@@ -32,6 +32,8 @@
 // ═══════════════════════════════════════════════════════════════════
 import { tamrielTrace, tamrielLandVersion, PROVINCE_OF_ID } from './tamrielLand.js';
 import { PICTURE_W, PICTURE_H, pictureToBay, bayToPicture, inBay, tamrielFit } from './tamrielFrame.js';
+import { arenaGlobalCityId } from '../formats/arenaCityData.js';
+import { COASTAL_CITY_COUNT } from '../formats/arenaExe.js';
 
 /** The cloud's scales about its province rectangle's centre. */
 export const FIT_SCALES = Object.freeze(Array.from({ length: 11 }, (_, i) => (600 + i * 50) / 1000));   // 0.60 .. 1.10
@@ -161,6 +163,54 @@ export function placeArenaLocations(cityData, trace) {
 /** How far, Bay pixels, a place may stand from its own point when the pixel under it is not its province's land or a
  *  place before it took it. */
 export const PIXEL_REACH = 3;
+/** TESA6: how far, Bay pixels, a coastal city looks for its province's shore - however far its own province's nearest
+ *  is: the freeware's farthest is 247 (Soulrest, Black Marsh; Summurset's cloud fits at 0.6, its coast's cities pulled in). */
+export const SHORE_REACH = 320;
+const RING8 = Object.freeze([[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1]]);
+/** TESA6: is a Bay pixel the picture's sea - its centre off the trace's land, or off the picture (the ground's own law
+ *  past the Bay, world/tamrielGround.js: the trace's sea is water). */
+export function pictureSea(trace, x, y) {
+  const [px, py] = bayToPicture(x + 0.5, y + 0.5);
+  const ix = Math.floor(px), iy = Math.floor(py);
+  return !(ix >= 0 && iy >= 0 && ix < trace.w && iy < trace.h && trace.land[iy * trace.w + ix]);
+}
+/** TESA6: a province's COAST CELLS - its land's picture pixels with the sea (pictureSea's: off the land, or off the
+ *  picture) among their eight - as a predicate over picture points; a Bay pixel beside the sea lies in one of them. */
+function coastCells(trace, own) {
+  const { w, h, land } = trace;
+  const mask = new Uint8Array(w * h), cells = [];
+  const sea = (x, y) => x < 0 || y < 0 || x >= w || y >= h || !land[y * w + x];
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) if (own(x + 0.5, y + 0.5) && RING8.some(([dx, dy]) => sea(x + dx, y + dy))) { mask[y * w + x] = 1; cells.push([x, y]); }
+  const has = (px, py) => { const x = Math.floor(px), y = Math.floor(py); return x >= 0 && y >= 0 && x < w && y < h && mask[y * w + x] === 1; };
+  /** The ring (Chebyshev, Bay pixels from (fx, fy)) no nearer than which a coast cell's Bay pixels lie - where to start. */
+  const ringFrom = (fx, fy) => {
+    let r = Infinity;
+    for (const [cx, cy] of cells) {
+      const [ax, ay] = pictureToBay(cx, cy), [bx, by] = pictureToBay(cx + 1, cy + 1);
+      r = Math.min(r, Math.max(0, Math.floor(ax) - fx, fx - Math.ceil(bx), Math.floor(ay) - fy, fy - Math.ceil(by)));
+    }
+    return r;
+  };
+  return { has, ringFrom };
+}
+/** The nearest pixel to (x, y) `ok` takes, ring by ring from ring `from` out to `reach` and in each ring the nearest
+ *  centre, or null. */
+function nearestPixel(x, y, reach, ok, from = 0) {
+  const fx = Math.floor(x), fy = Math.floor(y);
+  if (from <= 0 && ok(fx, fy)) return [fx, fy];
+  for (let r = Math.max(1, from); r <= reach; r++) {
+    let at = null, bd = Infinity;
+    for (let dy = -r; dy <= r; dy++) {
+      for (let dx = -r; dx <= r; dx++) {
+        if (Math.max(Math.abs(dx), Math.abs(dy)) !== r) continue;   // the ring alone - the ones inside it were asked
+        const d = Math.hypot(fx + dx + 0.5 - x, fy + dy + 0.5 - y);
+        if (d < bd && ok(fx + dx, fy + dy)) { bd = d; at = [fx + dx, fy + dy]; }
+      }
+    }
+    if (at) return at;
+  }
+  return null;
+}
 
 /**
  * TESA2: THE BAY PIXEL EACH NAMED PLACE BEYOND THE BAY STANDS ON - the pixel under its point (the live fit's
@@ -168,10 +218,18 @@ export const PIXEL_REACH = 3;
  * province, then id) stood there; else the nearest such pixel within PIXEL_REACH, ring by ring and in each ring the
  * nearest centre; else none (`unstood`). The Bay's own ground stands none, and a nameless dungeon stands nowhere (a name
  * each Arena save rolls - not yet). Answers { stood: [place & { bx, by }], unstood, byPixel: Map<'bx,by', place> }.
+ *
+ * TESA6: A COASTAL CITY STANDS ON ITS SHORE. A city of `coastal` (A.EXE's list, formats/arenaExe.js - global city ids)
+ * stands on the nearest pixel of its own province's land beside the picture's sea (`pictureSea`, one of its eight
+ * neighbours, never the Bay's), within SHORE_REACH, ring by ring as above - and is a PORT (`port: true`). Arena says the
+ * city is on the coast; the coast is the picture's, and the fit draws a cloud's coastal ring in from it. One with no
+ * shore in reach stands as any place does, no port.
  * @param {ReturnType<typeof placeArenaLocations>} model @param {import('./tamrielLand.js').TamrielTrace} trace
+ * @param {?ArrayLike<number>} [coastal]
  */
-export function standArenaPixels(model, trace) {
+export function standArenaPixels(model, trace, coastal = null) {
   const stood = [], unstood = [], byPixel = new Map(), lands = new Map();
+  const coast = new Set(Array.from(coastal ?? []));
   for (const p of model.places) {
     if (!p.name) continue;
     const [x, y] = pictureToBay(p.px, p.py);
@@ -179,20 +237,15 @@ export function standArenaPixels(model, trace) {
     let own = lands.get(p.province);
     if (!own) lands.set(p.province, own = provinceLand(trace, p.province));
     const free = (bx, by) => !inBay(bx, by) && !byPixel.has(`${bx},${by}`) && own(...bayToPicture(bx + 0.5, by + 0.5));
-    const fx = Math.floor(x), fy = Math.floor(y);
-    let at = free(fx, fy) ? [fx, fy] : null;
-    for (let r = 1; !at && r <= PIXEL_REACH; r++) {
-      let bd = Infinity;
-      for (let dy = -r; dy <= r; dy++) {
-        for (let dx = -r; dx <= r; dx++) {
-          if (Math.max(Math.abs(dx), Math.abs(dy)) !== r) continue;   // the ring alone - the ones inside it were asked
-          const d = Math.hypot(fx + dx + 0.5 - x, fy + dy + 0.5 - y);
-          if (d < bd && free(fx + dx, fy + dy)) { bd = d; at = [fx + dx, fy + dy]; }
-        }
-      }
-    }
+    const port = p.id < 32 && coast.has(arenaGlobalCityId(p.id, p.provinceIndex));
+    let shores = port ? lands.get(`${p.province}:shore`) : null;
+    if (port && !shores) lands.set(`${p.province}:shore`, shores = coastCells(trace, own));
+    // a shore pixel's picture pixel is a coast cell (its province's land beside the sea) - asked first, it spares the rest
+    const shore = (bx, by) => { const [qx, qy] = bayToPicture(bx + 0.5, by + 0.5); return shores.has(qx, qy) && free(bx, by) && RING8.some(([dx, dy]) => !inBay(bx + dx, by + dy) && pictureSea(trace, bx + dx, by + dy)); };
+    const onShore = port ? nearestPixel(x, y, SHORE_REACH, shore, shores.ringFrom(Math.floor(x), Math.floor(y))) : null;
+    const at = onShore ?? nearestPixel(x, y, PIXEL_REACH, free);
     if (!at) { unstood.push(p); continue; }
-    const placed = { ...p, bx: at[0], by: at[1] };
+    const placed = { ...p, bx: at[0], by: at[1], ...(onShore ? { port: true } : {}) };
     stood.push(placed);
     byPixel.set(`${at[0]},${at[1]}`, placed);
   }
@@ -203,8 +256,10 @@ export function standArenaPixels(model, trace) {
 
 let _cityData = null;
 let _known = false;
+let _coastal = null;   // TESA6: A.EXE's coastal list
+let _coastKnown = false;
 let _version = 0;
-let _model = null;   // { land, model, fit, pixels }
+let _model = null;   // { land, model, fit, coast, pixels }
 let _standing = false;
 let _online = false;
 
@@ -235,6 +290,22 @@ export function setArenaCityData(cityData, { known = false } = {}) {
 }
 export const arenaCityData = () => _cityData;
 export const arenaCityDataKnown = () => _known;
+
+/** TESA6: THE COASTAL LISTS A ROOM KNOWS - the SHA-256 of A.EXE's coastal list (formats/arenaExe.js arenaCoastalCities),
+ *  the 58 ids, never the file: an executable's print would split the releases a list does not (the freeware's A.EXE and
+ *  a CD's ACD.EXE hold one list at two offsets). Online the list moves places (a coastal city to its shore), so a room's
+ *  players stand them only from a list it knows. */
+export const ARENA_COASTAL_PRINTS = Object.freeze(['50624be2a679f8098d9ef71f5b8dfec4aa11edd80c9e431b89003ae538ff5e1e']);
+export const isKnownCoastalPrint = (print) => ARENA_COASTAL_PRINTS.includes(String(print));
+/** TESA6: install A.EXE's coastal list (or null: no ports, every city where the fit stands it). `known`: its print is
+ *  one a room knows. */
+export function setArenaCoastal(list, { known = false } = {}) {
+  _coastal = list && list.length === COASTAL_CITY_COUNT ? Uint8Array.from(list) : null;
+  _coastKnown = !!_coastal && !!known;
+  _version++;
+}
+export const arenaCoastal = () => _coastal;
+export const arenaCoastalKnown = () => _coastKnown;
 /** TESA-ONLINE: is the host a room's (online) - its word at its mount. Online, only known data stands places. */
 export function setArenaRoom(online) {
   if (!!online === _online) return;
@@ -251,18 +322,23 @@ export function arenaPlaces() {
   const trace = tamrielTrace();
   if (!_cityData || !trace) return null;
   const land = tamrielLandVersion();
-  if (!_model || _model.land !== land) _model = { land, model: placeArenaLocations(_cityData, trace), fit: null, pixels: null };
+  if (!_model || _model.land !== land) _model = { land, model: placeArenaLocations(_cityData, trace), fit: null, coast: null, pixels: null };
   return _model.model;
 }
 
 /** TESA2: the installed set's pixels (standArenaPixels) on the trace and the Bay's fit as they stand now - remade when
- *  either moves - or null with no places; TESA-ONLINE: and null in a room whose data is not a known release. */
+ *  either moves - or null with no places; TESA-ONLINE: and null in a room whose data is not a known release; TESA6: with
+ *  the coastal list's ports, and online none unless that list is one the room knows too. */
 export function arenaPixels() {
-  if (_online && !_known) return null;   // TESA-ONLINE: a room stands one Tamriel - a copy it does not know stands none
+  if (_online && !(_known && _coastKnown)) return null;   // TESA-ONLINE: a room stands one Tamriel - a copy it does not know stands none
   const model = arenaPlaces();
   if (!model) return null;
   const fit = tamrielFit();
-  if (_model.fit !== fit) { _model.fit = fit; _model.pixels = standArenaPixels(model, /** @type {any} */ (tamrielTrace())); }
+  if (_model.fit !== fit || _model.coast !== _coastal) {
+    _model.fit = fit;
+    _model.coast = _coastal;
+    _model.pixels = standArenaPixels(model, /** @type {any} */ (tamrielTrace()), _coastal);
+  }
   return _model.pixels;
 }
 /** TESA2: the place standing on a Bay pixel, or null. */

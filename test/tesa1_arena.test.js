@@ -24,7 +24,7 @@ import { setTamrielFit } from '../src/world/tamrielFrame.js';
 import { buildTamrielInk, tamrielInkFor, tamrielPlaceAt, arenaInkCities, TAMRIEL_TEXT, ARENA_KIND_WORDS, ARENA_KIND_GLYPHS } from '../src/ui/tamrielInk.js';
 import { isArenaFile, ARENA_FILES, ARENA_CITYDATA, registerArenaData, arenaDataRegistered, arenaDataAttached } from '../src/scenes/dataSource.js';
 import { arenaPlacesOn } from '../src/scenes/shared.js';
-import { arenaCard, ARENA_CARD_LINE } from '../src/ui/enhancedMenu.js';
+import { arenaCard, ARENA_CARD_LINE, ARENA_PORT_WORDS } from '../src/ui/enhancedMenu.js';
 
 const read = (p) => readFileSync(new URL(`../${p}`, import.meta.url), 'utf8');
 afterEach(() => { setTamrielTrace(null); setTamrielFit(null); setArenaCityData(null); });
@@ -219,10 +219,10 @@ test('TESA1 the ink: on the trace, the continent\'s cities ARE Arena\'s named pl
 });
 
 test('TESA1 the store: Arena\'s own (not ARENA2\'s - KEEP\'s diet and the recovery wipe never see it), the database\'s upgrade additive, only CITYDATA.65 kept from a folder by its uppercase name; a registration with no IndexedDB installs nothing and says so; the picker says what it found (mutant: the filter, the store list, the version)', async () => {
-  assert.deepEqual(ARENA_FILES, ['CITYDATA.65']);
+  assert.deepEqual(ARENA_FILES, ['CITYDATA.65', 'A.EXE', 'ACD.EXE'], 'PIN MOVED (TESA6): and the executable, for its coastal list (tesa6_ports)');
   assert.equal(ARENA_CITYDATA, 'CITYDATA.65');
-  assert.deepEqual(['CITYDATA.65', 'citydata.65', 'ARENA/CITYDATA.65', 'C:\\ARENA\\CityData.65', 'CITYDATA.00', 'CITYDATA.64', 'GLOBAL.BSA', 'CITYDATA.650'].map(isArenaFile),
-    [true, true, true, true, false, false, false, false], 'the template a new character starts from, and nothing else');
+  assert.deepEqual(['CITYDATA.65', 'citydata.65', 'ARENA/CITYDATA.65', 'C:\\ARENA\\CityData.65', 'CITYDATA.00', 'CITYDATA.64', 'GLOBAL.BSA', 'CITYDATA.650', 'a.exe', 'ACD.EXE', 'INSTALL.EXE'].map(isArenaFile),
+    [true, true, true, true, false, false, false, false, true, true, false], 'the template a new character starts from and the executable, nothing else');
   const ds = read('src/scenes/dataSource.js');
   assert.match(ds, /const ARENA_STORE = 'arena';/);
   assert.match(ds, /const ASSET_STORES = \[MUSIC_STORE, TEXTURE_STORE, MW_STORE, DERIVED_STORE, ARENA_STORE\];/);
@@ -267,11 +267,11 @@ test('TESA1 the doors: the world host reads the store at its boot behind `?arena
   globalThis.document = { createElement: mk };
   try {
     for (const [attached, data, buttons, primary] of [[false, 'none attached', ['Attach data'], ['Attach data']], [true, 'CITYDATA.65 attached', ['Attach data', 'Remove data'], []]]) {
-      const card = arenaCard({ attached, known: attached });   // PIN MOVED (TESA-ONLINE): the reading names the release - the known one here (tesa2_online holds the other)
+      const card = arenaCard({ attached, known: attached, coast: attached, coastKnown: attached });   // PIN MOVED (TESA-ONLINE): the reading names the release - the known one here (tesa2_online holds the other); TESA6: and its ports
       assert.equal(kids(card, 'h3')[0].textContent, 'The Elder Scrolls: Arena');
       assert.deepEqual(kids(card, 'p').map((p) => p.textContent), [ARENA_CARD_LINE]);
       const [dl] = kids(card, 'dl');
-      assert.deepEqual(Object.fromEntries(kids(dl, 'dt').map((dt, i) => [dt.textContent, kids(dl, 'dd')[i].textContent])), { Data: data });
+      assert.deepEqual(Object.fromEntries(kids(dl, 'dt').map((dt, i) => [dt.textContent, kids(dl, 'dd')[i].textContent])), attached ? { Data: data, Ports: ARENA_PORT_WORDS.known } : { Data: data }, 'PIN MOVED (TESA6): the ports\' row once data is attached');
       const bs = kids(card, 'div').flatMap((d) => kids(d, 'button'));
       assert.deepEqual(bs.map((b) => b.textContent), buttons);
       assert.deepEqual(bs.filter((b) => /primary/.test(b.className)).map((b) => b.textContent), primary);

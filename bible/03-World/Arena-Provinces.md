@@ -353,6 +353,45 @@ On the freeware with Basic Roads: seven crossings - three north (366, 548, 726),
 Recorded: the joins are not drawn on the Bay's travel map, not cut by the landforms, not read by Snowfall or by World of
 Daggerfall's road clearance (its camps are the Bay's, and a join is a few pixels at its edge).
 
+## TESA6 - the ports (2026-10-12)
+
+The owner, on the same item: *"Do it"*. Arena marks its coastal cities in the executable, not in CITYDATA: CityGeneration's
+CoastalCityList, 58 global city ids (OpenTESArena's ExeData, its address maps `aExeStrings.txt` 0x3FEA8 and
+`acdExeStrings.txt` 0x401E2 - the freeware is the first), and Arena's coastal city is built round the water.
+
+- **The file** (`formats/arenaExe.js`): A.EXE (ACD.EXE on the CD) is PKLITE-packed; unpackArenaExe is OpenTESArena's
+  ExeUnpacker law for law (the spec's two prefix tables, the 0x011100 special, a byte of data XORed with 16 less the flags
+  read of its word) - byte-identical to it on the freeware's A.EXE, 19 ms. arenaCoastalCities reads the 58 ids at either
+  release's offset where the city templates' names follow at once ("town%d.mif"), which is how a file is known to be a
+  release the list is read from. The folder pick keeps A.EXE and ACD.EXE beside CITYDATA.65 (`dataSource.js`
+  ARENA_FILES); nothing of the file is kept in memory but the list.
+- **Measured first**: the cloud's fit draws a province's coastal ring in from the coast (Summurset's cloud fits at 0.6),
+  and Arena's coastal cities stood a median 70 Bay pixels inland - 247 at the farthest (Soulrest) - none of them a harbour.
+- **A coastal city stands on its shore** (`arenaPlaces.js` standArenaPixels): on the nearest pixel of its own province's
+  land beside the picture's sea (one of its eight neighbours off the trace's land or off the picture - never the Bay's,
+  never another province's land), ring by ring out to SHORE_REACH (320), and is a PORT (`port`); with none in reach, or
+  no list, it stands as any place. A dungeon is never one. The shore search starts at the ring of the province's nearest
+  coast cell (a picture pixel of its land beside the sea): the freeware's pixels take 160 ms with the shore, once a trace.
+  On the freeware: all 248 places still stand, 51 of them ports, each beside the ground's own sea; the 51 moved 1 to 247
+  pixels. Arena says the city is on the coast; the coast is the picture's.
+- **The clone answers a harbour** (`arenaLocations.js`: `portTownAndUnknown` 1, `arena.port`), so what a port of the Bay
+  has by its byte it has: its shipyard and its lighthouse on its seaward ground (SHIPYARDS, `world/portSites.js`), the
+  docks off its harbour, a ship for sale at its bank. A city made a port is cloned again (`arenaLocationAt`) and its
+  pixel built again (the sweep's slot carries the port).
+- **The host's ports past the Bay** (`world.js` arenaPortAt, arenaPortNear, arenaPortOf - ETHER-PORTS' shape): Come Sail
+  Away's port town (`csaIsPortTown`, and with it `navalNearPort`), the naval host's port here (`navalPortHere` -
+  `{ key, name, px, py, region, crown: null }`: no crown's writ past the Bay, the region the pixel's own read), the
+  harbour book's town (`navalHarbourNear` - its harbour sounded as any port's, its quays by QUAYS' law), the nearest
+  port's name and way past the Bay (`csaNearestPort`), and the waters' distance to a port (`navalPortPx`). An Arena port
+  trades the one good its key draws (`portTrade`: no crown's table). Not yet: the harbour office's contract board lists
+  the Bay's ports alone, and the travel window's ship passage is Travel Options' hand-written list.
+- **Online** (TESA-ONLINE's law, widened): the list moves places, so a room stands Arena's places only from a known
+  CITYDATA.65 AND a known list - its print the LIST's SHA-256 (ARENA_COASTAL_PRINTS), never the file's, so a CD and the
+  freeware that hold one list are one Tamriel. A copy attached before TESA6 kept CITYDATA alone: attaching the folder
+  again reads A.EXE (the card's Ports row says so).
+- **Measured in the game** (headless, the freeware's CITYDATA.65 and A.EXE): Solitude stands on Skyrim's north shore at
+  (1691, -341), its clone a port, its build standing both of the port's places, and Arena's roads at its gate.
+
 ## The arc - what comes next
 
 - **The provinces as regions of their own** - their own chat rooms, banks, law, prices and quest sites. The save's shape,
@@ -365,11 +404,25 @@ Daggerfall's road clearance (its camps are the Bay's, and a join is a few pixels
   joins them and the seed it draws from are not in OpenTESArena or any reference this port has; reading them out of
   A.EXE's code would be a guess no test could check against the game. Left until a reference exists - a nameless
   dungeon stands nowhere, as Arena's own map shows none until it is found.
-- **Roads, the rest** - TESA4 stands the roads between Arena's places and TESA5 joins them to the Bay's. Still to come:
-  their ports (A.EXE's coastal city list, as OpenTESArena reads it), the landforms' cut along them, and the maps' ink of
-  them.
+- **Roads, the rest** - TESA4 stands the roads between Arena's places, TESA5 joins them to the Bay's and TESA6 makes
+  the coastal cities ports. Still to come: the landforms' cut along the roads, the maps' ink of them, Arena's ports on
+  the contract board and the ship passage.
 
 ## Pins
+
+`test/tesa6_ports.test.js` (10, TESA6): the unpacking against the spec's tables (a stream made here: data, a copy of 2, a
+high byte, the long special, 0xFE, the counts past 12) and its refusals (the last word, a byte or a copy past the length,
+a copy before the start, a short file); the list at either offset and its templates' check; the shore (straight to the
+coast, off the list and a dungeon unmoved, never across another province's land, none in reach); the clone's harbour;
+the installed list (58 or none, its print, at once, online a known list too, the version); the store and the card's
+Ports row; the host by source (each port reader, no crown, the clone's and the sweep's port); with ARENA_PATH the real
+A.EXE's list known; with ARENA2_PATH and ARENA_PATH 248 stood, 51 ports, each beside the ground's sea. Mutants
+`tools/mutants/tesa6.json` (33, all dead). PIN MOVED: `test/tesa1_arena.test.js` (ARENA_FILES, the card's Ports row),
+`test/tesa2_arena.test.js` (`arena.port`, the clone's cache, the sweep's slot), `test/tesa2_online.test.js` (online needs
+the list too), `test/fb0929h_deedport.test.js` (its harness lifts the port test and the nearest-port finder: Arena's
+ports past the Bay, the Bay's on it); `tools/mutants/tesa1.json`'s TESA1-a-registration-installs-nothing, `tesa2.json`'s TESA2-one-fit-ever,
+TESA2-a-harbour-kept and TESA2-the-index-keeps-it, `tesa_online.json`'s TESA-ONLINE-any-copy-online re-aimed by content,
+all judged dead again.
 
 `test/tesa5_join.test.js` (9, TESA5): the crossings (the depth, the spacing, the nearest, the middle, the gate's reach,
 all four edges, never a track, the land); the drawing (the join's Bay pixels, the gate's run past the Bay, neither in the

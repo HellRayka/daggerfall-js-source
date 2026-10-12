@@ -29,7 +29,7 @@
   {
     "name": "TESA-ONLINE-any-copy-online",
     "file": "src/world/arenaPlaces.js",
-    "old": "  if (_online && !_known) return null;   // TESA-ONLINE",
+    "old": "  if (_online && !(_known && _coastKnown)) return null;   // TESA-ONLINE",
     "new": "  // TESA-ONLINE",
     "tests": [
       "test/tesa2_online.test.js"

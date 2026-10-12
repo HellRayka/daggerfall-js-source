@@ -96,9 +96,11 @@ export function arenaTemplateOf(templates, place) {
  * AN ARENA PLACE'S LOCATION: the template cloned onto the place's Bay pixel (bx, by) - its id (the map row's, the
  * exterior's location and map ids, its record's header, and the dungeon's header's), the pixel's longitude and latitude,
  * Arena's name, the region the pixel answers for (`where`: the host's), its own location index, and `arena` (its province,
- * its slot, its kind). Its exterior answers no harbour (`portTownAndUnknown` 0: Arena's ports are not yet).
+ * its slot, its kind; TESA6 whether it is a port). Its exterior answers a harbour by the place (`portTownAndUnknown`:
+ * a port's 1, any other 0 - TESA6: a coastal city on its shore, world/arenaPlaces.js standArenaPixels), never the
+ * template's.
  * @param {any} template
- * @param {{ province: string, provinceIndex: number, id: number, kind: string, name: string, bx: number, by: number }} place
+ * @param {{ province: string, provinceIndex: number, id: number, kind: string, name: string, bx: number, by: number, port?: boolean }} place
  * @param {{ regionIndex?: number, regionName?: string, politic?: number, climate?: any }} [where]
  */
 export function synthesizeArenaLocation(template, place, where = {}) {
@@ -115,10 +117,10 @@ export function synthesizeArenaLocation(template, place, where = {}) {
     mapTableData: { ...template.mapTableData, mapId, longitude: ll.x, latitude: ll.y },
     exterior: {
       ...template.exterior,
-      exteriorData: { ...template.exterior?.exteriorData, locationId: mapId, mapId, portTownAndUnknown: 0 },
+      exteriorData: { ...template.exterior?.exteriorData, locationId: mapId, mapId, portTownAndUnknown: place.port ? 1 : 0 },
       ...(template.exterior?.recordElement ? { recordElement: { ...template.exterior.recordElement, header: { ...template.exterior.recordElement.header, locationId: mapId } } } : {}),
     },
-    arena: Object.freeze({ province: place.province, provinceIndex: place.provinceIndex, id: place.id, kind: place.kind }),
+    arena: Object.freeze({ province: place.province, provinceIndex: place.provinceIndex, id: place.id, kind: place.kind, port: !!place.port }),
   };
   if (template.dungeon) loc.dungeon = { ...template.dungeon, recordElement: { ...template.dungeon?.recordElement, header: { ...template.dungeon?.recordElement?.header, locationId: mapId } } };
   return loc;

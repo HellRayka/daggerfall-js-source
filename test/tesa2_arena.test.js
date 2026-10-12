@@ -188,7 +188,7 @@ test('TESA2 the clone: the template under Arena\'s name, its own id on the map r
   assert.equal(loc.dungeon.recordElement.header.locationId, id);
   assert.equal(loc.dungeon.blocks, tpl.dungeon.blocks, 'the blocks shared, never copied');
   assert.equal(loc.exterior.buildings, tpl.exterior.buildings);
-  assert.deepEqual(loc.arena, { province: 'Skyrim', provinceIndex: 2, id: 33, kind: 'map-dungeon' });
+  assert.deepEqual(loc.arena, { province: 'Skyrim', provinceIndex: 2, id: 33, kind: 'map-dungeon', port: false }, 'PIN MOVED (TESA6): and whether it is a port (tesa6_ports)');
   assert.ok(Object.isFrozen(loc.arena));
   assert.equal(JSON.stringify(tpl), before, 'the template is the game\'s and stays so');
   const town = synthesizeArenaLocation(row(40, LOCATION_TYPES.TownHamlet), { ...place, kind: 'town', name: 'T' });
@@ -226,7 +226,8 @@ test('TESA2 the host: offline on the land beyond the Bay it stands the places - 
   assert.ok(w.indexOf('const _arenaTemplates = arenaStands') < w.indexOf('  _classicRows = null;   // read, let go'), 'before they go');
   assert.match(w, /if \(etherSea && inEther\(px, py\)\) return etherPlaceAt\(px, py\);[^\n]*\n\s+if \(_arenaTemplates && !onTheBay\(px, py\)\) return arenaLocationAt\(px, py\);/);
   const fn = w.slice(w.indexOf('  function arenaLocationAt(px, py) {'), w.indexOf('  /** AUDIT OW4 D4: THE CLONE a pixel\'s spawn IS'));
-  assert.match(fn, /if \(place && had\.arena\.provinceIndex === place\.provinceIndex && had\.arena\.id === place\.id\) return had;\n\s+_locIndexGen \+= 1;\n\s+locationIndex\.delete\(key\);/, 'one clone a pixel, and out of the index when its place goes');
+  assert.match(fn, /if \(place && had\.arena\.provinceIndex === place\.provinceIndex && had\.arena\.id === place\.id && had\.arena\.port === !!place\.port\) return had;[^\n]*\n\s+_locIndexGen \+= 1;\n\s+locationIndex\.delete\(key\);/,   // PIN MOVED (TESA6): a city made a port is cloned again
+    'one clone a pixel, and out of the index when its place goes');
   assert.match(fn, /const regionIndex = maps\.getRegionIndexAt\(px, py\);\n\s+const loc = synthesizeArenaLocation\(template, place, \{ regionIndex, regionName: REGION_NAMES\[regionIndex\], politic: 128 \+ regionIndex, climate: getWorldClimateSettings\(maps\.getClimateIndex\(px, py\)\) \}\);/);
   assert.match(fn, /locationIndex\.set\(key, loc\);\n\s+return loc;/);
   assert.match(w, /location: dfLocation \? dfLocation\.name : null,\n\s+arenaSlot: dfLocation\?\.arena \?\? null,\n/, 'the built pixel keeps its Arena slot - beside, never over, the colosseum\'s `arena` (ARENA2)');
@@ -234,7 +235,7 @@ test('TESA2 the host: offline on the land beyond the Bay it stands the places - 
   const sweep = w.slice(w.indexOf('  function sweepArenaPixels() {'), w.indexOf('  // LocationLoader.cs:146-151'));
   assert.match(sweep, /if \(now === _arenaSwept\) return;/);
   assert.match(sweep, /if \(onTheBay\(p\.px, p\.py\)\) continue;/);
-  assert.match(sweep, /if \(\(place \? `\$\{place\.provinceIndex\}\|\$\{place\.id\}` : null\) !== \(p\.arenaSlot \? `\$\{p\.arenaSlot\.provinceIndex\}\|\$\{p\.arenaSlot\.id\}` : null\)\) again\.push/);
+  assert.match(sweep, /if \(\(place \? `\$\{place\.provinceIndex\}\|\$\{place\.id\}\|\$\{!!place\.port\}` : null\) !== \(p\.arenaSlot \? `\$\{p\.arenaSlot\.provinceIndex\}\|\$\{p\.arenaSlot\.id\}\|\$\{!!p\.arenaSlot\.port\}` : null\)\) again\.push/, 'PIN MOVED (TESA6): and its port');
   assert.match(sweep, /for \(const k of again\) destroyPixel\(k\.px, k\.py, \{ collectLoose: false \}\);\n\s+queue\.push\(\.\.\.again\.sort\(nearestFirstFrom\(state\.current\)\)\);/);
   assert.match(w, /if \(_arenaTemplates && !building\) sweepArenaPixels\(\);/);
   assert.match(w, /if \(_arenaTemplates && params\.has\('load'\)\) await arenaReady\.then\(\(n\) => \(n \? Promise\.race\(\[arenaTraced, new Promise\(\(r\) => setTimeout\(r, ARENA_LOAD_WAIT_MS\)\)\]\) : 0\)\);\n\s+let _loadedGame = false;/, 'a load waits before the boot decides its start');

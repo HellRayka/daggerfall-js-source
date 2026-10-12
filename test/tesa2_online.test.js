@@ -12,7 +12,7 @@ import { createHash } from 'node:crypto';
 import { parseArenaCityData, CITYDATA_BYTES, PROVINCE_BYTES, LOCATION_BYTES } from '../src/formats/arenaCityData.js';
 import {
   ARENA_CITYDATA_PRINTS, arenaCityDataPrint, isKnownArenaPrint, setArenaCityData, arenaCityDataKnown, setArenaRoom, arenaRoom,
-  arenaPixels, arenaPlacesVersion, setArenaStanding,
+  arenaPixels, arenaPlacesVersion, setArenaStanding, setArenaCoastal,
 } from '../src/world/arenaPlaces.js';
 import { arenaPlaceId, ARENA_PLACES_TEXT } from '../src/world/arenaLocations.js';
 import { setTamrielTrace } from '../src/world/tamrielLand.js';
@@ -22,7 +22,7 @@ import { arenaCard, ARENA_DATA_WORDS } from '../src/ui/enhancedMenu.js';
 import { isWorldRoom } from '../src/net/wire.js';
 
 const read = (p) => readFileSync(new URL(`../${p}`, import.meta.url), 'utf8');
-afterEach(() => { setTamrielTrace(null); setTamrielFit(null); setArenaCityData(null); setArenaRoom(false); setArenaStanding(false); });
+afterEach(() => { setTamrielTrace(null); setTamrielFit(null); setArenaCityData(null); setArenaCoastal(null); setArenaRoom(false); setArenaStanding(false); });
 
 function mintCityData(provinces) {
   const b = new Uint8Array(CITYDATA_BYTES);
@@ -72,6 +72,9 @@ test('TESA-ONLINE the room: online, places stand only from a known release - an 
   assert.equal(arenaPixels(), null, 'online: not a release the room knows - none stands');
   setArenaCityData(cd, { known: true });
   assert.equal(arenaCityDataKnown(), true);
+  // PIN MOVED (TESA6, tesa6_ports): the coastal list moves places, so a room knows it too
+  assert.equal(arenaPixels(), null, 'online: a known release with no coastal list a room knows - none stands');
+  setArenaCoastal(new Uint8Array(58), { known: true });
   assert.equal(arenaPixels()?.stood.length, 1, 'online: a known release stands, the same for every player who has it');
   setArenaCityData(null, { known: true });
   assert.equal(arenaCityDataKnown(), false, 'no data is never known');

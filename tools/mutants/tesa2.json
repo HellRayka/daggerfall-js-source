@@ -47,7 +47,7 @@
   {
     "name": "TESA2-one-fit-ever",
     "file": "src/world/arenaPlaces.js",
-    "old": "  if (_model.fit !== fit) {",
+    "old": "  if (_model.fit !== fit || _model.coast !== _coastal) {",
     "new": "  if (!_model.pixels) {",
     "tests": [
       "test/tesa2_arena.test.js"
@@ -137,7 +137,7 @@
   {
     "name": "TESA2-a-harbour-kept",
     "file": "src/world/arenaLocations.js",
-    "old": "locationId: mapId, mapId, portTownAndUnknown: 0 },",
+    "old": "locationId: mapId, mapId, portTownAndUnknown: place.port ? 1 : 0 },",
     "new": "locationId: mapId, mapId },",
     "tests": [
       "test/tesa2_arena.test.js"
@@ -182,7 +182,7 @@
   {
     "name": "TESA2-the-index-keeps-it",
     "file": "src/scenes/world.js",
-    "old": "      if (place && had.arena.provinceIndex === place.provinceIndex && had.arena.id === place.id) return had;",
+    "old": "      if (place && had.arena.provinceIndex === place.provinceIndex && had.arena.id === place.id && had.arena.port === !!place.port) return had;",
     "new": "      return had;",
     "tests": [
       "test/tesa2_arena.test.js"

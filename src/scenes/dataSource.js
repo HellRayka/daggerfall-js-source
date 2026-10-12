@@ -919,9 +919,11 @@ export async function registerMorrowindData() {
 // ---- TESA1: the player's own Arena -------------------------------------
 
 /** The files of Arena the port reads, by their canonical (uppercase) names: CITYDATA.65, the world map's places as a
- *  new character starts them (formats/arenaCityData.js). A folder pick keeps these and nothing else. */
+ *  new character starts them (formats/arenaCityData.js); TESA6: the executable, A.EXE (ACD.EXE on the CD), for its list
+ *  of coastal cities (formats/arenaExe.js). A folder pick keeps these and nothing else. */
 export const ARENA_CITYDATA = 'CITYDATA.65';
-export const ARENA_FILES = Object.freeze([ARENA_CITYDATA]);
+export const ARENA_EXES = Object.freeze(['A.EXE', 'ACD.EXE']);
+export const ARENA_FILES = Object.freeze([ARENA_CITYDATA, ...ARENA_EXES]);
 export const isArenaFile = (name) => ARENA_FILES.includes(normalizeName(name));
 
 export async function storeArenaFiles(files) {
@@ -933,12 +935,17 @@ export const loadArenaFile = (fileName) => assetBytes(ARENA_STORE, fileName);
 let _arenaRegistered = false;
 let _arenaPlacesInstalled = false;
 let _arenaKnown = false;
+let _arenaCoast = false;
+let _arenaCoastKnown = false;
 /** Has a registration read the store this page? */
 export const arenaDataRegistered = () => _arenaRegistered;
 /** Did it find a CITYDATA the reader took? The Arena card's reading. */
 export const arenaDataAttached = () => _arenaPlacesInstalled;
 /** TESA-ONLINE: is it a release a room knows (its print)? The Arena card's reading. */
 export const arenaDataKnown = () => _arenaKnown;
+/** TESA6: did it find an executable whose coastal list the reader took - and is that list one a room knows? */
+export const arenaCoastAttached = () => _arenaCoast;
+export const arenaCoastKnown = () => _arenaCoastKnown;
 
 /** THE ONE REGISTRATION (the texture store's law, AUDIT VE R2): the stored CITYDATA read, parsed and installed for every
  *  reader (world/arenaPlaces.js) - by the world host at its boot, by a pick, by the card. A missing or malformed file
@@ -951,20 +958,37 @@ export async function registerArenaData() {
   // TESA-ONLINE: the file's print, so a room stands its places only from a release it knows (world/arenaPlaces.js)
   const known = cityData ? isKnownArenaPrint(await arenaCityDataPrint(bytes)) : false;
   setArenaCityData(cityData, { known });
+  // TESA6: the coastal list, from whichever executable the folder held - its print the list's, never the file's
+  const { unpackArenaExe, arenaCoastalCities } = await import('../formats/arenaExe.js');
+  const { setArenaCoastal, isKnownCoastalPrint } = await import('../world/arenaPlaces.js');
+  let coast = null;
+  for (const name of ARENA_EXES) {
+    let exe = null;
+    try { exe = await loadArenaFile(name); } catch { exe = null; }
+    coast = exe ? arenaCoastalCities(unpackArenaExe(exe)) : null;
+    if (coast) break;
+  }
+  const coastKnown = coast ? isKnownCoastalPrint(await arenaCityDataPrint(coast)) : false;
+  setArenaCoastal(coast, { known: coastKnown });
   _arenaRegistered = true;
   _arenaPlacesInstalled = !!cityData;
   _arenaKnown = known;
+  _arenaCoast = !!coast;
+  _arenaCoastKnown = coastKnown;
   return cityData ? 1 : 0;
 }
 
 /** REMOVE THE ARENA DATA - the store emptied and the places taken off the map at once. */
 export async function clearStoredArena() {
   await clearAssets(ARENA_STORE);
-  const { setArenaCityData } = await import('../world/arenaPlaces.js');
+  const { setArenaCityData, setArenaCoastal } = await import('../world/arenaPlaces.js');
   setArenaCityData(null);
+  setArenaCoastal(null);
   _arenaRegistered = true;
   _arenaPlacesInstalled = false;
   _arenaKnown = false;
+  _arenaCoast = false;
+  _arenaCoastKnown = false;
 }
 
 export async function pickArenaFolder() {
@@ -974,8 +998,8 @@ export async function pickArenaFolder() {
       from Bethesda. Nothing is uploaded - it is stored in this browser,
       exactly like the ARENA2 pick.</p>
       <p style="color:#999">Arena's cities, towns, villages and dungeons
-      stand on the map of Tamriel beyond the Iliac Bay. Only
-      <b>CITYDATA.65</b> is kept.</p>`,
+      stand on the map of Tamriel beyond the Iliac Bay, its coastal cities
+      ports. Only <b>CITYDATA.65</b> and <b>A.EXE</b> are kept.</p>`,
     store: storeArenaFiles,
     register: registerArenaData,
     doneText: (n) => (n ? 'Arena\u2019s places will stand on the map of Tamriel' : 'no CITYDATA.65 in that folder'),

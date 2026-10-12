@@ -102,7 +102,7 @@ import { mwRaceId } from '../formats/mwNpc.js';
 import { EQUIP_SLOTS, equipTableOf } from '../systems/equip.js';
 import { dfWornEquipment } from '../formats/mwItemMap.js';
 import { ARMOR_ENUM } from '../combat/enemyEquipment.js';
-import { morrowindDataCount, morrowindDataCounted, countMorrowindArchives, assetPickerOpen, textureStoreRegistered, textureStoreSettled, arenaDataAttached, arenaDataRegistered, arenaDataKnown } from '../scenes/dataSource.js';   // MAC1: the boot door counts the store itself; AUDIT 65 XL-6: by NAME - it never reads a stored file   // MW-IMPORT: the attach door; MWFIX: and the modal it opens owns the keyboard
+import { morrowindDataCount, morrowindDataCounted, countMorrowindArchives, assetPickerOpen, textureStoreRegistered, textureStoreSettled, arenaDataAttached, arenaDataRegistered, arenaDataKnown, arenaCoastAttached, arenaCoastKnown } from '../scenes/dataSource.js';   // MAC1: the boot door counts the store itself; AUDIT 65 XL-6: by NAME - it never reads a stored file   // MW-IMPORT: the attach door; MWFIX: and the modal it opens owns the keyboard
 import { CATEGORIES, keysOf, isSettingItem, optionPath, whereIs } from '../ui/settingsMap.js';   // ORG2: the one map of every option
 import { GRAPHICS_PRESETS, PRESET_ROWS, presetNow } from '../systems/graphicsPresets.js';   // ORG2
 import { widgetFor, blockedReason, formatValue, stepValue, COLOUR_KEYS, ENUM_LAW } from '../ui/settingsLaw.js';   // FT14: the enum's own values are the bar's segments
@@ -2867,12 +2867,16 @@ function askArenaStore() {
 }
 /** TESA-ONLINE: the data's reading - a release a room knows stands its places online too; any other offline alone. */
 export const ARENA_DATA_WORDS = Object.freeze({ none: 'none attached', known: 'CITYDATA.65 attached', unknown: 'CITYDATA.65 attached - not a release a room knows: its places stand offline alone' });
-export function arenaCard({ attached = arenaDataAttached(), known = arenaDataKnown() } = {}) {
+/** TESA6: the coastal list's reading - A.EXE makes Arena's coastal cities ports, and a room stands Arena's places only
+ *  with a list it knows. */
+export const ARENA_PORT_WORDS = Object.freeze({ none: 'no A.EXE attached - no ports, and online no places', known: 'A.EXE attached - its coastal cities are ports', unknown: 'A.EXE attached - not a list a room knows: its ports stand offline alone' });
+export function arenaCard({ attached = arenaDataAttached(), known = arenaDataKnown(), coast = arenaCoastAttached(), coastKnown = arenaCoastKnown() } = {}) {
   askArenaStore();
   const c = el('div', 'card');
   c.append(el('h3', null, 'The Elder Scrolls: Arena'));
   c.append(el('p', 'meta', ARENA_CARD_LINE));
-  c.append(stats([['Data', !attached ? ARENA_DATA_WORDS.none : known ? ARENA_DATA_WORDS.known : ARENA_DATA_WORDS.unknown]]));
+  c.append(stats([['Data', !attached ? ARENA_DATA_WORDS.none : known ? ARENA_DATA_WORDS.known : ARENA_DATA_WORDS.unknown],
+    ...(attached ? [['Ports', !coast ? ARENA_PORT_WORDS.none : coastKnown ? ARENA_PORT_WORDS.known : ARENA_PORT_WORDS.unknown]] : [])]));
   const actions = [{ label: 'Attach data', primary: !attached, onClick: async () => { const ds = await import('../scenes/dataSource.js'); await ds.pickArenaFolder(); render(); } }];
   if (attached) {
     actions.push({ label: 'Remove data', onClick: () => ask(

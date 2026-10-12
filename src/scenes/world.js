@@ -1560,7 +1560,7 @@ export async function bootWorld(canvas, renderer, params, status) {
     for (const [, p] of built) {
       if (onTheBay(p.px, p.py)) continue;
       const place = now?.byPixel.get(`${p.px},${p.py}`) ?? null;
-      if ((place ? `${place.provinceIndex}|${place.id}` : null) !== (p.arenaSlot ? `${p.arenaSlot.provinceIndex}|${p.arenaSlot.id}` : null)) again.push({ px: p.px, py: p.py });
+      if ((place ? `${place.provinceIndex}|${place.id}|${!!place.port}` : null) !== (p.arenaSlot ? `${p.arenaSlot.provinceIndex}|${p.arenaSlot.id}|${!!p.arenaSlot.port}` : null)) again.push({ px: p.px, py: p.py });   // TESA6: and its port
     }
     if (!again.length) return;
     const under = `${state.current.x},${state.current.y}`;
@@ -2509,7 +2509,7 @@ export async function bootWorld(canvas, renderer, params, status) {
     const place = arenaPlaceOnPixel(px, py);
     const had = locationIndex.get(key);
     if (had?.arena) {
-      if (place && had.arena.provinceIndex === place.provinceIndex && had.arena.id === place.id) return had;
+      if (place && had.arena.provinceIndex === place.provinceIndex && had.arena.id === place.id && had.arena.port === !!place.port) return had;   // TESA6: a city made a port is cloned again
       _locIndexGen += 1;
       locationIndex.delete(key);
     }
@@ -9574,8 +9574,21 @@ export async function bootWorld(canvas, renderer, params, status) {
   /** ETHER-PORTS: a port isle as the harbour office and the naval host read a port - `{ key, name, px, py, region,
    *  crown: null, ether: true }`: no crown's writ runs past the Veil. */
   const etherPortOf = (i) => ({ key: `${i.px},${i.py}`, name: i.name, px: i.px, py: i.py, region: ETHER_REGION, crown: null, ether: true });
+  /** TESA6 (bible/03-World/Arena-Provinces.md): ARENA'S PORTS - a coastal city of Arena on its shore past the Bay
+   *  (world/arenaPlaces.js standArenaPixels: `port`), where this host stands Arena's places; within a pixel, the nearest;
+   *  and as the harbour office and the naval host read a port - no crown's writ past the Bay (`crown: null`), its region
+   *  the pixel's own read (TESA3's law: never a province's). */
+  const arenaPorts = () => (_arenaTemplates ? arenaPixels()?.stood.filter((q) => q.port) ?? [] : []);
+  const arenaPortAt = (x, y) => { if (!_arenaTemplates || onTheBay(x, y)) return null; const q = arenaPlaceOnPixel(x, y); return q?.port ? q : null; };
+  const arenaPortNear = (x, y) => {
+    let best = null, bd = Infinity;
+    for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) { const q = arenaPortAt(x + dx, y + dy); const d = Math.abs(dx) + Math.abs(dy); if (q && d < bd) { bd = d; best = q; } }
+    return best;
+  };
+  const arenaPortOf = (q) => ({ key: `${q.bx},${q.by}`, name: q.name, px: q.bx, py: q.by, region: maps.getRegionIndexAt(q.bx, q.by), crown: null });
   const csaIsPortTown = (x, y) => {
     if (etherSea && inEther(x, y)) return !!etherPortAt(x, y);   // ETHER-PORTS: an isle's port, past the Veil
+    if (!onTheBay(x, y)) return !!arenaPortAt(x, y);   // TESA6: an Arena port past the Bay - no table of the Bay's there
     const summary = travelLocationSummaryAt(mapDict, x, y);
     if (!summary) return false;
     if (hasPortFor(summary.id)) return true;   // SEAT2b part two: or a members' Harbour at a seat ("ships dock at the seat")
@@ -9593,6 +9606,15 @@ export async function bootWorld(canvas, renderer, params, status) {
       const isle = etherRisePort(here.x, here.y);
       const turn = Math.atan2(here.y - isle.py, isle.px - here.x) / (Math.PI / 4);
       return { name: isle.name, way: COMPASS_WAYS[((Math.round(turn) % 8) + 8) % 8], ether: true };
+    }
+    // TESA6: past the Bay, the nearest of Arena's ports where it has them (P5's law: the Bay's are a world away)
+    if (!onTheBay(here.x, here.y)) {
+      let near = null, nd = Infinity;
+      for (const q of arenaPorts()) { const d = Math.hypot(q.bx - here.x, q.by - here.y); if (d < nd) { nd = d; near = q; } }
+      if (near) {
+        const turn = Math.atan2(here.y - near.by, near.bx - here.x) / (Math.PI / 4);
+        return { name: near.name, way: COMPASS_WAYS[((Math.round(turn) % 8) + 8) % 8] };
+      }
     }
     let best = null, bestD = Infinity;
     for (const id of PORT_LOCATION_IDS) {
@@ -10146,6 +10168,7 @@ export async function bootWorld(canvas, renderer, params, status) {
     _navalPorts ??= [...new Set(PORT_LOCATION_IDS)].map((id) => mapDict.get(id & 0x000fffff)).filter(Boolean).map((s) => getPixelFromPixelID(s.id));
     let d = Infinity;
     for (const q of _navalPorts) d = Math.min(d, Math.max(Math.abs(q.x - p.x), Math.abs(q.y - p.y)));
+    for (const q of arenaPorts()) d = Math.min(d, Math.max(Math.abs(q.bx - p.x), Math.abs(q.by - p.y)));   // TESA6: and Arena's
     _navalPortPxAt = { key, d: Number.isFinite(d) ? d : null };
     return _navalPortPxAt.d;
   };
@@ -10179,6 +10202,11 @@ export async function bootWorld(canvas, renderer, params, status) {
       _navalPortHereAt = { key, port: isle ? etherPortOf(isle) : null };
       return _navalPortHereAt.port;
     }
+    if (!onTheBay(p.x, p.y)) {   // TESA6: an Arena port past the Bay
+      const q = arenaPortNear(p.x, p.y);
+      _navalPortHereAt = { key, port: q ? arenaPortOf(q) : null };
+      return _navalPortHereAt.port;
+    }
     for (const q of navalPortList()) { const d = Math.max(Math.abs(q.px - p.x), Math.abs(q.py - p.y)); if (d <= 1 && d < best) { best = d; port = q; } }
     _navalPortHereAt = { key, port };
     return port;
@@ -10206,6 +10234,9 @@ export async function bootWorld(canvas, renderer, params, status) {
       const isle = etherSea && inEther(p.x, p.y) ? etherPortNear(p.x, p.y) : null;   // ETHER-PORTS: an isle's town, its harbour sounded as any port's
       const loc = isle ? etherPlaceAt(isle.px, isle.py) : null;
       if (loc?.exterior?.exteriorData) town = { id: `ether:${isle.key}`, loc, x: isle.px, y: isle.py, name: isle.name, reach: ETHER_HARBOUR_REACH };   // AUDIT CAPTAIN'S SEA H1/P2: its isle's shore, ETHER_PORT_SHORE_M about the town
+      const aq = !isle && !onTheBay(p.x, p.y) ? arenaPortNear(p.x, p.y) : null;   // TESA6: an Arena port's town, its harbour sounded as any port's
+      const aloc = aq ? arenaLocationAt(aq.bx, aq.by) : null;
+      if (aloc?.exterior?.exteriorData) town = { id: `arena:${aq.bx},${aq.by}`, loc: aloc, x: aq.bx, y: aq.by, name: aq.name };
       for (let dy = -1; dy <= 1 && !town && !isle; dy++) for (let dx = -1; dx <= 1 && !town; dx++) {
         if (!csaIsPortTown(p.x + dx, p.y + dy)) continue;
         const summary = travelLocationSummaryAt(mapDict, p.x + dx, p.y + dy);
@@ -19193,7 +19224,9 @@ export async function bootWorld(canvas, renderer, params, status) {
         mapId: loc?.mapTableData?.mapId ?? null, blocks: loc ? [loc.exterior?.exteriorData?.width, loc.exterior?.exteriorData?.height] : null,
         buildings: loc?.exterior?.buildings?.length ?? null, region: loc?.regionName ?? null,
         // TESA4: the Arena roads' layer it was painted with, whether they reached it, and the tiles the painter wrote
-        roads: b ? { epoch: b.arenaRoadsEpoch, painted: b.arenaRoadsPainted, tiles: b.paths ? b.paths.reduce((n, t) => n + (t ? 1 : 0), 0) : null } : null };
+        roads: b ? { epoch: b.arenaRoadsEpoch, painted: b.arenaRoadsPainted, tiles: b.paths ? b.paths.reduce((n, t) => n + (t ? 1 : 0), 0) : null } : null,
+        // TESA6: its harbour byte, and the shipyard's and the lighthouse's sites its build stood
+        port: loc ? (loc.exterior?.exteriorData?.portTownAndUnknown ?? 0) : null, portSites: b?.portSites?.length ?? null };
     };
     // ARENA2 probe surface (tools/arenaProbe.mjs): the city floor's sand and the Herald's place, the bout standing (its
     // phase, its fighters' health, the crowd's mood and how many sit), and the Herald's three doors pressed as his choice

@@ -56,7 +56,9 @@ SOFTWARE.
 OpenTESArena
 
 The reader of The Elder Scrolls: Arena's CITYDATA (src/formats/arenaCityData.js)
-is translated from OpenTESArena (https://github.com/afritz1/OpenTESArena),
+and its executable's unpacker and coastal-city list (src/formats/arenaExe.js,
+after ExeUnpacker and the address maps aExeStrings.txt / acdExeStrings.txt)
+are translated from OpenTESArena (https://github.com/afritz1/OpenTESArena),
 which is licensed as follows:
 
 The MIT License (MIT)
