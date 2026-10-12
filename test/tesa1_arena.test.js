@@ -12,7 +12,7 @@ import { readFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 
 import {
-  parseArenaCityData, arenaLocationKind, arenaGlobalPoint, arenaGlobalCityId, arenaLocationVisible, isArenaCity,
+  parseArenaCityData, arenaLocationKind, arenaGlobalPoint, arenaGlobalCityId, arenaLocationVisible, isArenaCityId,
   PROVINCE_COUNT, PROVINCE_BYTES, NAME_BYTES, LOCATION_BYTES, LOCATIONS_PER_PROVINCE, CITYDATA_BYTES, IMPERIAL_PROVINCE,
 } from '../src/formats/arenaCityData.js';
 import {
@@ -89,7 +89,7 @@ test('TESA1 the location laws, verbatim: a location\'s kind by its id (0-7 city-
   assert.deepEqual(kinds, [
     ...Array(8).fill('city-state'), ...Array(8).fill('town'), ...Array(16).fill('village'), 'staff-dungeon', 'map-dungeon', ...Array(14).fill('dungeon'), null,
   ]);
-  assert.deepEqual([0, 31, 32, -1].map(isArenaCity), [true, true, false, false]);
+  assert.deepEqual([0, 31, 32, -1].map(isArenaCityId), [true, true, false, false]);
   // Skyrim's Solitude: ((112 * trunc(9400 / 320)) / 100) + 112, ((8 * trunc(5300 / 200)) / 100) + 22
   assert.deepEqual(arenaGlobalPoint(112, 8, { x: 112, y: 22, w: 94, h: 53 }), { x: 144, y: 24 });
   // the inner truncation is the game's: 83 * 100 / 320 is 25.9375, held at 25 - (9 * 25) / 100 is 2, where the exact ratio gives 2.33

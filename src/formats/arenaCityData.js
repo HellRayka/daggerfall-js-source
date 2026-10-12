@@ -31,7 +31,7 @@ export function arenaLocationKind(locationId) {
   if (locationId < LOCATIONS_PER_PROVINCE) return 'dungeon';
   return null;
 }
-export const isArenaCity = (locationId) => locationId >= 0 && locationId < 32;
+export const isArenaCityId = (locationId) => locationId >= 0 && locationId < 32;
 
 /** ArenaLocationData::isVisible - only read for dungeons; 0x02 is shown on the map. */
 export const arenaLocationVisible = (visibility) => (visibility & 0x2) !== 0;
