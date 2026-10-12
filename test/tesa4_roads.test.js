@@ -163,7 +163,7 @@ test('TESA4 the layer installed: a pixel\'s byte by its key, its corners as the 
   assert.equal(arenaRoadsVersion(), v + 2);
   const packed = packArenaRoads(layer);
   assert.ok(packed.keys instanceof Float64Array && packed.keys.length === 3);
-  assert.deepEqual(unpackArenaRoads(packed), layer);
+  assert.deepEqual(unpackArenaRoads(packed), { ...layer, join: new Map() }, 'TESA5: and an empty join');
 });
 
 test('TESA4 the cache\'s key: the generator\'s version and dials, the layer\'s version, the towns, the window, the heightmap\'s length, the fit and the trace\'s land - the installed fit and trace unless given (mutant: a term dropped)', () => {
@@ -389,11 +389,14 @@ test('TESA4 the worker: an ask builds on its own ground and installs the layer i
 test('TESA4 the host: the towns go to the kernels when the places that stand move; each pixel keeps the epoch its job was posted under and whether Arena\'s roads reached it; a landing marks every built pixel off the Bay posted earlier that its paint or the new layer reaches, a pixel in flight as it publishes, and the sweep builds them again (mutant: a hand-over, the epoch\'s capture, the stale law, the sweep)', () => {
   const w = read('src/scenes/world.js');
   const hand = w.slice(w.indexOf('  function handArenaRoads() {'), w.indexOf('  function arenaRoadsLanded('));
-  assert.match(hand, /if \(now === _arenaRoadsFor\) return;\n\s+_arenaRoadsFor = now;\n\s+terrainGen\.setArenaRoads\(arenaRoadTowns\(now\), arenaRoadsLanded\);/);
+  // PIN MOVED (TESA5, test/tesa5_join.test.js): the hand-over waits for the Bay's network too, its crossings with it
+  assert.match(hand, /if \(now === _arenaRoadsFor && bay === _arenaRoadsBay\) return;/);
+  assert.match(hand, /const towns = arenaRoadTowns\(now\);/);
+  assert.match(hand, /terrainGen\.setArenaRoads\(towns && \[\.\.\.towns, [^\n]*\], arenaRoadsLanded, \{ joins \}\);/);
   assert.match(w, /if \(_arenaTemplates\) handArenaRoads\(\);[^\n]*\n\s+if \(_arenaTemplates && !building\) sweepArenaPixels\(\);/, 'on the frame, building or not: the build is the worker\'s');
   assert.match(w, /const arenaRoadsAt = terrainGen\.arenaRoadsEpoch;[^\n]*\n\s+const \{ [^}]*, arenaRoads \} = await terrainGen\.generate\(\{/, 'the epoch read as the job is posted');
   assert.match(w, /arenaSlot: dfLocation\?\.arena \?\? null,\n\s+arenaRoadsEpoch: arenaRoadsAt, arenaRoadsPainted: !!arenaRoads,/);
-  assert.match(w, /const arenaRoadsStale = \(p, epoch, layer\) => !onTheBay\(p\.px, p\.py\) && p\.arenaRoadsEpoch < epoch && \(p\.arenaRoadsPainted \|\| layerTouches\(layer, p\.px, p\.py\)\);/);
+  assert.match(w, /const arenaRoadsStale = \(p, epoch, layer\) => p\.arenaRoadsEpoch < epoch && \(p\.arenaRoadsPainted \|\| layerTouches\(layer, p\.px, p\.py\)\);/, 'PIN MOVED (TESA5): a Bay pixel too, where a join runs');
   assert.match(w, /function arenaRoadsLanded\(epoch, layer\) \{\n\s+for \(const \[k, p\] of built\) if \(arenaRoadsStale\(p, epoch, layer\)\) _arenaRoadsStale\.add\(k\);/);
   assert.match(w, /if \(built\.has\(key\) && arenaRoadsStale\(built\.get\(key\), terrainGen\.arenaRoadsLanded, arenaRoadsLayer\(\)\)\) _arenaRoadsStale\.add\(key\);/, 'a pixel in flight, as it publishes');
   const fn = w.slice(w.indexOf('  function sweepArenaRoads() {'), w.indexOf('  // LocationLoader.cs:146-151'));
@@ -403,7 +406,7 @@ test('TESA4 the host: the towns go to the kernels when the places that stand mov
   assert.match(w, /setArenaStanding\(arenaStands\);\n\s+setArenaRoads\(null\);/, 'a mount starts with none on this thread');
   // the kernel and the verge read it off the Bay
   assert.match(read('src/world/terrainGen.js'), /const arena = !inBay\(px, py\);/);
-  assert.match(read('src/world/roadVerge.js'), /const bits = mx >= 0 && my >= 0 && mx < MAP_W && my < MAP_H \? pathsDataPoint\(net, mx, my\) : arenaPathsAt\(mx, my\);/);
+  assert.match(read('src/world/roadVerge.js'), /const bits = mx >= 0 && my >= 0 && mx < MAP_W && my < MAP_H \? pathsDataPoint\(net, mx, my\) \| arenaJoinByte\(mx, my\) : arenaPathsAt\(mx, my\);/, 'PIN MOVED (TESA5): and the join on the Bay');
 });
 
 const ARENA2 = process.env.ARENA2_PATH, ARENA = process.env.ARENA_PATH;

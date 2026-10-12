@@ -41,7 +41,7 @@ import { LPT_CROWNS } from './lptCrowns.js';
 import { lptVariety } from './lowPolyTrees.js';
 import { getNatureArchive, SEASON } from './climateSwaps.js';
 import { TILE } from './roadPainter.js';
-import { arenaPathsAt } from './arenaRoads.js';   // TESA4: Arena's roads past the Bay
+import { arenaPathsAt, arenaJoinByte } from './arenaRoads.js';   // TESA4: Arena's roads past the Bay; TESA5: their joins on it
 
 /** A path's half width (m): Basic Roads paints a road or a track two tiles wide about its line. */
 export const PATH_HALF_M = PATH_HALF_WIDTH / UNITS_PER_METRE;
@@ -69,7 +69,7 @@ export function roadRoom(net, px, py, x, z, reach) {
   for (let iz = iz0; iz <= iz1; iz++) {
     for (let ix = ix0; ix <= ix1; ix++) {
       const mx = px + ix, my = py - iz;   // north (+z) is the row above: py - 1
-      const bits = mx >= 0 && my >= 0 && mx < MAP_W && my < MAP_H ? pathsDataPoint(net, mx, my) : arenaPathsAt(mx, my);
+      const bits = mx >= 0 && my >= 0 && mx < MAP_W && my < MAP_H ? pathsDataPoint(net, mx, my) | arenaJoinByte(mx, my) : arenaPathsAt(mx, my);   // TESA5: and a crossing's join on it
       if (!bits) continue;
       const qx = x - (ix * PIXEL_M + HALF_M), qz = z - (iz * PIXEL_M + HALF_M);   // the point from that pixel's centre
       for (const [bit, sx, sz] of ARMS) {

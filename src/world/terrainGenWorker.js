@@ -125,11 +125,11 @@ function answerArenaRoads(m) {
     let net = m.net ?? null;
     const built = !!(towns && window && !net && woods);
     if (built) net = buildArenaNetwork({ towns, window, heightAt: (x, y) => woods.getHeightMapValue(x, y), isWater: (_x, _y, h) => h <= WATER_BYTE });
-    const layer = net && towns && window ? rasterArenaRoads(net, window, towns) : null;
+    const layer = net && towns && window ? rasterArenaRoads(net, window, towns, m.joins ?? []) : null;   // TESA5: and the crossings' joins
     setArenaRoads(layer);
     const packed = layer ? packArenaRoads(layer) : null;
     const back = built && net ? { roads: net.roads, tracks: net.tracks } : null;
-    const xfer = [...(packed ? [packed.keys.buffer, packed.roads.buffer, packed.tracks.buffer] : []), ...(back ? [back.roads.buffer, back.tracks.buffer] : [])];
+    const xfer = [...(packed ? [packed.keys.buffer, packed.roads.buffer, packed.tracks.buffer, packed.joinKeys.buffer, packed.join.buffer] : []), ...(back ? [back.roads.buffer, back.tracks.buffer] : [])];
     globalThis.postMessage({ t: 'arena-roads', epoch, layer: packed, net: back, stats: net?.stats ?? null }, xfer);
   } catch (e) {
     setArenaRoads(null);

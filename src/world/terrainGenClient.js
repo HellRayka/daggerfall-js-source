@@ -168,10 +168,13 @@ export class TerrainGenClient {
    * from its post on is built with its layer (`arenaRoadsEpoch` - the host stamps it on the pixel it posts), and
    * `onLanded(epoch, layer)` says when this thread holds that layer too (`arenaRoadsLanded`). A later ask supersedes one
    * still at the cache. Resolves when posted (or, with no worker, landed).
+   * TESA5: `joins` the crossings onto the Bay's network (arenaRoads.js arenaJoins) - their gates among the towns, their
+   * runs drawn with the layer.
    * @param {?Array<{ x: number, y: number, type: number }>} towns @param {?Function} [onLanded]
-   * @param {{ store?: ?{ get: Function, set: Function } }} [o] the cache (roadsCache.js idbStore; null: none)
+   * @param {{ store?: ?{ get: Function, set: Function }, joins?: Array<object> }} [o] the cache (roadsCache.js idbStore;
+   *   null: none) and the crossings
    */
-  setArenaRoads(towns, onLanded = null, { store = idbStore() } = {}) {
+  setArenaRoads(towns, onLanded = null, { store = idbStore(), joins = [] } = {}) {
     const ask = ++this._arenaAsks;
     this._arenaOnLanded = onLanded;
     const window = arenaRoadWindow(towns);
@@ -180,11 +183,11 @@ export class TerrainGenClient {
     return lookup.then((hit) => {
       if (ask !== this._arenaAsks) return;   // a newer ask has the floor
       const net = hit?.roads && hit?.tracks ? { roads: hit.roads, tracks: hit.tracks } : null;
-      this._arena = { epoch: ask, towns: window ? towns : null, window, key, store, net };
+      this._arena = { epoch: ask, towns: window ? towns : null, window, key, store, net, joins: window ? joins : [] };
       this.arenaRoadsEpoch = ask;
       if (this._worker) {
         const copy = net ? { roads: net.roads.slice(), tracks: net.tracks.slice() } : null;
-        this._worker.postMessage({ t: 'arena-roads', epoch: ask, towns: this._arena.towns, window, net: copy }, copy ? [copy.roads.buffer, copy.tracks.buffer] : []);
+        this._worker.postMessage({ t: 'arena-roads', epoch: ask, towns: this._arena.towns, window, net: copy, joins: this._arena.joins }, copy ? [copy.roads.buffer, copy.tracks.buffer] : []);
         return;
       }
       this._arenaFallback();
@@ -200,7 +203,7 @@ export class TerrainGenClient {
       net = buildArenaNetwork({ towns: a.towns, window: a.window, heightAt: (x, y) => this._woods.getHeightMapValue(x, y), isWater: (_x, _y, h) => h <= WATER_BYTE });
       built = net;
     }
-    this._arenaLand(a, net && a.towns ? rasterArenaRoads(net, a.window, a.towns) : null, built);
+    this._arenaLand(a, net && a.towns ? rasterArenaRoads(net, a.window, a.towns, a.joins) : null, built);
   }
 
   /** TESA4: the worker's layer - the ask in hand's alone (a superseded ask's answer is dropped; its successor lands). */

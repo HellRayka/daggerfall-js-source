@@ -27,7 +27,7 @@ import { assignTiles, blendLocationTerrain, calcAvgMaxHeight, generateTileData }
 import { layoutNature } from './terrainNature.js';
 import { paintRoads, smoothRoadHeights, pathCorners } from './roadPainter.js';
 import { MAP_W } from './roadNetwork.js';
-import { arenaRoadByte, arenaRoadCorners } from './arenaRoads.js';   // TESA4: Arena's roads past the Bay
+import { arenaRoadByte, arenaRoadCorners, arenaJoinByte } from './arenaRoads.js';   // TESA4: Arena's roads past the Bay; TESA5: their joins on it
 import { inBay } from './tamrielFrame.js';
 import { applyPicks } from './wodLocationLoader.js';   // WOD2: World of Daggerfall's smoothing arms
 import { createLandforms } from './landforms.js';   // LANDFORM1-3: the port's own terrain, inside the kernel
@@ -113,9 +113,11 @@ export function generatePixelTerrain({ woods, px, py, stride = 1, tilemap, locat
     // TESA4: past the Bay - north and south of it too - Arena's roads (world/arenaRoads.js), each byte and corner its
     // layer's; none on the Bay, whose network is its own
     const arena = !inBay(px, py);
-    const road = at(roads.roads) | (arena ? arenaRoadByte('roads', px, py) : 0), track = at(roads.tracks) | (arena ? arenaRoadByte('tracks', px, py) : 0);
+    // TESA5: on the Bay, a crossing's join alone - the Bay's road carried out to its edge (no corner: its runs are straight)
+    const join = arena ? 0 : arenaJoinByte(px, py);
+    const road = at(roads.roads) | (arena ? arenaRoadByte('roads', px, py) : join), track = at(roads.tracks) | (arena ? arenaRoadByte('tracks', px, py) : 0);
     const arenaCorners = (kind) => (arena ? arenaRoadCorners(kind, px, py) : 0);
-    arenaPainted = !!(arena && (road || track || arenaCorners('roads') || arenaCorners('tracks')));
+    arenaPainted = !!(join || (arena && (road || track || arenaCorners('roads') || arenaCorners('tracks'))));
     // ROADS 23: the mod's corners - a neighbour's diagonal brushes this
     // pixel's corner tile - and its water, off unless the network says.
     const c = (m) => (m ? pathCorners(m, px, py, MAP_W) : 0);

@@ -1,0 +1,209 @@
+[
+  {
+    "name": "TESA5-a-pixel-deeper",
+    "file": "src/world/arenaRoads.js",
+    "old": "export const JOIN_DEPTH = 8;",
+    "new": "export const JOIN_DEPTH = 9;",
+    "tests": [
+      "test/tesa5_join.test.js"
+    ]
+  },
+  {
+    "name": "TESA5-the-runs-wider",
+    "file": "src/world/arenaRoads.js",
+    "old": "export const JOIN_SPACING = 60;",
+    "new": "export const JOIN_SPACING = 62;",
+    "tests": [
+      "test/tesa5_join.test.js"
+    ]
+  },
+  {
+    "name": "TESA5-the-gate-nearer",
+    "file": "src/world/arenaRoads.js",
+    "old": "export const JOIN_OUT = 8;",
+    "new": "export const JOIN_OUT = 4;",
+    "tests": [
+      "test/tesa5_join.test.js"
+    ]
+  },
+  {
+    "name": "TESA5-the-first-not-the-nearest",
+    "file": "src/world/arenaRoads.js",
+    "old": "const depth = Math.min(...r.map((h) => h[1])), mid",
+    "new": "const depth = r[0][1], mid",
+    "tests": [
+      "test/tesa5_join.test.js"
+    ]
+  },
+  {
+    "name": "TESA5-the-middle-unread",
+    "file": "src/world/arenaRoads.js",
+    "old": ".reduce((a, b) => (Math.abs(b[0] - mid) < Math.abs(a[0] - mid) ? b : a));",
+    "new": ".reduce((a) => a);",
+    "tests": [
+      "test/tesa5_join.test.js"
+    ]
+  },
+  {
+    "name": "TESA5-the-land-unasked",
+    "file": "src/world/arenaRoads.js",
+    "old": "      if (run.every(([x, y]) => land(x, y))) joins.push(",
+    "new": "      if (true) joins.push(",
+    "tests": [
+      "test/tesa5_join.test.js"
+    ]
+  },
+  {
+    "name": "TESA5-a-track-crossed",
+    "file": "src/world/arenaRoads.js",
+    "old": "        if (bay.roads[y * MAP_W + x]) { hits.push([u, k]); break; }",
+    "new": "        if (bay.roads[y * MAP_W + x] || bay.tracks?.[y * MAP_W + x]) { hits.push([u, k]); break; }",
+    "tests": [
+      "test/tesa5_join.test.js"
+    ]
+  },
+  {
+    "name": "TESA5-the-join-unkept",
+    "file": "src/world/arenaRoads.js",
+    "old": "    stampRun(out.join, meet[0], meet[1], gate[0], gate[1], inBay);\n",
+    "new": "",
+    "tests": [
+      "test/tesa5_join.test.js"
+    ]
+  },
+  {
+    "name": "TESA5-the-gate-unstamped",
+    "file": "src/world/arenaRoads.js",
+    "old": "    stampRun(out.roads, meet[0], meet[1], gate[0], gate[1]);\n",
+    "new": "",
+    "tests": [
+      "test/tesa5_join.test.js"
+    ]
+  },
+  {
+    "name": "TESA5-the-grades-unordered",
+    "file": "src/world/arenaRoads.js",
+    "old": "  for (const t of [...towns.filter(roadGrade), ...towns.filter((o) => !roadGrade(o))]) {",
+    "new": "  for (const t of towns) {",
+    "tests": [
+      "test/tesa5_join.test.js"
+    ]
+  },
+  {
+    "name": "TESA5-the-join-unpacked",
+    "file": "src/world/arenaRoads.js",
+    "old": "  for (let i = 0; i < (packed.joinKeys?.length ?? 0); i++) join.set(packed.joinKeys[i], packed.join[i]);\n",
+    "new": "",
+    "tests": [
+      "test/tesa5_join.test.js"
+    ]
+  },
+  {
+    "name": "TESA5-the-touch-blind-to-it",
+    "file": "src/world/arenaRoads.js",
+    "old": " || layerByte(layer, 'tracks', x + dx, y) || layerByte(layer, 'join', x + dx, y));",
+    "new": " || layerByte(layer, 'tracks', x + dx, y));",
+    "tests": [
+      "test/tesa5_join.test.js"
+    ]
+  },
+  {
+    "name": "TESA5-the-painter-blind-to-it",
+    "file": "src/world/terrainGen.js",
+    "old": "    const join = arena ? 0 : arenaJoinByte(px, py);",
+    "new": "    const join = 0;",
+    "tests": [
+      "test/tesa5_join.test.js"
+    ]
+  },
+  {
+    "name": "TESA5-the-flag-blind-to-it",
+    "file": "src/world/terrainGen.js",
+    "old": "    arenaPainted = !!(join || (arena &&",
+    "new": "    arenaPainted = !!(false || (arena &&",
+    "tests": [
+      "test/tesa5_join.test.js"
+    ]
+  },
+  {
+    "name": "TESA5-the-verge-blind-to-it",
+    "file": "src/world/roadVerge.js",
+    "old": "pathsDataPoint(net, mx, my) | arenaJoinByte(mx, my) :",
+    "new": "pathsDataPoint(net, mx, my) :",
+    "tests": [
+      "test/tesa5_join.test.js"
+    ]
+  },
+  {
+    "name": "TESA5-the-worker-told-none",
+    "file": "src/world/terrainGenClient.js",
+    "old": "net: copy, joins: this._arena.joins }",
+    "new": "net: copy, joins: [] }",
+    "tests": [
+      "test/tesa5_join.test.js"
+    ]
+  },
+  {
+    "name": "TESA5-none-drawn-here",
+    "file": "src/world/terrainGenClient.js",
+    "old": "rasterArenaRoads(net, a.window, a.towns, a.joins)",
+    "new": "rasterArenaRoads(net, a.window, a.towns)",
+    "tests": [
+      "test/tesa5_join.test.js"
+    ]
+  },
+  {
+    "name": "TESA5-crossings-without-towns",
+    "file": "src/world/terrainGenClient.js",
+    "old": "net, joins: window ? joins : [] };",
+    "new": "net, joins };",
+    "tests": [
+      "test/tesa5_join.test.js"
+    ]
+  },
+  {
+    "name": "TESA5-the-worker-blind-to-them",
+    "file": "src/world/terrainGenWorker.js",
+    "old": "rasterArenaRoads(net, window, towns, m.joins ?? [])",
+    "new": "rasterArenaRoads(net, window, towns)",
+    "tests": [
+      "test/tesa5_join.test.js"
+    ]
+  },
+  {
+    "name": "TESA5-no-wait-for-the-bay",
+    "file": "src/scenes/world.js",
+    "old": "    if (now && !bay && terrainGen.hasRoads) return;   // TESA5: the Bay's network is on its way - its crossings with it\n",
+    "new": "",
+    "tests": [
+      "test/tesa5_join.test.js"
+    ]
+  },
+  {
+    "name": "TESA5-the-bay-by-heights",
+    "file": "src/scenes/world.js",
+    "old": "(onTheBay(x, y) ? !isWaterPixel(maps.getClimateIndex(x, y), woods.getHeightMapValue(x, y)) :",
+    "new": "(onTheBay(x, y) ? woods.getHeightMapValue(x, y) > WATER_BYTE :",
+    "tests": [
+      "test/tesa5_join.test.js"
+    ]
+  },
+  {
+    "name": "TESA5-a-gate-a-track",
+    "file": "src/scenes/world.js",
+    "old": "type: LOCATION_TYPES.TownCity }))], arenaRoadsLanded, { joins });",
+    "new": "type: LOCATION_TYPES.TownVillage }))], arenaRoadsLanded, { joins });",
+    "tests": [
+      "test/tesa5_join.test.js"
+    ]
+  },
+  {
+    "name": "TESA5-the-bay-never-stale",
+    "file": "src/scenes/world.js",
+    "old": "  const arenaRoadsStale = (p, epoch, layer) => p.arenaRoadsEpoch < epoch",
+    "new": "  const arenaRoadsStale = (p, epoch, layer) => !onTheBay(p.px, p.py) && p.arenaRoadsEpoch < epoch",
+    "tests": [
+      "test/tesa5_join.test.js"
+    ]
+  }
+]

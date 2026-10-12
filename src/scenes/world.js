@@ -282,7 +282,7 @@ import { realForestsOn, FOREST_HIDDEN_LOCATION_TYPES, roadVergesOn, climateBlend
 import { landformsOn, tamrielLandOn, tamrielTraceOn, etherSeaOn, etherCrossOutOn, arenaPlacesOn } from './shared.js';   // LANDFORM1-3: the Landforms switch; TAMRIEL2: the land beyond the Bay's; TAMRIEL3: the trace's door; ETHER-SEA: the Etheric Sea's
 import { preloadTamrielTrace } from '../ui/tamrielTrace.js';   // TAMRIEL3: Daggerfall's own map of Tamriel, off the player's two files
 import { arenaPlaces, arenaPixels, arenaPlaceOnPixel, setArenaCityData, setArenaStanding, setArenaRoom } from '../world/arenaPlaces.js';   // TESA1: Arena's places on it; TESA2: the pixels they stand on
-import { arenaRoadsLayer, layerTouches, setArenaRoads } from '../world/arenaRoads.js';   // TESA4: the roads between them
+import { arenaRoadsLayer, layerTouches, setArenaRoads, arenaJoins } from '../world/arenaRoads.js';   // TESA4: the roads between them; TESA5: their crossings onto the Bay's
 import { arenaTemplates, arenaTemplateOf, synthesizeArenaLocation, ARENA_LOAD_WAIT_MS, ARENA_PLACES_TEXT, arenaRoadTowns } from '../world/arenaLocations.js';   // TESA2: the places stood, each a Daggerfall town or dungeon cloned
 import { fitBayToPicture } from '../world/tamrielLand.js';   // TAMRIEL3: where the Bay stands on it
 import { provinceKeyBeyondBay } from '../world/tamrielLand.js';   // TESA3: the province a pixel past the Bay stands on
@@ -1572,18 +1572,25 @@ export async function bootWorld(canvas, renderer, params, status) {
   /** TESA4: ARENA'S ROADS - the towns to the kernels whenever the places that stand move (a trace, a fit, a data set, the
    *  room's word), on the frame and not between builds alone: the build is the worker's, and the pixels built meanwhile
    *  are painted again when it lands (below). */
-  let _arenaRoadsFor = null;
+  let _arenaRoadsFor = null, _arenaRoadsBay = null;
+  /** TESA5: land, for a crossing's run - the Bay's own water law on the Bay (the fit's), the ground's beach line past it. */
+  const arenaJoinLand = (x, y) => (onTheBay(x, y) ? !isWaterPixel(maps.getClimateIndex(x, y), woods.getHeightMapValue(x, y)) : woods.getHeightMapValue(x, y) > WATER_BYTE);
   function handArenaRoads() {
-    const now = arenaPixels();
-    if (now === _arenaRoadsFor) return;
+    const now = arenaPixels(), bay = terrainGen.roads();
+    if (now === _arenaRoadsFor && bay === _arenaRoadsBay) return;
+    if (now && !bay && terrainGen.hasRoads) return;   // TESA5: the Bay's network is on its way - its crossings with it
     _arenaRoadsFor = now;
-    terrainGen.setArenaRoads(arenaRoadTowns(now), arenaRoadsLanded);
+    _arenaRoadsBay = bay;
+    const towns = arenaRoadTowns(now);
+    const joins = towns && bay ? arenaJoins(bay, arenaJoinLand) : [];   // TESA5: onto the Bay's own roads at its edge
+    terrainGen.setArenaRoads(towns && [...towns, ...joins.map((j) => ({ x: j.gate[0], y: j.gate[1], type: LOCATION_TYPES.TownCity }))], arenaRoadsLanded, { joins });
   }
-  /** TESA4: ARENA'S ROADS LANDED (world/terrainGenClient.js setArenaRoads) - each built pixel off the Bay posted under an
-   *  older layer, whose paint Arena's roads reached or which the new layer reaches, is built again (sweepSdLate's shape);
+  /** TESA4: ARENA'S ROADS LANDED (world/terrainGenClient.js setArenaRoads) - each built pixel posted under an older layer
+   *  (off the Bay, or on it where a crossing's join runs - TESA5), whose paint Arena's roads reached or which the new
+   *  layer reaches, is built again (sweepSdLate's shape);
    *  a pixel still in flight is asked as it publishes (arenaRoadsStale). */
   const _arenaRoadsStale = new Set();
-  const arenaRoadsStale = (p, epoch, layer) => !onTheBay(p.px, p.py) && p.arenaRoadsEpoch < epoch && (p.arenaRoadsPainted || layerTouches(layer, p.px, p.py));
+  const arenaRoadsStale = (p, epoch, layer) => p.arenaRoadsEpoch < epoch && (p.arenaRoadsPainted || layerTouches(layer, p.px, p.py));   // TESA5: a Bay pixel too, where a join runs
   function arenaRoadsLanded(epoch, layer) {
     for (const [k, p] of built) if (arenaRoadsStale(p, epoch, layer)) _arenaRoadsStale.add(k);
     console.log(`[arena] the roads past the Bay landed: ${layer ? layer.roads.size + layer.tracks.size : 0} path pixels, ${_arenaRoadsStale.size} built pixel(s) to paint again`);

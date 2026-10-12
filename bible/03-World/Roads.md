@@ -903,5 +903,8 @@ The painter's seam and the verge read a second layer off the Bay: the
 roads between Arena's places (`Arena-Provinces.md` TESA4,
 `world/arenaRoads.js`), built by this network's own builder on a
 window over them and drawn back onto the Bay pixels. On the Bay
-nothing moves - the layer holds no Bay pixel, and a Bay pixel never
-reads it.
+nothing moves - the layer's roads and tracks hold no Bay pixel, and a
+Bay pixel never reads them. TESA5's one exception: a crossing's
+`join`, the straight run that carries a Bay road out to its edge where
+Arena's roads meet it - the painter ORs it into the pixel's road byte
+and the verge asks it (`Arena-Provinces.md` TESA5).

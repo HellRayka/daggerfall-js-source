@@ -22,9 +22,13 @@
 // installs what it posts back; tamrielLand's trace the pattern) - and the painter and the verge ask it of a pixel off the
 // Bay. Built once a set of places, cached as the Bay's network is (world/roadsCache.js).
 //
+// TESA5 - THE JOIN: where the Bay's own roads come to its edge and the land goes on past it, a crossing (arenaJoins): a
+// road node of Arena's network a little past the edge (its GATE) and the straight run from the Bay's road out to it. The
+// run's Bay pixels are the layer's `join` - the one part of it a Bay pixel reads.
+//
 // Nothing of Arena ships or crosses the wire (bible/01-Overview/Port-Doctrine.md): each player's roads are drawn from
 // their own copy's places, the same for every player with the same release (TESA-ONLINE).
-import { buildRoadNetwork, DIR_DELTA, MAP_W, MAP_H, ROAD_DIALS } from './roadNetwork.js';
+import { buildRoadNetwork, DIR_DELTA, MAP_W, MAP_H, ROAD_DIALS, ROAD_TYPES } from './roadNetwork.js';
 import { inBay, tamrielFit } from './tamrielFrame.js';
 import { tamrielTrace } from './tamrielLand.js';
 import { GENERATOR_VERSION } from './roadsCache.js';
@@ -57,7 +61,8 @@ export const cellCentre = (win, u, v) => [win.x0 + u * win.s + (win.s >> 1), win
 
 /**
  * THE NETWORK on the window's cells: the ground read once a cell at its centre (`heightAt`, `isWater` of a Bay pixel and
- * its height; the Bay's own cells water), and the towns in their cells - the first town a cell takes is its node.
+ * its height; the Bay's own cells water), and the towns in their cells - a cell's node its first road town, else its
+ * first track town.
  * @param {{ towns: Array<{ x: number, y: number, type: number }>, window: { x0: number, y0: number, s: number },
  *   heightAt: (x: number, y: number) => number, isWater: (x: number, y: number, h: number) => boolean }} o
  * @returns {{ roads: Uint8Array, tracks: Uint8Array, stats: object }}
@@ -73,13 +78,64 @@ export function buildArenaNetwork({ towns, window, heightAt, isWater }) {
     }
   }
   const taken = new Set(), locations = [];
-  for (const t of towns) {
+  // TESA5: a road node takes its cell before a track node does (a crossing's gate where a village stands); of a grade,
+  // the first
+  const roadGrade = (o) => /** @type {ReadonlySet<number>} */ (ROAD_TYPES).has(o.type);
+  for (const t of [...towns.filter(roadGrade), ...towns.filter((o) => !roadGrade(o))]) {
     const [u, v] = windowCell(window, t.x, t.y);
     if (taken.has(v * MAP_W + u)) continue;
     taken.add(v * MAP_W + u);
     locations.push({ x: u, y: v, type: t.type });
   }
   return buildRoadNetwork({ locations, heightAt: (u, v) => heights[v * MAP_W + u], isWater: (u, v) => water[v * MAP_W + u] === 1 });
+}
+
+/** TESA5: how deep inside its edge a Bay road may lie and still be joined, Bay pixels. */
+export const JOIN_DEPTH = 8;
+/** TESA5: how far apart along an edge two crossings stand at least - a road nearer the last one is the same crossing. */
+export const JOIN_SPACING = 60;
+/** TESA5: how far past the edge a crossing's gate stands - its window cell's centre past the Bay at any scale to 8. */
+export const JOIN_OUT = 8;
+/** The Bay's four edges: the run along it, the Bay pixel at (along, depth in), the step out of the Bay. */
+const EDGES = Object.freeze([
+  Object.freeze({ side: 'N', len: MAP_W, at: (u, k) => [u, k], out: [0, -1] }),
+  Object.freeze({ side: 'S', len: MAP_W, at: (u, k) => [u, MAP_H - 1 - k], out: [0, 1] }),
+  Object.freeze({ side: 'W', len: MAP_H, at: (u, k) => [k, u], out: [-1, 0] }),
+  Object.freeze({ side: 'E', len: MAP_H, at: (u, k) => [MAP_W - 1 - k, u], out: [1, 0] }),
+]);
+
+/**
+ * TESA5: THE CROSSINGS - where the Bay's ROADS (never its tracks: a track is no way out of a province) come within
+ * JOIN_DEPTH of its edge, each run of them along the edge (runs nearer than JOIN_SPACING one run) is one crossing, at the
+ * road pixel nearest the edge (of those, the nearest the run's middle). Its GATE stands JOIN_OUT past the edge, straight
+ * out; the run is every pixel from the road out to the gate, and a crossing stands only where all of it is land (`land`
+ * of a Bay pixel or one past it - the Bay's water law and the ground's).
+ * @param {{ roads: Uint8Array }} bay the Bay's network (terrainGen.roads()) @param {(x: number, y: number) => boolean} land
+ * @returns {Array<{ side: string, gate: number[], meet: number[], run: number[][] }>}
+ */
+export function arenaJoins(bay, land) {
+  const joins = [];
+  for (const { side, len, at, out } of EDGES) {
+    const hits = [];
+    for (let u = 0; u < len; u++) {
+      for (let k = 0; k < JOIN_DEPTH; k++) {
+        const [x, y] = at(u, k);
+        if (bay.roads[y * MAP_W + x]) { hits.push([u, k]); break; }
+      }
+    }
+    const runs = [];
+    for (const h of hits) { const r = runs.at(-1); if (r && h[0] - r.at(-1)[0] < JOIN_SPACING) r.push(h); else runs.push([h]); }
+    for (const r of runs) {
+      const depth = Math.min(...r.map((h) => h[1])), mid = (r[0][0] + r.at(-1)[0]) / 2;
+      const [u, k] = r.filter((h) => h[1] === depth).reduce((a, b) => (Math.abs(b[0] - mid) < Math.abs(a[0] - mid) ? b : a));
+      const run = [];
+      for (let j = k; j >= 0; j--) run.push(at(u, j));
+      const [ex, ey] = at(u, 0);
+      for (let j = 1; j <= JOIN_OUT; j++) run.push([ex + out[0] * j, ey + out[1] * j]);
+      if (run.every(([x, y]) => land(x, y))) joins.push({ side, gate: run.at(-1), meet: run[0], run });
+    }
+  }
+  return joins;
 }
 
 /** A Bay pixel's key in the layer: x and y each in [-32768, 32767]. */
@@ -89,28 +145,35 @@ const OPPOSITE_OF = new Map(DIR_DELTA.map(([bit], k) => [bit, DIR_DELTA[(k + 4) 
 /** Each cell's steps drawn once: from it to the east, south-east, south and south-west. */
 const FORWARD = DIR_DELTA.slice(2, 6);
 
-/** One straight run of 8-connected steps between two Bay pixels, each step's bits on both its ends - none on the Bay. */
-function stampRun(layer, ax, ay, bx, by) {
+const offBay = (x, y) => !inBay(x, y);
+/** One straight run of 8-connected steps between two Bay pixels, each step's bits on both its ends - on the pixels `keep`
+ *  takes: none on the Bay, unless the join's. */
+function stampRun(layer, ax, ay, bx, by, keep = offBay) {
   const n = Math.max(Math.abs(bx - ax), Math.abs(by - ay));
   let px = ax, py = ay;
   for (let i = 1; i <= n; i++) {
     const qx = ax + Math.round(((bx - ax) * i) / n), qy = ay + Math.round(((by - ay) * i) / n);
     const bit = BIT_OF.get(`${qx - px},${qy - py}`);
-    if (!inBay(px, py)) layer.set(beyondKey(px, py), (layer.get(beyondKey(px, py)) ?? 0) | bit);
-    if (!inBay(qx, qy)) layer.set(beyondKey(qx, qy), (layer.get(beyondKey(qx, qy)) ?? 0) | OPPOSITE_OF.get(bit));
+    if (keep(px, py)) layer.set(beyondKey(px, py), (layer.get(beyondKey(px, py)) ?? 0) | bit);
+    if (keep(qx, qy)) layer.set(beyondKey(qx, qy), (layer.get(beyondKey(qx, qy)) ?? 0) | OPPOSITE_OF.get(bit));
     px = qx; py = qy;
   }
 }
 
 /**
  * THE LAYER: the network's steps drawn onto the Bay pixels, centre to centre, and each town's pixel joined to its cell's
- * centre where the cell carries that grade.
+ * centre where the cell carries that grade; TESA5: each crossing's run, its Bay pixels the `join`, its gate's past the
+ * Bay the roads'.
  * @param {{ roads: Uint8Array, tracks: Uint8Array }} net @param {{ x0: number, y0: number, s: number }} window
- * @param {Array<{ x: number, y: number }>} towns
- * @returns {{ roads: Map<number, number>, tracks: Map<number, number> }}
+ * @param {Array<{ x: number, y: number }>} towns @param {Array<{ meet: number[], gate: number[] }>} [joins]
+ * @returns {{ roads: Map<number, number>, tracks: Map<number, number>, join: Map<number, number> }}
  */
-export function rasterArenaRoads(net, window, towns) {
-  const out = { roads: new Map(), tracks: new Map() };
+export function rasterArenaRoads(net, window, towns, joins = []) {
+  const out = { roads: new Map(), tracks: new Map(), join: new Map() };
+  for (const { meet, gate } of joins) {
+    stampRun(out.join, meet[0], meet[1], gate[0], gate[1], inBay);
+    stampRun(out.roads, meet[0], meet[1], gate[0], gate[1]);
+  }
   for (const kind of /** @type {const} */ (['roads', 'tracks'])) {
     const cells = net[kind], layer = out[kind];
     for (let v = 0; v < MAP_H; v++) {
@@ -165,25 +228,30 @@ export const arenaRoadByte = (kind, x, y) => layerByte(_layer, kind, x, y);
 export const arenaRoadCorners = (kind, x, y) => (arenaRoadByte(kind, x + 1, y) & 0x5) | (arenaRoadByte(kind, x - 1, y) & 0x50);
 /** Roads and tracks together at a Bay pixel - travelPaths.js pathsDataPoint's question. */
 export const arenaPathsAt = (x, y) => (arenaRoadByte('roads', x, y) | arenaRoadByte('tracks', x, y)) & 0xff;
+/** TESA5: a Bay pixel's join byte - a road's, the one part of the layer a pixel ON the Bay reads (its runs are straight
+ *  out of the Bay, so no diagonal of them brushes a corner). */
+export const arenaJoinByte = (x, y) => arenaRoadByte('join', x, y);
 /** Does a layer carry anything on a pixel or the two beside it - whose bytes and corners its paint reads? */
-export const layerTouches = (layer, x, y) => !!layer && [-1, 0, 1].some((dx) => layerByte(layer, 'roads', x + dx, y) || layerByte(layer, 'tracks', x + dx, y));
+export const layerTouches = (layer, x, y) => !!layer && [-1, 0, 1].some((dx) => layerByte(layer, 'roads', x + dx, y) || layerByte(layer, 'tracks', x + dx, y) || layerByte(layer, 'join', x + dx, y));
 
 /**
  * The layer to post across a thread, and back: its pixels' keys and bytes in three arrays (transferable).
- * @param {{ roads: Map<number, number>, tracks: Map<number, number> }} layer
+ * @param {{ roads: Map<number, number>, tracks: Map<number, number>, join?: Map<number, number> }} layer
  */
 export function packArenaRoads(layer) {
   const keys = [...new Set([...layer.roads.keys(), ...layer.tracks.keys()])];
   const k = new Float64Array(keys), r = new Uint8Array(keys.length), t = new Uint8Array(keys.length);
   keys.forEach((key, i) => { r[i] = layer.roads.get(key) ?? 0; t[i] = layer.tracks.get(key) ?? 0; });
-  return { keys: k, roads: r, tracks: t };
+  const join = layer.join ?? new Map();
+  return { keys: k, roads: r, tracks: t, joinKeys: new Float64Array(join.keys()), join: Uint8Array.from(join.values()) };
 }
-/** @param {{ keys: Float64Array, roads: Uint8Array, tracks: Uint8Array }} packed */
+/** @param {{ keys: Float64Array, roads: Uint8Array, tracks: Uint8Array, joinKeys?: Float64Array, join?: Uint8Array }} packed */
 export function unpackArenaRoads(packed) {
-  const roads = new Map(), tracks = new Map();
+  const roads = new Map(), tracks = new Map(), join = new Map();
   for (let i = 0; i < packed.keys.length; i++) {
     if (packed.roads[i]) roads.set(packed.keys[i], packed.roads[i]);
     if (packed.tracks[i]) tracks.set(packed.keys[i], packed.tracks[i]);
   }
-  return { roads, tracks };
+  for (let i = 0; i < (packed.joinKeys?.length ?? 0); i++) join.set(packed.joinKeys[i], packed.join[i]);
+  return { roads, tracks, join };
 }

@@ -322,6 +322,37 @@ On the freeware: 233 towns and villages, 150 roads and 56 tracks routed (four pa
 road pixels and 5,813 track pixels, none on the Bay. Recorded: the roads stop at the Bay's edge and at the coast - no
 road joins the Bay's network yet, and no port.
 
+## TESA5 - the crossings onto the Bay's roads (2026-10-12)
+
+The owner, on the next item ("joining Arena's roads to the Bay's roads at its edge, and ports"): *"Do it"*. Measured
+first: none of the Bay's roads leaves its edge (Basic Roads' arrays carry no arm off the map - nor does the port's own
+network), but 165 road pixels lie within six of its north edge, 99 of its south and 12 of its east, where the land goes
+on past it (766, 863 and 489 of the edges' pixels land on both sides; the west is the Eltheric's).
+
+- **A crossing** (`world/arenaRoads.js` arenaJoins): where the Bay's ROADS (never its tracks) come within JOIN_DEPTH (8)
+  of its edge, each run of them along the edge - runs nearer than JOIN_SPACING (60) one run - is one crossing, at the road
+  pixel nearest the edge (of those, the nearest the run's middle). Its GATE stands JOIN_OUT (8) straight past the edge,
+  so its window cell's centre is past the Bay at any scale to eight; the run is every pixel from the road out to the
+  gate, and a crossing stands only where all of it is land - the Bay's own water law on the Bay (`isWaterPixel`, the
+  fit's), the ground's beach line past it (`world.js` arenaJoinLand).
+- **The gate is a road town** of Arena's network (a city's grade), so the Bay's road law routes it to Arena's towns. A
+  road node now takes its window cell before a track node does: a village stood in the cell of one gate, and the first
+  town a cell took was the village (TESA4's law, which had no gate to lose).
+- **The run is drawn** (rasterArenaRoads): its pixels past the Bay into the roads, its Bay pixels into the layer's
+  `join` - the ONE part of the layer a pixel on the Bay reads: the painter ORs it into the pixel's road byte (no corner -
+  a run is straight out of the Bay), the verge asks it beside the Bay's own network (`roadRoom`), and the stale law takes
+  a Bay pixel a join reaches (a pixel off the Bay's or on it). On the Bay nothing else of Arena's is read.
+- **When**: the host hands the crossings over with the towns (`handArenaRoads`), found on the Bay's own network in use -
+  Basic Roads' or the port's own - once that network is known (`terrainGen.roads()`); while it is still on its way
+  (`hasRoads` and none yet) the towns wait for it, and a world with no Bay network joins none.
+- **Online**: the crossings are each player's own Bay network's - a player with Basic Roads off crosses where the port's
+  network comes near the edge. Roads are drawn on each client and never shared; nothing crosses the wire.
+
+On the freeware with Basic Roads: seven crossings - three north (366, 548, 726), three south (169, 394, 639), one east
+(row 300) - every gate on Arena's roads, 19 join pixels on the Bay; 158 roads and 54 tracks routed past the Bay.
+Recorded: the joins are not drawn on the Bay's travel map, not cut by the landforms, not read by Snowfall or by World of
+Daggerfall's road clearance (its camps are the Bay's, and a join is a few pixels at its edge).
+
 ## The arc - what comes next
 
 - **The provinces as regions of their own** - their own chat rooms, banks, law, prices and quest sites. The save's shape,
@@ -334,11 +365,23 @@ road joins the Bay's network yet, and no port.
   joins them and the seed it draws from are not in OpenTESArena or any reference this port has; reading them out of
   A.EXE's code would be a guess no test could check against the game. Left until a reference exists - a nameless
   dungeon stands nowhere, as Arena's own map shows none until it is found.
-- **Roads, the rest** - TESA4 stands the roads between Arena's places. Still to come: joining them to the Bay's
-  network where it meets the Bay's edge, their ports (A.EXE's coastal city list, as OpenTESArena reads it), the
-  landforms' cut along them, and the held map's ink of them.
+- **Roads, the rest** - TESA4 stands the roads between Arena's places and TESA5 joins them to the Bay's. Still to come:
+  their ports (A.EXE's coastal city list, as OpenTESArena reads it), the landforms' cut along them, and the maps' ink of
+  them.
 
 ## Pins
+
+`test/tesa5_join.test.js` (9, TESA5): the crossings (the depth, the spacing, the nearest, the middle, the gate's reach,
+all four edges, never a track, the land); the drawing (the join's Bay pixels, the gate's run past the Bay, neither in the
+other's map); the network (the gate a road node, before a village in its cell; the Bay's road walks to the town); the
+painter and the verge on the Bay (the join read, the flag; a join byte past the Bay never); the layer (packed and back,
+the touch); the client (the joins to the worker and drawn here, none without towns); the real worker (a job on the join
+paints it); the host by source (the land's two laws, the wait for the Bay's network, the gate's grade, the stale law's
+Bay pixel); with ARENA2_PATH and ARENA_PATH, the freeware's seven crossings and 19 join pixels. Mutants
+`tools/mutants/tesa5.json` (23, all dead). PIN MOVED: `test/tesa4_roads.test.js` (the hand-over, the stale law, the
+verge's line, the packed layer's join); `tools/mutants/tesa4.json`'s TESA4-the-towns-handed-once,
+TESA4-the-verge-unasked, TESA4-the-verge-asks-the-bay-of-the-layer, TESA4-the-flag-blind-to-corners,
+TESA4-one-end-unstamped and TESA4-the-bay-stamped re-aimed by content, all judged dead again.
 
 `test/tesa4_roads.test.js` (13, TESA4): the grade (the clone's, a dungeon none); the window (the margin, the extent's
 last pixel, the least scale, the taller way, a cell and its centre); the drawing (each step once, both ends, the spur in

@@ -92,7 +92,7 @@
   {
     "name": "TESA4-one-end-unstamped",
     "file": "src/world/arenaRoads.js",
-    "old": "    if (!inBay(qx, qy)) layer.set(beyondKey(qx, qy), (layer.get(beyondKey(qx, qy)) ?? 0) | OPPOSITE_OF.get(bit));\n",
+    "old": "    if (keep(qx, qy)) layer.set(beyondKey(qx, qy), (layer.get(beyondKey(qx, qy)) ?? 0) | OPPOSITE_OF.get(bit));\n",
     "new": "",
     "tests": [
       "test/tesa4_roads.test.js"
@@ -101,8 +101,8 @@
   {
     "name": "TESA4-the-bay-stamped",
     "file": "src/world/arenaRoads.js",
-    "old": "    if (!inBay(qx, qy)) layer.set(beyondKey(qx, qy), (layer.get(beyondKey(qx, qy)) ?? 0) | OPPOSITE_OF.get(bit));",
-    "new": "    layer.set(beyondKey(qx, qy), (layer.get(beyondKey(qx, qy)) ?? 0) | OPPOSITE_OF.get(bit));",
+    "old": "const offBay = (x, y) => !inBay(x, y);",
+    "new": "const offBay = () => true;",
     "tests": [
       "test/tesa4_roads.test.js"
     ]
@@ -245,8 +245,8 @@
   {
     "name": "TESA4-the-flag-blind-to-corners",
     "file": "src/world/terrainGen.js",
-    "old": "    arenaPainted = !!(arena && (road || track || arenaCorners('roads') || arenaCorners('tracks')));",
-    "new": "    arenaPainted = !!(arena && (road || track));",
+    "old": "(arena && (road || track || arenaCorners('roads') || arenaCorners('tracks')))",
+    "new": "(arena && (road || track))",
     "tests": [
       "test/tesa4_roads.test.js"
     ]
@@ -263,8 +263,8 @@
   {
     "name": "TESA4-the-verge-unasked",
     "file": "src/world/roadVerge.js",
-    "old": "? pathsDataPoint(net, mx, my) : arenaPathsAt(mx, my);",
-    "new": "? pathsDataPoint(net, mx, my) : 0;",
+    "old": ": arenaPathsAt(mx, my);   // TESA5",
+    "new": ": 0;   // TESA5",
     "tests": [
       "test/tesa4_roads.test.js"
     ]
@@ -272,8 +272,8 @@
   {
     "name": "TESA4-the-verge-asks-the-bay-of-the-layer",
     "file": "src/world/roadVerge.js",
-    "old": "      const bits = mx >= 0 && my >= 0 && mx < MAP_W && my < MAP_H ? pathsDataPoint(net, mx, my) : arenaPathsAt(mx, my);",
-    "new": "      const bits = pathsDataPoint(net, mx, my) | arenaPathsAt(mx, my);",
+    "old": "      const bits = mx >= 0 && my >= 0 && mx < MAP_W && my < MAP_H ? pathsDataPoint(net, mx, my) | arenaJoinByte(mx, my) : arenaPathsAt(mx, my);",
+    "new": "      const bits = pathsDataPoint(net, mx, my) | arenaJoinByte(mx, my) | arenaPathsAt(mx, my);",
     "tests": [
       "test/tesa4_roads.test.js"
     ]
@@ -425,8 +425,8 @@
   {
     "name": "TESA4-the-towns-handed-once",
     "file": "src/scenes/world.js",
-    "old": "    if (now === _arenaRoadsFor) return;\n    _arenaRoadsFor = now;",
-    "new": "    if (_arenaRoadsFor) return;\n    _arenaRoadsFor = now;",
+    "old": "    if (now === _arenaRoadsFor && bay === _arenaRoadsBay) return;",
+    "new": "    if (_arenaRoadsFor && bay === _arenaRoadsBay) return;",
     "tests": [
       "test/tesa4_roads.test.js"
     ]
