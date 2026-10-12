@@ -1542,7 +1542,7 @@ export async function bootWorld(canvas, renderer, params, status) {
   }
   /** TESA2: THE ARENA SWEEP - a pixel beyond the Bay built before Arena's places stood as they stand now (the trace or
    *  the data landing after it, the Arena card's Attach or Remove) is built again, the way the late Hollow's is
-   *  (sweepSdLate): each built pixel's Arena slot (its entry's `arena`) against the place standing on it now. Asked on the frame
+   *  (sweepSdLate): each built pixel's Arena slot (its entry's `arenaSlot`) against the place standing on it now. Asked on the frame
    *  when the pixels' set moves (world/arenaPlaces.js arenaPixels: a new set a trace, a fit, a data set). */
   let _arenaSwept = null;
   function sweepArenaPixels() {
@@ -1553,7 +1553,7 @@ export async function bootWorld(canvas, renderer, params, status) {
     for (const [, p] of built) {
       if (onTheBay(p.px, p.py)) continue;
       const place = now?.byPixel.get(`${p.px},${p.py}`) ?? null;
-      if ((place ? `${place.provinceIndex}|${place.id}` : null) !== (p.arena ? `${p.arena.provinceIndex}|${p.arena.id}` : null)) again.push({ px: p.px, py: p.py });
+      if ((place ? `${place.provinceIndex}|${place.id}` : null) !== (p.arenaSlot ? `${p.arenaSlot.provinceIndex}|${p.arenaSlot.id}` : null)) again.push({ px: p.px, py: p.py });
     }
     if (!again.length) return;
     const under = `${state.current.x},${state.current.y}`;
@@ -6708,7 +6708,7 @@ export async function bootWorld(canvas, renderer, params, status) {
       wodReach: gateLedger.reach.length ? Float32Array.from(gateLedger.reach) : null,   // GATE-CLEAR: what it stood, for the next gate's sweep
       placeHold: pipeline,
       location: dfLocation ? dfLocation.name : null,
-      arena: dfLocation?.arena ?? null,
+      arenaSlot: dfLocation?.arena ?? null,
       centerHeight: samples[64 * HEIGHTMAP_DIMENSION + 64] * worldHeight,
       avgY: dfLocation ? avg * worldHeight : 0,
     });
@@ -19129,7 +19129,7 @@ export async function bootWorld(canvas, renderer, params, status) {
     window.__tesaJump = (x, y) => _teleportToPixel(x, y, null, { reposition: REPOSITION.RandomStartMarker });
     window.__tesaPlace = (x, y) => {
       const b = built.get(`${x},${y}`), loc = locationIndex.get(`${x},${y}`);
-      return { built: !!b, location: b?.location ?? null, arenaKey: b?.arena ? `${b.arena.provinceIndex}|${b.arena.id}` : null, name: loc?.name ?? null, arena: loc?.arena ?? null,
+      return { built: !!b, location: b?.location ?? null, arenaKey: b?.arenaSlot ? `${b.arenaSlot.provinceIndex}|${b.arenaSlot.id}` : null, name: loc?.name ?? null, arena: loc?.arena ?? null,
         mapId: loc?.mapTableData?.mapId ?? null, blocks: loc ? [loc.exterior?.exteriorData?.width, loc.exterior?.exteriorData?.height] : null,
         buildings: loc?.exterior?.buildings?.length ?? null, region: loc?.regionName ?? null };
     };

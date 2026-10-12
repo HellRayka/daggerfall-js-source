@@ -174,7 +174,7 @@ into, a dungeon to go down - and the held map takes the player there.
   press there picks nothing. `_arenaTemplates` is made off the game's rows before they go; `_locationToBuild` asks
   `arenaLocationAt` of every pixel past the Bay, which stands the clone in the index once (and takes an Arena place's
   clone out of the index when its place has gone); the built pixel keeps its Arena slot (its entry's
-  `arena`).
+  `arenaSlot` - beside the colosseum's own `arena`, ARENA2).
 - **Late, and changed** (`sweepArenaPixels`, sweepSdLate's shape): on the frame, when the pixels' set moves (the trace or
   the data landing after a pixel built, the Arena card's Attach or Remove), every built pixel past the Bay whose
   Arena slot is not the place standing on it now is built again.

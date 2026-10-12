@@ -229,11 +229,12 @@ test('TESA2 the host: offline on the land beyond the Bay it stands the places - 
   assert.match(fn, /if \(place && had\.arena\.provinceIndex === place\.provinceIndex && had\.arena\.id === place\.id\) return had;\n\s+_locIndexGen \+= 1;\n\s+locationIndex\.delete\(key\);/, 'one clone a pixel, and out of the index when its place goes');
   assert.match(fn, /const regionIndex = maps\.getRegionIndexAt\(px, py\);\n\s+const loc = synthesizeArenaLocation\(template, place, \{ regionIndex, regionName: REGION_NAMES\[regionIndex\], politic: 128 \+ regionIndex, climate: getWorldClimateSettings\(maps\.getClimateIndex\(px, py\)\) \}\);/);
   assert.match(fn, /locationIndex\.set\(key, loc\);\n\s+return loc;/);
-  assert.match(w, /location: dfLocation \? dfLocation\.name : null,\n\s+arena: dfLocation\?\.arena \?\? null,\n/, 'the built pixel keeps its Arena slot');
+  assert.match(w, /location: dfLocation \? dfLocation\.name : null,\n\s+arenaSlot: dfLocation\?\.arena \?\? null,\n/, 'the built pixel keeps its Arena slot - beside, never over, the colosseum\'s `arena` (ARENA2)');
+  assert.equal((w.slice(w.indexOf('    built.set(key, {'), w.indexOf('    });', w.indexOf('    built.set(key, {'))).match(/^\s+arena: /gm) ?? []).length, 1, 'the colosseum\'s origin is the entry\'s one `arena`');
   const sweep = w.slice(w.indexOf('  function sweepArenaPixels() {'), w.indexOf('  // LocationLoader.cs:146-151'));
   assert.match(sweep, /if \(now === _arenaSwept\) return;/);
   assert.match(sweep, /if \(onTheBay\(p\.px, p\.py\)\) continue;/);
-  assert.match(sweep, /if \(\(place \? `\$\{place\.provinceIndex\}\|\$\{place\.id\}` : null\) !== \(p\.arena \? `\$\{p\.arena\.provinceIndex\}\|\$\{p\.arena\.id\}` : null\)\) again\.push/);
+  assert.match(sweep, /if \(\(place \? `\$\{place\.provinceIndex\}\|\$\{place\.id\}` : null\) !== \(p\.arenaSlot \? `\$\{p\.arenaSlot\.provinceIndex\}\|\$\{p\.arenaSlot\.id\}` : null\)\) again\.push/);
   assert.match(sweep, /for \(const k of again\) destroyPixel\(k\.px, k\.py, \{ collectLoose: false \}\);\n\s+queue\.push\(\.\.\.again\.sort\(nearestFirstFrom\(state\.current\)\)\);/);
   assert.match(w, /if \(_arenaTemplates && !building\) sweepArenaPixels\(\);/);
   assert.match(w, /if \(_arenaTemplates && params\.has\('load'\)\) await arenaReady\.then\(\(n\) => \(n \? Promise\.race\(\[arenaTraced, new Promise\(\(r\) => setTimeout\(r, ARENA_LOAD_WAIT_MS\)\)\]\) : 0\)\);\n\s+let _loadedGame = false;/, 'a load waits before the boot decides its start');
