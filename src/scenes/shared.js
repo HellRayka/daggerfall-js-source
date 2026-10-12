@@ -892,6 +892,12 @@ export function arenaPlacesOn(search) {
   return pageParam('arenaplaces', search) !== 'off';
 }
 
+/** TESA7 (bible/03-World/Arena-Provinces.md): THE COUNTRYSIDE'S KILL DOOR - `?country=off` stands no hamlet, farm, inn,
+ *  temple or shrine past the Bay; Arena's places stand as ever. No Features row: the countryside is the land's own. */
+export function countrysideOn(search) {
+  return pageParam('country', search) !== 'off';
+}
+
 /** VERGE1: THE CLEAR ROADSIDES' SWITCH - the Features row (`roadVerges`) on the enhanced skin, and on for everyone
  *  online whatever their skin: where the wild's flats stand is the room's ground (realForestsOn's shape). `?verges=off`
  *  the kill door, offline. The world host reads it once, at its mount. */

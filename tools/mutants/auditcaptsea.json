@@ -1430,8 +1430,8 @@
   {
     "name": "ACS-P9-deed",
     "file": "src/scenes/worldModes.js",
-    "old": "const houseOwnedAt = (b, key) => !isEtherPlaceId(homeTownOf(b)) && !isArenaPlaceId(homeTownOf(b)) && isHouseOwned(",
-    "new": "const houseOwnedAt = (b, key) => !isArenaPlaceId(homeTownOf(b)) && isHouseOwned(",
+    "old": "const houseOwnedAt = (b, key) => !isEtherPlaceId(homeTownOf(b)) && !isArenaPlaceId(",
+    "new": "const houseOwnedAt = (b, key) => !isArenaPlaceId(",
     "tests": [
       "test/auditcaptsea.test.js"
     ]

@@ -330,6 +330,7 @@ test('AUDIT OW5b D2 host run: A SPAWN PAST ITS TIME IS GONE FOR GOOD - the build
       const wildMaskOf = () => null, wildInside = () => false, wildHallStand = () => null;   // PVPDUNGEONS: no open zone here - the spawner's own pixel
       const etherSea = false;   // PIN MOVED (ETHER-PLACES): the build answers an Etheric pixel by its isle first - the sea off here, the Bay's pixels this pin's
       const _arenaTemplates = null;   // PIN MOVED (TESA2): and past the Bay its Arena place - off here too
+      const _countryTemplates = null;   // PIN MOVED (TESA7): and the countryside's
       let _locIndexGen = 0;
       ${seen}
       ${spawned}

@@ -224,7 +224,7 @@ test('TESA2 the host: offline on the land beyond the Bay it stands the places - 
   assert.match(w, /const arenaStands = tamrielLand && arenaPlacesOn\(\);\n\s+setArenaRoom\(params\.has\('online'\)\);\n\s+setArenaStanding\(arenaStands\);/, 'PIN MOVED (TESA-ONLINE): online too, from a release the room knows (tesa2_online)');
   assert.match(w, /const _arenaTemplates = arenaStands \? arenaTemplates\(_classicRows \?\? _hubRows\.map\(classicRow\)\.filter\(Boolean\), isMainStoryDungeon\) : null;/, 'the game\'s rows');
   assert.ok(w.indexOf('const _arenaTemplates = arenaStands') < w.indexOf('  _classicRows = null;   // read, let go'), 'before they go');
-  assert.match(w, /if \(etherSea && inEther\(px, py\)\) return etherPlaceAt\(px, py\);[^\n]*\n\s+if \(_arenaTemplates && !onTheBay\(px, py\)\) return arenaLocationAt\(px, py\);/);
+  assert.match(w, /if \(etherSea && inEther\(px, py\)\) return etherPlaceAt\(px, py\);[^\n]*\n\s+if \(\(_arenaTemplates \|\| _countryTemplates\) && !onTheBay\(px, py\)\) return \(_arenaTemplates && arenaLocationAt\(px, py\)\) \|\| countryLocationAt\(px, py\);/);   // PIN MOVED (TESA7): Arena's place first, else the countryside's (tesa7_country)
   const fn = w.slice(w.indexOf('  function arenaLocationAt(px, py) {'), w.indexOf('  /** AUDIT OW4 D4: THE CLONE a pixel\'s spawn IS'));
   assert.match(fn, /if \(place && had\.arena\.provinceIndex === place\.provinceIndex && had\.arena\.id === place\.id && had\.arena\.port === !!place\.port\) return had;[^\n]*\n\s+_locIndexGen \+= 1;\n\s+locationIndex\.delete\(key\);/,   // PIN MOVED (TESA6): a city made a port is cloned again
     'one clone a pixel, and out of the index when its place goes');
@@ -245,7 +245,7 @@ test('TESA2 the host: offline on the land beyond the Bay it stands the places - 
   assert.match(w, /if \(_arenaTemplates\) for \(const a of arenaPixels\(\)\?\.stood \?\? \[\]\) if \(!locationIndex\.has\(`\$\{a\.bx\},\$\{a\.by\}`\)\) places\.push\(\{ name: a\.name, px: a\.bx, py: a\.by \}\);/);
   const modes = read('src/scenes/worldModes.js');
   assert.match(modes, /if \(isArenaPlaceId\(dir\.mapId\)\) return \[\];/);
-  assert.match(modes, /const houseOwnedAt = \(b, key\) => !isEtherPlaceId\(homeTownOf\(b\)\) && !isArenaPlaceId\(homeTownOf\(b\)\) && isHouseOwned\(/);
+  assert.match(modes, /const houseOwnedAt = \(b, key\) => !isEtherPlaceId\(homeTownOf\(b\)\) && !isArenaPlaceId\(homeTownOf\(b\)\) && !isCountryPlaceId\(homeTownOf\(b\)\) && isHouseOwned\(/);   // PIN MOVED (TESA7): nor a country place's
 });
 
 // ── THE PLAYER'S OWN FILES ─────────────────────────────────────────

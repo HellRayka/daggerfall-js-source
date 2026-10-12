@@ -392,6 +392,72 @@ CoastalCityList, 58 global city ids (OpenTESArena's ExeData, its address maps `a
 - **Measured in the game** (headless, the freeware's CITYDATA.65 and A.EXE): Solitude stands on Skyrim's north shore at
   (1691, -341), its clone a port, its build standing both of the port's places, and Arena's roads at its gate.
 
+## TESA7 - the countryside (2026-10-12)
+
+The owner: *"Populating the world with unique and smaller towns, farms, etc"* (the third of four asks; the dungeons, a
+Morrowind of Morrowind's own and the capitals hand-built are TESA8-10). Arena's 248 places are 48 a province; the Bay
+stands 15,251 on a sixth of the land. Between Arena's places the land past the Bay now stands the hamlets, villages,
+farms, homes, inns, temples and shrines the Bay stands, as thick on the ground.
+
+- **The rate is the Bay's** (`world/tamrielCountry.js` countryCounts, bayLand, countryRates): each climate stands what
+  the Bay stands on its land of that climate - of each kind, the game's rows of that kind on a pixel of that climate,
+  over the Bay's land pixels of it (CLIMATE.PAK and WOODS.WLD's water law, `ui/overworldModel.js` isWaterPixel). Counted
+  from the player's own files at the first pixel past the Bay that asks (the Bay's half a million pixels, 11 ms on the
+  freeware); nothing of the count is kept in the port. On the freeware, places a thousand land pixels: Woodlands 50.8,
+  MountainWoods 46.1, HauntedWoodlands 46.6, Subtropical 44.9, Rainforest 42.1, Swamp 41.2, Mountain 19.0, Desert 12.3,
+  Desert2 5.5 - Hammerfell's deserts as empty as the Alik'r.
+- **The kinds**: TownHamlet, TownVillage, HomeFarms, ReligionTemple, Tavern, HomeWealthy, ReligionCult, HomePoor
+  (COUNTRY_TYPES, the roll's order). Never a city (Arena's city-states are the cities) and never a place with a dungeon
+  under it, a labyrinth, a keep, a ruin, a graveyard or a coven (TESA8's).
+- **The roll** (countryRoll, countryPick): a pixel's own hash, `hash32(COUNTRY_SALT, x, y, 1)`, under its climate's
+  ceilings names the kind; `hash32(.., 2)` the template in map-id order. Pure in the pixel and the game's rows: every
+  client and every session stand the same countryside, online too (`?country=off` the kill door). Over a 500 x 500
+  Woodlands window the roll stands 51.4 a thousand against the rate's 50.8.
+  Over the whole continent past the Bay (the freeware's trace at its fit, (38, 57) x15.5: 5,991,777 land pixels) the roll
+  stands 226,068 - 26,452 hamlets, 42,771 villages, 36,848 farms, 18,989 temples, 36,287 inns, 30,539 manors, 9,311
+  shrines, 24,871 poor homes - before the water, the shore and the roads take theirs; the Bay holds 15,251 of every kind.
+- **The clone** (countryTemplates, synthesizeCountryLocation): the Etheric Sea's, the spawns' and Arena's law - a
+  NON-MUTATING clone of one of the game's own places of its kind as MAPS.BSA holds it (an exterior, no dungeon, never a
+  main-story place nor one the port made: 1,200 hamlets, 1,834 villages, 1,841 farms, 1,043 temples, 1,646 inns, 1,399
+  manors, 475 shrines, 1,158 poor homes on the freeware), its blocks and buildings the template's by reference; its own
+  id, its own index, the pixel's longitude and latitude, the region and climate the pixel answers (the climate the
+  province's, TAMRIEL2; the region the clamp's, as Arena's), no harbour, and `country` (its pixel, kind and template).
+- **The name is the province's** (countryName): a frame of the kind's - "The %s Farmstead", "Old %f's Farm", "%s Manor",
+  "Shrine of %f", "The Old %s Place" - round stems from the province's people's bank (`world/tamrielPeople.js`, DFU's
+  NameGen: a Nord's in Skyrim, its 'sen' cut from a place's stem; a Redguard's first names, the bank having no
+  surnames), an inn's from DFU's own tavern words (`world/buildingNames.js` TAVERNS_A and TAVERNS_B, then Tavern, Inn,
+  Pub, Hostel or Lodge), a temple's an epithet and a noun of one of the Eight. The frames are the port's own words in
+  the shape the Bay's names take, not MAPS.BSA's names. Drawn on DFRandom off `hash32(.., 3)` with the stream's state put
+  back after (`characters/nameHelper.js` draws on the global stream). A pixel past the trace's provinces names off the
+  clamp's region's bank.
+- **The id** (countryOrdinal, countryPlaceId): the pixel's ordinal on a fixed grid (COUNTRY_GRID: 8,192 x 4,096 from
+  (-1024, -1024), the continent's frame at the shipped fit inside it), its high bits one of 64 lanes from 0x300 (apart
+  from the spawns' 1, the zone halls' 7, Arena's 0xa7, the isles' 0xe7, the Ocean Holes' 0x600 and the Abyss Dungeons'
+  2049-4095), its low 19 bits the lane's number with 0x80000 set: past every Bay pixel id, so a country place's
+  discovery (`systems/discovery.js` keys on the low 20) never marks a place of the Bay found. Its location index counts
+  down from -COUNTRY_INDEX_BASE (-2,000,000), past Arena's. A pixel off the grid stands none.
+- **The host** (`scenes/world.js` countryLocationAt): `_locationToBuild` asks of a pixel past the Bay Arena's place
+  first (TESA2), else the country's. It stands none on water (WOODS.WLD's byte at or under the beach, the land past the
+  Bay's law), on a pixel an Arena road or track crosses (SPAWN-ROADS' law - the roads land late: the roads sweep builds
+  the pixel again and it stands none then), or where the sea's edge would flatten it onto sand (SPAWN-SHORE's
+  dry-plateau law, `createCountryGround`, kept under the pixel's own key - the spawns' key is a Bay pixel's and two
+  pixels past the Bay would share it). Stood in the index once, and cloned again when what the pixel stands moves (the
+  trace landing moves a climate, a road). Arena attached late: the Arena sweep builds the pixel again and Arena's place
+  takes it. No house is sold in a country place and no deed read in one (`scenes/worldModes.js`, the isles' and Arena's
+  rule: every one answers the clamp's region). `/tp` names a stood one; `__tesaPlace` reads its `country` and kind.
+- **What a country place is not yet**: on no map (the held map and the travel map ink the Bay's places and Arena's),
+  on no road (the roads between Arena's places alone - TESA4's network at five pixels a cell takes cities, hamlets and
+  villages, and the countryside's 226,068 are past its scale), and in no quest (the quest machine's
+  sites are MAPS.BSA's rows). Its layout is its template's: the Bay's own block layouts under a new name, never a layout
+  made of the blocks.
+- **Online, apart**: a pixel the countryside stands and a player's known Arena stands too is Arena's for that player and
+  the country's for one without Arena, and a pixel an Arena road crosses stands none for the one and the country's for
+  the other - TESA-ONLINE's divergence (a player without Arena sees no Arena place), no wider.
+- **Measured in the game** (headless, the freeware's ARENA2, no Arena attached): at (2198, -356) in Skyrim the roll
+  stands a village, and the jump lands in it - Asgorn, a Nord's name, a 2 x 2 village of 18 buildings cloned off one of
+  the Bay's, its streets and houses standing in Skyrim's ground; the eight pixels round it stand none, as the rate
+  says they mostly will.
+
 ## The arc - what comes next
 
 - **The provinces as regions of their own** - their own chat rooms, banks, law, prices and quest sites. The save's shape,
@@ -407,8 +473,36 @@ CoastalCityList, 58 global city ids (OpenTESArena's ExeData, its address maps `a
 - **Roads, the rest** - TESA4 stands the roads between Arena's places, TESA5 joins them to the Bay's and TESA6 makes
   the coastal cities ports. Still to come: the landforms' cut along the roads, the maps' ink of them, Arena's ports on
   the contract board and the ship passage.
+- **The owner's four asks of 2026-10-12, the rest** - TESA8, dungeons of the land's own past the Bay (the Bay's count of
+  labyrinths, keeps, ruins, graveyards and covens a climate, as TESA7's); TESA9, Morrowind of Morrowind's own (the
+  player's Morrowind.esm read for Vvardenfell's towns at their places and Morrowind's ground, plants, rocks and buildings
+  across the province: the owner chose "Real towns + MW look"); TESA10, the capitals built by hand ("You build them
+  yourself. No files needed": the Imperial City's White-Gold Tower in its walled ring on Lake Rumare, Solitude's arch
+  over the water, the Blue Palace and Castle Dour, and Arena's capitals of the rest) - their signature landmarks in a
+  layout of the port's own, never a copy of another game's level design.
+- **The countryside, the rest** - its places on the held map and the travel map, roads to them, and quest sites in them.
 
 ## Pins
+
+`test/tesa7_country.test.js` (11, TESA7): the id (the grid's four edges, a point none, the 64 lanes from 0x300, the low
+20 bits past every Bay pixel id, one a pixel, never an Arena place's, an isle's or a spawn's under any salt; the index
+past Arena's); the templates (a list a kind in map-id order, no city, dungeon, spawn, isle's, Arena's or country place,
+no main-story place); the Bay's count by its row's pixel's climate, its land over every Bay pixel once; the rates
+(cumulative in COUNTRY_TYPES order, a climate with no land or no kind none); the pick (the roll's ceilings, the
+template's hash, the same answer every ask, a kind with no template none, the rates realised over 40,000 pixels); the
+name (deterministic, the global DFRandom stream untouched, every farm frame and nothing else, DFU's tavern words and an
+inn's kind, an epithet of the Eight, a Nord's stem no son, a Redguard's a first name, a city none); the clone
+(non-mutating, its ids in the row, the exterior and its record, the pixel's longitude and latitude, the host's region,
+no harbour, `country`, none off the grid); the ground (the dry-plateau law under the pixel's own key, kept); the host by
+source (the door, the rows before they go, the rates' water law, Arena's first, the probe, the deed rules) and run
+(stood once under the province's bank, the clamp's region's without a province, a moved climate cloned again, water, an
+Arena road and the sea's edge none, a road painted late takes it out, the door shut none) and the build's order
+(Arena's, else the country's, the Bay its own). Mutants `tools/mutants/tesa7.json` (66, all dead). PIN MOVED:
+`test/auditcaptsea.test.js`, `test/houses.test.js`, `test/housecontainers.test.js` and `test/tesa2_arena.test.js` (the
+deed's one reading: nor a country place's), `test/tesa2_arena.test.js` (the build past the Bay: Arena's, else the
+country's), `test/fb0929h_spawnplate.test.js` and `test/spawneddungeons.test.js` (their harnesses lift
+`_locationToBuild`: the countryside off, the Bay's pixels theirs); `tools/mutants/auditcaptsea.json`'s ACS-P9-deed and
+`tesa2.json`'s TESA2-no-arm re-aimed by content, judged dead again.
 
 `test/tesa6_ports.test.js` (10, TESA6): the unpacking against the spec's tables (a stream made here: data, a copy of 2, a
 high byte, the long special, 0xFE, the counts past 12) and its refusals (the last word, a byte or a copy past the length,

@@ -285,6 +285,9 @@ import { arenaPlaces, arenaPixels, arenaPlaceOnPixel, setArenaCityData, setArena
 import { arenaRoadsLayer, layerTouches, setArenaRoads, arenaJoins } from '../world/arenaRoads.js';   // TESA4: the roads between them; TESA5: their crossings onto the Bay's
 import { arenaTemplates, arenaTemplateOf, synthesizeArenaLocation, ARENA_LOAD_WAIT_MS, ARENA_PLACES_TEXT, arenaRoadTowns } from '../world/arenaLocations.js';   // TESA2: the places stood, each a Daggerfall town or dungeon cloned
 import { fitBayToPicture } from '../world/tamrielLand.js';   // TAMRIEL3: where the Bay stands on it
+import { countryTemplates, countryCounts, bayLand, countryRates, countryPick, countryName, countryNameSeed, createCountryGround, synthesizeCountryLocation } from '../world/tamrielCountry.js';   // TESA7: the countryside past the Bay
+import { countrysideOn } from './shared.js';   // TESA7: its kill door
+import { arenaPathsAt } from '../world/arenaRoads.js';   // TESA7: no country place on an Arena road
 import { provinceKeyBeyondBay } from '../world/tamrielLand.js';   // TESA3: the province a pixel past the Bay stands on
 import { provinceByKey } from '../world/tamrielGeography.js';   // TESA3: its name and race
 import { provinceNameBank } from '../world/tamrielPeople.js';   // TESA3: its people's names
@@ -1733,6 +1736,12 @@ export async function bootWorld(canvas, renderer, params, status) {
   // a region's cities apart: its Hollow stood by another city, on another pixel, in another room.
   const _sdCityRows = params.has('online') ? _classicRows.filter((loc) => !!hubClaim(loc, maps.getRegionName(loc.regionIndex))) : [];
   const _sdTemplateRows = params.has('online') ? sdTemplates(_classicRows, isMainStoryDungeon) : [];
+  // TESA7 (world/tamrielCountry.js): THE COUNTRYSIDE'S TEMPLATES AND THE BAY'S COUNT OF THEM - the hamlets, villages, farms,
+  // homes, inns, temples and shrines a pixel past the Bay may clone, and how many of each kind stand on each climate of the
+  // Bay, off the same rows (the game's own, as MAPS.BSA holds them: every client rolls the same countryside), kept before
+  // the rows go. The land past the Bay streamed (TAMRIEL2), `?country` open; online too.
+  const _countryTemplates = tamrielLand && countrysideOn() ? countryTemplates(_classicRows ?? _hubRows.map(classicRow).filter(Boolean), isMainStoryDungeon) : null;
+  const _countryCounts = _countryTemplates ? countryCounts(_countryTemplates, (x, y) => maps.getClimateIndex(x, y)) : null;
   // TESA2 (world/arenaLocations.js): THE ARENA PLACES' TEMPLATES - the cities, hamlets, villages, labyrinths and keeps an
   // Arena place may clone, off the same rows (the game's own, as MAPS.BSA holds them), kept before the rows go
   const _arenaTemplates = arenaStands ? arenaTemplates(_classicRows ?? _hubRows.map(classicRow).filter(Boolean), isMainStoryDungeon) : null;
@@ -2472,7 +2481,7 @@ export async function bootWorld(canvas, renderer, params, status) {
    *  the Overworld (tvSpawnGone) had it gone. */
   function _locationToBuild(px, py) {
     if (etherSea && inEther(px, py)) return etherPlaceAt(px, py);   // ETHER-PLACES: an isle's place, or the open sea's none
-    if (_arenaTemplates && !onTheBay(px, py)) return arenaLocationAt(px, py);   // TESA2: past the Bay, Arena's place or none
+    if ((_arenaTemplates || _countryTemplates) && !onTheBay(px, py)) return (_arenaTemplates && arenaLocationAt(px, py)) || countryLocationAt(px, py);   // TESA2: Arena's; TESA7: else the country's
     const key = `${px},${py}`;
     const loc = locationIndex.get(key);
     if (loc?.spawned && _spawnLedger.expired(key, _spawnClock()) && !_insideSpawn(key)) {
@@ -2518,6 +2527,38 @@ export async function bootWorld(canvas, renderer, params, status) {
     if (!template) return null;
     const regionIndex = maps.getRegionIndexAt(px, py);
     const loc = synthesizeArenaLocation(template, place, { regionIndex, regionName: REGION_NAMES[regionIndex], politic: 128 + regionIndex, climate: getWorldClimateSettings(maps.getClimateIndex(px, py)) });
+    _locIndexGen += 1;
+    locationIndex.set(key, loc);
+    return loc;
+  }
+  /** TESA7 (world/tamrielCountry.js): THE COUNTRYSIDE'S RATES - each climate's chances, the Bay's count over the Bay's land
+   *  (CLIMATE.PAK and WOODS.WLD's water law, ui/overworldModel.js isWaterPixel), worked out at the first pixel past the Bay
+   *  that asks (the Bay's half a million pixels read once). */
+  let _countryRates = null;
+  const countryRatesNow = () => (_countryRates ??= countryRates(_countryCounts, bayLand((x, y) => maps.getClimateIndex(x, y), (x, y, c) => isWaterPixel(c, woods.getHeightMapValue(x, y)))));
+  const _countryGround = _countryTemplates ? createCountryGround(woods) : null;
+  /** TESA7: THE PLACE THE COUNTRYSIDE STANDS ON A PIXEL PAST THE BAY that no Arena place takes - its roll's kind and template
+   *  (countryPick: the climate's rates, the pixel's hash), never on water, on an Arena road or track (SPAWN-ROADS' law: a
+   *  road the roads sweep paints late builds the pixel again, and it stands none then) or on ground the sea's edge would
+   *  flatten it into; named off its province's people (world/tamrielPeople.js, the clamp's region's where it has none) and
+   *  cloned under its own id, name and index, the region and climate the pixel's - stood in the index once (and again when
+   *  what the pixel stands moves: the trace landing, a road), or null. */
+  function countryLocationAt(px, py) {
+    if (!_countryTemplates) return null;
+    const key = `${px},${py}`;
+    const had = locationIndex.get(key);
+    const pick = countryPick(countryRatesNow(), _countryTemplates, maps.getClimateIndex(px, py), px, py);
+    const stands = !!pick && woods.getHeightMapValue(px, py) > WATER_BYTE && !arenaPathsAt(px, py) && _countryGround(px, py);
+    const regionIndex = maps.getRegionIndexAt(px, py);
+    const name = stands ? countryName(pick.type, provinceNameBank(provinceKeyBeyondBay(px, py)) ?? getNameBankOfRegion(regionIndex), countryNameSeed(px, py)) : null;
+    if (had?.country) {
+      if (stands && had.country.type === pick.type && had.country.template === pick.template.mapTableData?.mapId && had.name === name) return had;
+      _locIndexGen += 1;
+      locationIndex.delete(key);
+    }
+    if (!stands) return null;
+    const loc = synthesizeCountryLocation(pick.template, { px, py, type: pick.type, name }, { regionIndex, regionName: REGION_NAMES[regionIndex], politic: 128 + regionIndex, climate: getWorldClimateSettings(maps.getClimateIndex(px, py)) });
+    if (!loc) return null;
     _locIndexGen += 1;
     locationIndex.set(key, loc);
     return loc;
@@ -19226,7 +19267,8 @@ export async function bootWorld(canvas, renderer, params, status) {
         // TESA4: the Arena roads' layer it was painted with, whether they reached it, and the tiles the painter wrote
         roads: b ? { epoch: b.arenaRoadsEpoch, painted: b.arenaRoadsPainted, tiles: b.paths ? b.paths.reduce((n, t) => n + (t ? 1 : 0), 0) : null } : null,
         // TESA6: its harbour byte, and the shipyard's and the lighthouse's sites its build stood
-        port: loc ? (loc.exterior?.exteriorData?.portTownAndUnknown ?? 0) : null, portSites: b?.portSites?.length ?? null };
+        port: loc ? (loc.exterior?.exteriorData?.portTownAndUnknown ?? 0) : null, portSites: b?.portSites?.length ?? null,
+        country: loc?.country ?? null, type: loc?.mapTableData?.locationType ?? null };   // TESA7: a country place's pixel, kind and template
     };
     // ARENA2 probe surface (tools/arenaProbe.mjs): the city floor's sand and the Herald's place, the bout standing (its
     // phase, its fighters' health, the crowd's mood and how many sit), and the Herald's three doors pressed as his choice
