@@ -1,0 +1,254 @@
+[
+  {
+    "name": "TESA2-a-shorter-reach",
+    "file": "src/world/arenaPlaces.js",
+    "old": "export const PIXEL_REACH = 3;",
+    "new": "export const PIXEL_REACH = 2;",
+    "tests": [
+      "test/tesa2_arena.test.js"
+    ]
+  },
+  {
+    "name": "TESA2-the-corner-decides",
+    "file": "src/world/arenaPlaces.js",
+    "old": "own(...bayToPicture(bx + 0.5, by + 0.5));",
+    "new": "own(...bayToPicture(bx, by));",
+    "tests": [
+      "test/tesa2_arena.test.js"
+    ]
+  },
+  {
+    "name": "TESA2-a-pixel-twice",
+    "file": "src/world/arenaPlaces.js",
+    "old": "const free = (bx, by) => !inBay(bx, by) && !byPixel.has(`${bx},${by}`) && own(",
+    "new": "const free = (bx, by) => !inBay(bx, by) && own(",
+    "tests": [
+      "test/tesa2_arena.test.js"
+    ]
+  },
+  {
+    "name": "TESA2-the-bay-stands-one",
+    "file": "src/world/arenaPlaces.js",
+    "old": "    const [x, y] = pictureToBay(p.px, p.py);\n    if (inBay(x, y)) continue;\n    let own",
+    "new": "    const [x, y] = pictureToBay(p.px, p.py);\n    let own",
+    "tests": [
+      "test/tesa2_arena.test.js"
+    ]
+  },
+  {
+    "name": "TESA2-the-nameless-stand",
+    "file": "src/world/arenaPlaces.js",
+    "old": "  for (const p of model.places) {\n    if (!p.name) continue;\n    const [x, y] = pictureToBay(p.px, p.py);\n    if (inBay(x, y)) continue;\n    let own",
+    "new": "  for (const p of model.places) {\n    const [x, y] = pictureToBay(p.px, p.py);\n    if (inBay(x, y)) continue;\n    let own",
+    "tests": [
+      "test/tesa2_arena.test.js"
+    ]
+  },
+  {
+    "name": "TESA2-one-fit-ever",
+    "file": "src/world/arenaPlaces.js",
+    "old": "  if (_model.fit !== fit) {",
+    "new": "  if (!_model.pixels) {",
+    "tests": [
+      "test/tesa2_arena.test.js"
+    ]
+  },
+  {
+    "name": "TESA2-the-switch-always-moves",
+    "file": "src/world/arenaPlaces.js",
+    "old": "  if (!!on === _standing) return;\n",
+    "new": "\n",
+    "tests": [
+      "test/tesa2_arena.test.js"
+    ]
+  },
+  {
+    "name": "TESA2-the-isles-lane",
+    "file": "src/world/arenaLocations.js",
+    "old": "export const ARENA_PLACE_SALT = 0xa7;",
+    "new": "export const ARENA_PLACE_SALT = 0xe7;",
+    "tests": [
+      "test/tesa2_arena.test.js"
+    ]
+  },
+  {
+    "name": "TESA2-no-base",
+    "file": "src/world/arenaLocations.js",
+    "old": "(ARENA_PLACE_BASE + ordinal(place))",
+    "new": "(ordinal(place))",
+    "tests": [
+      "test/tesa2_arena.test.js"
+    ]
+  },
+  {
+    "name": "TESA2-the-ordinal-overlaps",
+    "file": "src/world/arenaLocations.js",
+    "old": "const ordinal = (place) => place.provinceIndex * LOCATIONS_PER_PROVINCE + place.id;",
+    "new": "const ordinal = (place) => place.provinceIndex * 47 + place.id;",
+    "tests": [
+      "test/tesa2_arena.test.js"
+    ]
+  },
+  {
+    "name": "TESA2-a-town-a-village",
+    "file": "src/world/arenaLocations.js",
+    "old": "  town: Object.freeze({ type: LOCATION_TYPES.TownHamlet, dungeon: false }),",
+    "new": "  town: Object.freeze({ type: LOCATION_TYPES.TownVillage, dungeon: false }),",
+    "tests": [
+      "test/tesa2_arena.test.js"
+    ]
+  },
+  {
+    "name": "TESA2-a-dungeon-without-blocks",
+    "file": "src/world/arenaLocations.js",
+    "old": "(dungeon ? !!(l.hasDungeon && l.dungeon?.blocks?.length) : !l.hasDungeon)",
+    "new": "(dungeon ? !!l.hasDungeon : !l.hasDungeon)",
+    "tests": [
+      "test/tesa2_arena.test.js"
+    ]
+  },
+  {
+    "name": "TESA2-a-clone-cloned",
+    "file": "src/world/arenaLocations.js",
+    "old": "!l.spawned && !l.ether && !l.arena && !isMain(idOf(l))",
+    "new": "!l.spawned && !l.ether && !isMain(idOf(l))",
+    "tests": [
+      "test/tesa2_arena.test.js"
+    ]
+  },
+  {
+    "name": "TESA2-the-rows-unordered",
+    "file": "src/world/arenaLocations.js",
+    "old": "      .sort((a, b) => idOf(a) - idOf(b));",
+    "new": "      ;",
+    "tests": [
+      "test/tesa2_arena.test.js"
+    ]
+  },
+  {
+    "name": "TESA2-the-province-unhashed",
+    "file": "src/world/arenaLocations.js",
+    "old": "hash32(ARENA_PLACE_SALT, place.provinceIndex, place.id, 3)",
+    "new": "hash32(ARENA_PLACE_SALT, place.id, 3)",
+    "tests": [
+      "test/tesa2_arena.test.js"
+    ]
+  },
+  {
+    "name": "TESA2-a-harbour-kept",
+    "file": "src/world/arenaLocations.js",
+    "old": "locationId: mapId, mapId, portTownAndUnknown: 0 },",
+    "new": "locationId: mapId, mapId },",
+    "tests": [
+      "test/tesa2_arena.test.js"
+    ]
+  },
+  {
+    "name": "TESA2-the-dungeon-header-the-template-s",
+    "file": "src/world/arenaLocations.js",
+    "old": "header: { ...template.dungeon?.recordElement?.header, locationId: mapId } } };",
+    "new": "header: { ...template.dungeon?.recordElement?.header } } };",
+    "tests": [
+      "test/tesa2_arena.test.js"
+    ]
+  },
+  {
+    "name": "TESA2-the-pixel-transposed",
+    "file": "src/world/arenaLocations.js",
+    "old": "mapPixelToLongitudeLatitude(place.bx, place.by)",
+    "new": "mapPixelToLongitudeLatitude(place.by, place.bx)",
+    "tests": [
+      "test/tesa2_arena.test.js"
+    ]
+  },
+  {
+    "name": "TESA2-a-spawn-clones-one",
+    "file": "src/world/spawnedDungeons.js",
+    "old": "!l.spawned && !l.ether && !l.arena   // AUDIT CAPTAIN'S SEA P3",
+    "new": "!l.spawned && !l.ether   // AUDIT CAPTAIN'S SEA P3",
+    "tests": [
+      "test/tesa2_arena.test.js"
+    ]
+  },
+  {
+    "name": "TESA2-online-too",
+    "file": "src/scenes/world.js",
+    "old": "  const arenaStands = tamrielLand && arenaPlacesOn() && !params.has('online');",
+    "new": "  const arenaStands = tamrielLand && arenaPlacesOn();",
+    "tests": [
+      "test/tesa2_arena.test.js"
+    ]
+  },
+  {
+    "name": "TESA2-no-arm",
+    "file": "src/scenes/world.js",
+    "old": "    if (_arenaTemplates && !onTheBay(px, py)) return arenaLocationAt(px, py);   // TESA2: past the Bay, Arena's place or none\n",
+    "new": "\n",
+    "tests": [
+      "test/tesa2_arena.test.js"
+    ]
+  },
+  {
+    "name": "TESA2-the-index-keeps-it",
+    "file": "src/scenes/world.js",
+    "old": "      if (place && had.arena.provinceIndex === place.provinceIndex && had.arena.id === place.id) return had;",
+    "new": "      return had;",
+    "tests": [
+      "test/tesa2_arena.test.js"
+    ]
+  },
+  {
+    "name": "TESA2-no-key",
+    "file": "src/scenes/world.js",
+    "old": "      arenaKey: dfLocation?.arena ? `${dfLocation.arena.provinceIndex}|${dfLocation.arena.id}` : null,",
+    "new": "      arenaKey: null,",
+    "tests": [
+      "test/tesa2_arena.test.js"
+    ]
+  },
+  {
+    "name": "TESA2-no-sweep",
+    "file": "src/scenes/world.js",
+    "old": "    if (_arenaTemplates && !building) sweepArenaPixels();",
+    "new": "    void sweepArenaPixels;",
+    "tests": [
+      "test/tesa2_arena.test.js"
+    ]
+  },
+  {
+    "name": "TESA2-the-load-waits-not",
+    "file": "src/scenes/world.js",
+    "old": "    if (_arenaTemplates) await arenaReady.then((n) => (n ? Promise.race([arenaTraced, new Promise((r) => setTimeout(r, ARENA_LOAD_WAIT_MS))]) : 0));\n",
+    "new": "\n",
+    "tests": [
+      "test/tesa2_arena.test.js"
+    ]
+  },
+  {
+    "name": "TESA2-a-house-for-sale",
+    "file": "src/scenes/worldModes.js",
+    "old": "    if (isArenaPlaceId(dir.mapId)) return [];",
+    "new": "    void isArenaPlaceId;",
+    "tests": [
+      "test/tesa2_arena.test.js"
+    ]
+  },
+  {
+    "name": "TESA2-any-city-a-journey",
+    "file": "src/ui/heldMap.js",
+    "old": "      if (city?.pixel) {",
+    "new": "      if (city) {",
+    "tests": [
+      "test/tesa2_arena.test.js"
+    ]
+  },
+  {
+    "name": "TESA2-pixels-unstood",
+    "file": "src/ui/tamrielInk.js",
+    "old": "  if (arenaStanding()) for (const p of arenaPixels()?.stood ?? [])",
+    "new": "  for (const p of arenaPixels()?.stood ?? [])",
+    "tests": [
+      "test/tesa2_arena.test.js"
+    ]
+  }
+]

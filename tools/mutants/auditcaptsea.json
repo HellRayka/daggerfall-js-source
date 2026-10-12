@@ -1267,8 +1267,8 @@
   {
     "name": "ACS-P3-spawn-filter",
     "file": "src/world/spawnedDungeons.js",
-    "old": "&& !l.spawned && !l.ether   // AUDIT CAPTAIN'S SEA P3",
-    "new": "&& !l.spawned   // AUDIT CAPTAIN'S SEA P3",
+    "old": "&& !l.spawned && !l.ether && !l.arena   // AUDIT CAPTAIN'S SEA P3",
+    "new": "&& !l.spawned && !l.arena   // AUDIT CAPTAIN'S SEA P3",
     "tests": [
       "test/auditcaptsea.test.js"
     ]
@@ -1430,8 +1430,8 @@
   {
     "name": "ACS-P9-deed",
     "file": "src/scenes/worldModes.js",
-    "old": "const houseOwnedAt = (b, key) => !isEtherPlaceId(homeTownOf(b)) && isHouseOwned(",
-    "new": "const houseOwnedAt = (b, key) => isHouseOwned(",
+    "old": "const houseOwnedAt = (b, key) => !isEtherPlaceId(homeTownOf(b)) && !isArenaPlaceId(homeTownOf(b)) && isHouseOwned(",
+    "new": "const houseOwnedAt = (b, key) => !isArenaPlaceId(homeTownOf(b)) && isHouseOwned(",
     "tests": [
       "test/auditcaptsea.test.js"
     ]

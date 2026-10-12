@@ -1,4 +1,4 @@
-# The Arena provinces - The Elder Scrolls: Arena on Daggerfall's Tamriel (TESA1)
+# The Arena provinces - The Elder Scrolls: Arena on Daggerfall's Tamriel (TESA1, TESA2)
 
 Opened 2026-10-12. The owner: *"I think I want to begin implementing Elder Scrolls arena into our world of tamriel"*.
 Asked how, they chose **Arena's map, our engine** (Arena's cities, towns, villages and named dungeons stand on the
@@ -141,19 +141,90 @@ removal while the sheet is up repaints it.
   Arena's name roll; they are in the model and not on the map.
 - Summurset's cloud fits at the edge of the search; Auridon carries none of its places.
 
+## TESA2 - the places stand (2026-10-12)
+
+The owner: *"Continue building"*. Arena's 248 named places beyond the Bay now stand in the streamed land - a town to walk
+into, a dungeon to go down - and the held map takes the player there.
+
+- **The pixel** (`world/arenaPlaces.js` standArenaPixels, PIXEL_REACH 3): a place stands on the Bay pixel under its point
+  (the live fit's pictureToBay) where that pixel's CENTRE is its own province's land on the trace and no place before it
+  (the model's order: province, then slot) took it; else the nearest such pixel within three, ring by ring and the
+  nearest centre in a ring; else none. The Bay's own ground stands none (Daggerfall's places stand there), and a nameless
+  dungeon none. `arenaPixels` keeps the set once a trace and a fit and makes it again when either moves;
+  `arenaPlaceOnPixel` is the build's ask. On the freeware data all 248 stand on the pixel under their own point - none
+  moved, none shared, none left.
+- **The clone** (`world/arenaLocations.js`): a NON-MUTATING clone of one of Daggerfall's own places - the Etheric Sea's and
+  the spawned dungeons' law (`world/etherPlaces.js`, `world/spawnedDungeons.js`) - by the place's kind: a city-state a CITY
+  (MAPS.BSA's TownCity, 30 to 49 blocks: 407 of them), a town a HAMLET (TownHamlet, 4 to 12: 1,200), a village a VILLAGE
+  (TownVillage, 2 to 4: 1,834), a staff dungeon a LABYRINTH (1,500) and a staff map dungeon a KEEP (843), each a dungeon's
+  with its blocks. Never a main-story place (`isMainStoryDungeon`), never a town with a dungeon under it (the three
+  capitals' castles), never a place the port made (a spawn, an isle's, an Arena place's own). The rows are the game's as
+  MAPS.BSA holds them (HUB1's law), the template picked off `hash32(ARENA_PLACE_SALT, province, slot, 3)` in map-id order:
+  the same town every session. Winterhold stands a 6 x 7 city of 243 buildings. The clone keeps the template's blocks
+  and buildings by reference and carries Arena's name, its own MapId, its own location index, the pixel's longitude and
+  latitude, the region and climate the pixel answers (the climate the province's, TAMRIEL2; the region the clamp's
+  until TESA3), no harbour, and `arena` (province, slot, kind).
+- **The id**: ARENA_PLACE_SALT (0xa7) in the high 12 bits, apart from every other lane, and ARENA_PLACE_BASE (500000)
+  plus the place's ordinal (province x 48 + slot) in the low 20 - past every Bay pixel id, so no Arena place shares an id
+  with a spawn under any salt, an isle's place or a place of the Bay. The location index counts down from
+  -ARENA_INDEX_BASE (-1,000,000), past the isles' (-1000 to -403,194: 806 x 499 cells).
+- **The host** (`scenes/world.js`): `arenaStands` - the land beyond the Bay streamed (TAMRIEL2), `?arenaplaces` open, and
+  OFFLINE: the places are the player's own copy of Arena's, which another player in the room may not have, and a town
+  one client stands and its peer does not is a wall nobody else can see. Online the map still shows them (TESA1); a
+  press there picks nothing. `_arenaTemplates` is made off the game's rows before they go; `_locationToBuild` asks
+  `arenaLocationAt` of every pixel past the Bay, which stands the clone in the index once (and takes an Arena place's
+  clone out of the index when its place has gone); the built pixel keeps its place as `arenaKey`.
+- **Late, and changed** (`sweepArenaPixels`, sweepSdLate's shape): on the frame, when the pixels' set moves (the trace or
+  the data landing after a pixel built, the Arena card's Attach or Remove), every built pixel past the Bay whose
+  `arenaKey` is not the place standing on it now is built again.
+- **A save made in an Arena town** loads into it: with the player's Arena attached, the boot's load waits for the data and
+  the trace (`arenaTraced`), ARENA_LOAD_WAIT_MS (8 s) at most.
+- **The journey** (`ui/heldMap.js` `_pickAt`, `ui/tamrielInk.js` tamrielCityAt): where a host stands the places
+  (`setArenaStanding`, the world host's word at its mount) each inked place carries the pixel it stands on, and a press
+  on one selects it as a journey to that pixel - the coordinates' own trip (DFU's calculator over every pixel of the way,
+  `systems/travel.js` calculateTravelTime, on the composed climate reads) - and `fastTravelTo` lands the player by the
+  town's start markers (DFU's DirectionFromStartMarker, as every journey lands). The cursor points at a place it travels to. TAMRIEL1's law that a press beyond the Bay picks
+  nothing stands for everything else (PIN MOVED in `test/tamriel.test.js`).
+- **What an Arena town is not yet**: no house is sold in one (`scenes/worldModes.js`, the isles' rule, AUDIT CAPTAIN'S SEA
+  P9 - every Arena town answers the clamp's region until TESA3, so a deed's key would own the same key in all of them);
+  no spawn ever clones one (`spawnTemplates`, AUDIT CAPTAIN'S SEA P3's law); its port byte is 0. `/tp` names Arena's
+  places, stood or not yet. Shot mode's probe hooks `__tesaJump` and `__tesaPlace` jump to a pixel and read what it
+  stands.
+- **THE FOUR HOSTS.** `scenes/world.js` stands them. `scenes/worldModes.js` (interiors - an Arena town's buildings are its
+  template's, entered the same way) and `scenes/dungeonContext.js` (an Arena dungeon's halls are its template's, built
+  as any clone's) run in the world host's page over the same index; `worldModes.js` keeps the house rule above.
+  `scenes/exterior.js`, the single-town bench, streams no land beyond the Bay: no place stands there.
+
 ## The arc - what comes next
 
-- **TESA2 - the places stand.** Each named place beyond the Bay stood on its Bay pixel in the streamed land, a
-  NON-MUTATING clone of one of Daggerfall's own places (the Etheric Sea's and the spawned dungeons' law,
-  `world/etherPlaces.js`, `world/spawnedDungeons.js`): a city-state a city's blocks, a town a town's, a village a
-  hamlet's, a dungeon a dungeon's, under Arena's name. Two places on one pixel, and a place on a Daggerfall location's
-  pixel past the Bay, are that slice's to settle.
 - **TESA3 - the provinces as regions.** Past the Bay the region still reads as `getRegionIndexAt`'s clamp, the Alik'r
   Desert (TAMRIEL2); a province of its own for weather, factions and the travel map's words.
 - **Later.** Travel and the Overworld to Arena's places; the dungeons' names (Arena's own roll, from A.EXE's tables);
   roads between them.
 
 ## Pins
+
+`test/tesa2_arena.test.js` (8, TESA2): the pixel (under the point, the centre's land deciding where the corner's would not,
+the next nearest free one for a pixel taken, the reach in rings, the Bay's ground and a nameless dungeon none); the
+installed pixels (once a trace and a fit, again when the fit moves, the switch moving the version once); the id (the lane,
+the base, all 432 slots apart, never a spawn's under the same salt, past the isles' indices); the templates (the five
+kinds' types, the dungeon test, the exclusions, map-id order, the province's own hash, and a spawn never cloning an Arena
+place); the clone (every id field, the pixel, the region handed, no harbour, the template untouched); the map (the pixel
+carried only where a host stands them, the hit, the press's arm by source); the host by source (offline, the arm, one
+clone a pixel, the key, the sweep, the load's wait, /tp, no house); and, where ARENA_PATH and ARENA2_PATH name the data,
+all 248 stood under their own points, MAPS.BSA's five template counts and Winterhold's 6 x 7 city. Mutants
+`tools/mutants/tesa2.json` (28, all dead). PIN MOVED: `test/tamriel.test.js` (a press beyond the Bay picks an Arena place
+the world stands, and nothing else) and `test/auditcaptsea.test.js` (the house rule names an Arena town beside an isle's).
+Re-aimed by content, each judged dead again: `tools/mutants/auditcaptsea.json`'s ACS-P3-spawn-filter and ACS-P9-deed
+(each still drops the isles' own exclusion alone), `tools/mutants/tamriel.json`'s TAMRIEL1-the-hover-names-the-bay-too
+(the hover's city read is `tamrielCityAt` now) and TAMRIEL1-window-hover-silent-beyond-the-bay (its line carries the
+cursor). The boot load's wait stands above the save's own parse, so MWEARLY's record stands as it was.
+
+**Seen in the game** (the freeware ARENA2 served by the dev middleware, CITYDATA.65 in the Arena store, headless
+Chromium on SwiftShader, a scratch probe through `__tesaJump` and `__tesaPlace`): the trace landed, 401 places stood on the
+picture, the jump to Winterhold's pixel (2200, -360) built in 59 s of software rendering, and the pixel stood
+"Winterhold" - Arena key 2|2, a 6 x 7 city of 243 buildings, the region the clamp's (the Alik'r Desert) - with no page
+error.
 
 `test/tesa1_arena.test.js` (11): the file's layout field by field over a CITYDATA minted by the format's own law (a full
 twenty-byte name, the last slot of a province, a zeroed slot, any other length refused); the location laws (the 49 kinds,

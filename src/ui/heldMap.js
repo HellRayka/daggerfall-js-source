@@ -133,7 +133,7 @@ import { dungeonMap3dOn, tamrielMapOn } from './mapSkin.js';   // EM3-3D: the so
 // TAMRIEL1 (2026-10-08, Mac: "the entirety of tamriel ... connected as a gigantic map ... seen by players ingame"): the
 // continent inked round the Bay on the world sheet - the sheet's pan box grows to the whole frame, the home view stays
 // the Bay's own fit, and past that fit the sheet is on the continent (ui/tamrielInk.js; bible/03-World/Tamriel.md)
-import { tamrielInkFor, paintTamrielInk, tamrielPlaceAt, onContinent } from './tamrielInk.js';
+import { tamrielInkFor, paintTamrielInk, tamrielPlaceAt, tamrielCityAt, onContinent } from './tamrielInk.js';   // TESA2: the press's city beside the hover's
 import { tamrielFrameInBay } from '../world/tamrielFrame.js';
 import { tamrielLandVersion } from '../world/tamrielLand.js';   // TAMRIEL3: the trace's version, in the static key
 import { arenaPlacesVersion } from '../world/arenaPlaces.js';   // TESA1: Arena's places' version, beside it
@@ -3686,7 +3686,7 @@ export class HeldMapWindow {
       // TAMRIEL1: beyond the Bay the continent answers - a city, its province, or the sea - and nothing is picked
       if (!this._tamriel || this._zoneMap) return null;
       const place = tamrielPlaceAt(mx, my, this._view, tamrielInkFor(this._model));
-      return place ? { label: place, cursor: '' } : null;
+      return place ? { label: place, cursor: tamrielCityAt(mx, my, this._view, tamrielInkFor(this._model))?.pixel ? 'pointer' : '' } : null;   // TESA2: a place the press travels to points
     }
     // the raw politic read, range-checked - the classic window's own
     // region-under-cursor law; the sea answers nothing
@@ -3719,6 +3719,18 @@ export class HeldMapWindow {
     const quest = this._questAt(sx, sy);
     const place = quest ? this._questPlace(quest) : null;
     if (place) { this._select(place); return; }
+    // TESA2 (bible/03-World/Arena-Provinces.md): beyond the Bay an Arena place the world stands is a journey's end - the
+    // press picks its pixel, and the trip is the coordinates' own (DFU's calculator over every pixel of the way); a
+    // place the world does not stand (online, the classic skin's world) picks nothing, as TAMRIEL1's continent did
+    if (this._tamriel && !this._zoneMap) {
+      const [mx, my] = toMap(this._view, sx, sy);
+      const city = tamrielCityAt(mx, my, this._view, tamrielInkFor(this._model));
+      if (city?.pixel) {
+        this._select({ coords: true, x: city.pixel.x + 0.5, y: city.pixel.y + 0.5, colorIndex: -1, kind: 'coords', name: city.name, summary: null, mapId: null, arena: true });
+        this._openPanel('travel');
+        return;
+      }
+    }
     // WILD2 (the owner: "when clicking on this zone it opens its own ... map"): a press on the open zone's bare ground
     // opens the zone map; on the zone map itself the press is the world sheet's, as ever
     if (!this._zoneMap) {

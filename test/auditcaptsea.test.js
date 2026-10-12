@@ -636,7 +636,7 @@ test('AUDIT CAPTAIN\'S SEA P4/P6/P8/P9/P10: a death past the Veil rises at the n
   assert.match(w, /\?\? \(etherSea \? \[\.\.\.locationIndex\.values\(\)\]\.find\(\(l\) => l\?\.ether && l\.name === locationName && l\.regionName === regionName\) \?\? null : null\);/);
   assert.match(w, /regionName: REGION_NAMES\[ETHER_REGION\] \?\? ETHER_REGION_NAME/);
   const m = rd('src/scenes/worldModes.js');
-  assert.match(m, /const houseOwnedAt = \(b, key\) => !isEtherPlaceId\(homeTownOf\(b\)\) && isHouseOwned\(playerEntity\.houses \?\? \[\], b\?\.regionIndex \?\? 0, key\);/);
+  assert.match(m, /const houseOwnedAt = \(b, key\) => !isEtherPlaceId\(homeTownOf\(b\)\) && !isArenaPlaceId\(homeTownOf\(b\)\) && isHouseOwned\(playerEntity\.houses \?\? \[\], b\?\.regionIndex \?\? 0, key\);/);   // PIN MOVED (TESA2, bible/03-World/Arena-Provinces.md): nor an Arena town's - each answers the clamp's region, so a deed's key would own the same key in all of them
   assert.equal((m.match(/isHouseOwned\(playerEntity\.houses \?\? \[\]/g) ?? []).length, 1, 'every town building through it');
   assert.match(m, /if \(isEtherPlaceId\(dir\.mapId\)\) return \[\];/);
   assert.match(w, /portTown: \(loc\.ether \? loc\.etherKind === 'port' : modSetting\('travel-options', 'Enabled'\) === true/);

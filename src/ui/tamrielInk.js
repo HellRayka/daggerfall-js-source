@@ -35,7 +35,7 @@ import { pictureToBay, bayToPicture, inBay, BAY_W, BAY_H, tamrielFit, tamrielFra
 // the provinces' places come off the trace, the authored shape stands where there is none
 import { tamrielTrace, tamrielLandVersion, provinceKeyAt, PROVINCE_OF_ID } from '../world/tamrielLand.js';
 // TESA1: Arena's places, where the player attached their Arena and the trace stands them (world/arenaPlaces.js)
-import { arenaPlaces, arenaPlacesVersion } from '../world/arenaPlaces.js';
+import { arenaPlaces, arenaPlacesVersion, arenaPixels, arenaStanding } from '../world/arenaPlaces.js';
 import { makeNoise, octaveNoise } from './introMap.js';   // the intro's own seeded value noise - ONE home for it
 import { PEN, NAME_FACE, HALO_PEN, penOf, toPaper, paintGlyph, roundCorners, spacedName, boundarySegments, linkSegments } from './inkMap.js';
 import { simplifyChain } from './overworldModel.js';   // TAMRIEL3: the coast's chain thinned as the overworld's are
@@ -427,18 +427,35 @@ export function placeCity(city) {
 
 /** TESA1: the ink's cities off Arena's places - every named place beyond the Bay's rectangle (the Bay's own are
  *  Daggerfall's, inked by the Bay's painter), each a capital where TAMRIEL1 named it one, by name in its province.
- *  The unnamed dungeons (a name each Arena save rolls) are not inked.
+ *  The unnamed dungeons (a name each Arena save rolls) are not inked. TESA2: where a host stands the places
+ *  (arenaStanding), each carries the Bay pixel it stands on (`pixel`, world/arenaPlaces.js standArenaPixels) - the map's
+ *  journey to it; else `pixel` is null and a press picks nothing, as TESA1's did.
  *  @param {NonNullable<ReturnType<typeof arenaPlaces>>} model */
 export function arenaInkCities(model) {
   const capital = new Set(CITIES.filter((c) => c.capital).map((c) => `${c.province}|${c.name}`));
+  const stood = new Map();
+  if (arenaStanding()) for (const p of arenaPixels()?.stood ?? []) stood.set(`${p.provinceIndex}|${p.id}`, { x: p.bx, y: p.by });
   const out = [];
   for (const p of model.places) {
     if (!p.name) continue;
     const [x, y] = pictureToBay(p.px, p.py);
     if (inBay(x, y)) continue;
-    out.push({ name: p.name, province: p.province, capital: capital.has(`${p.province}|${p.name}`), kind: p.kind, x, y });
+    out.push({ name: p.name, province: p.province, capital: capital.has(`${p.province}|${p.name}`), kind: p.kind, x, y, pixel: stood.get(`${p.provinceIndex}|${p.id}`) ?? null });
   }
   return out;
+}
+
+/** The continent's city within CITY_HIT_PX of a sheet point (paper pixels at the view's scale), or null - the hover's
+ *  read and, TESA2, the press's. */
+export function tamrielCityAt(mx, my, view, ink) {
+  if (!ink || inBay(mx, my)) return null;
+  const reach = CITY_HIT_PX / view.scale;
+  let best = null, bd = reach;
+  for (const c of ink.cities) {
+    const d = Math.hypot(c.x - mx, c.y - my);
+    if (d < bd) { bd = d; best = c; }
+  }
+  return best;
 }
 
 /**
@@ -601,15 +618,8 @@ export function paintTamrielInk(ctx, view, ink, opts) {
  */
 export function tamrielPlaceAt(mx, my, view, ink = null) {
   if (inBay(mx, my)) return null;
-  if (ink) {
-    const reach = CITY_HIT_PX / view.scale;
-    let best = null, bd = reach;
-    for (const c of ink.cities) {
-      const d = Math.hypot(c.x - mx, c.y - my);
-      if (d < bd) { bd = d; best = c; }
-    }
-    if (best) return TAMRIEL_TEXT.city(provinceByKey(best.province)?.name ?? best.province, best.name, best.kind);
-  }
+  const best = tamrielCityAt(mx, my, view, ink);
+  if (best) return TAMRIEL_TEXT.city(provinceByKey(best.province)?.name ?? best.province, best.name, best.kind);
   const [px, py] = bayToPicture(mx, my);
   const key = provinceKeyAt(px, py);
   if (key) return TAMRIEL_TEXT.land(provinceByKey(key)?.name ?? key);

@@ -168,7 +168,7 @@ export function synthesizeDungeonLocation(template, { salt, px, py, where = {}, 
  */
 export function spawnTemplates(locations, isMain = () => false) {
   const dungeons = [...(locations ?? [])].filter((l) => l?.hasDungeon && l.dungeon?.blocks?.length
-    && l.exterior?.exteriorData && !isMain(l.mapTableData?.mapId) && !l.spawned && !l.ether   // AUDIT CAPTAIN'S SEA P3: never an isle's place - a session that stood ruins past the Veil first cloned other templates on every Bay pixel than its party
+    && l.exterior?.exteriorData && !isMain(l.mapTableData?.mapId) && !l.spawned && !l.ether && !l.arena   // AUDIT CAPTAIN'S SEA P3: never an isle's place - a session that stood ruins past the Veil first cloned other templates on every Bay pixel than its party; TESA2: nor an Arena place, the same way
     && spawnClearance(l.exterior.exteriorData.width, l.exterior.exteriorData.height) >= SPAWN_CLEARANCE_M);   // SPAWNED-DUNGEONS3: never one the player could cross into inside 300 m
   const small = dungeons.filter((l) => l.exterior.exteriorData.width * l.exterior.exteriorData.height === 1);
   return small.length ? small : dungeons;

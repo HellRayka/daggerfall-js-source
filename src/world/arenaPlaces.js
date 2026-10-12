@@ -31,7 +31,7 @@
 // (world/tamrielLand.js); the bytes are read by the host (scenes/world.js) and the Arena card (ui/enhancedMenu.js).
 // ═══════════════════════════════════════════════════════════════════
 import { tamrielTrace, tamrielLandVersion, PROVINCE_OF_ID } from './tamrielLand.js';
-import { PICTURE_W, PICTURE_H } from './tamrielFrame.js';
+import { PICTURE_W, PICTURE_H, pictureToBay, bayToPicture, inBay, tamrielFit } from './tamrielFrame.js';
 
 /** The cloud's scales about its province rectangle's centre. */
 export const FIT_SCALES = Object.freeze(Array.from({ length: 11 }, (_, i) => (600 + i * 50) / 1000));   // 0.60 .. 1.10
@@ -156,11 +156,55 @@ export function placeArenaLocations(cityData, trace) {
   return { provinces, places, lost };
 }
 
+// ── TESA2: THE PIXEL A PLACE STANDS ON ──────────────────────────
+
+/** How far, Bay pixels, a place may stand from its own point when the pixel under it is not its province's land or a
+ *  place before it took it. */
+export const PIXEL_REACH = 3;
+
+/**
+ * TESA2: THE BAY PIXEL EACH NAMED PLACE BEYOND THE BAY STANDS ON - the pixel under its point (the live fit's
+ * pictureToBay) where that pixel's centre is its own province's land and no place before it (the model's order:
+ * province, then id) stood there; else the nearest such pixel within PIXEL_REACH, ring by ring and in each ring the
+ * nearest centre; else none (`unstood`). The Bay's own ground stands none, and a nameless dungeon stands nowhere (a name
+ * each Arena save rolls - not yet). Answers { stood: [place & { bx, by }], unstood, byPixel: Map<'bx,by', place> }.
+ * @param {ReturnType<typeof placeArenaLocations>} model @param {import('./tamrielLand.js').TamrielTrace} trace
+ */
+export function standArenaPixels(model, trace) {
+  const stood = [], unstood = [], byPixel = new Map(), lands = new Map();
+  for (const p of model.places) {
+    if (!p.name) continue;
+    const [x, y] = pictureToBay(p.px, p.py);
+    if (inBay(x, y)) continue;
+    let own = lands.get(p.province);
+    if (!own) lands.set(p.province, own = provinceLand(trace, p.province));
+    const free = (bx, by) => !inBay(bx, by) && !byPixel.has(`${bx},${by}`) && own(...bayToPicture(bx + 0.5, by + 0.5));
+    const fx = Math.floor(x), fy = Math.floor(y);
+    let at = free(fx, fy) ? [fx, fy] : null;
+    for (let r = 1; !at && r <= PIXEL_REACH; r++) {
+      let bd = Infinity;
+      for (let dy = -r; dy <= r; dy++) {
+        for (let dx = -r; dx <= r; dx++) {
+          if (Math.max(Math.abs(dx), Math.abs(dy)) !== r) continue;   // the ring alone - the ones inside it were asked
+          const d = Math.hypot(fx + dx + 0.5 - x, fy + dy + 0.5 - y);
+          if (d < bd && free(fx + dx, fy + dy)) { bd = d; at = [fx + dx, fy + dy]; }
+        }
+      }
+    }
+    if (!at) { unstood.push(p); continue; }
+    const placed = { ...p, bx: at[0], by: at[1] };
+    stood.push(placed);
+    byPixel.set(`${at[0]},${at[1]}`, placed);
+  }
+  return { stood, unstood, byPixel };
+}
+
 // ── THE INSTALLED SET ───────────────────────────────────────────
 
 let _cityData = null;
 let _version = 0;
-let _model = null;   // { land, model }
+let _model = null;   // { land, model, fit, pixels }
+let _standing = false;
 
 /** Install the parsed city data (or null: none - TAMRIEL1's authored cities again). */
 export function setArenaCityData(cityData) {
@@ -178,6 +222,27 @@ export function arenaPlaces() {
   const trace = tamrielTrace();
   if (!_cityData || !trace) return null;
   const land = tamrielLandVersion();
-  if (!_model || _model.land !== land) _model = { land, model: placeArenaLocations(_cityData, trace) };
+  if (!_model || _model.land !== land) _model = { land, model: placeArenaLocations(_cityData, trace), fit: null, pixels: null };
   return _model.model;
 }
+
+/** TESA2: the installed set's pixels (standArenaPixels) on the trace and the Bay's fit as they stand now - remade when
+ *  either moves - or null with no places. */
+export function arenaPixels() {
+  const model = arenaPlaces();
+  if (!model) return null;
+  const fit = tamrielFit();
+  if (_model.fit !== fit) { _model.fit = fit; _model.pixels = standArenaPixels(model, /** @type {any} */ (tamrielTrace())); }
+  return _model.pixels;
+}
+/** TESA2: the place standing on a Bay pixel, or null. */
+export const arenaPlaceOnPixel = (bx, by) => arenaPixels()?.byPixel.get(`${bx},${by}`) ?? null;
+
+/** TESA2: does a host stand the places - the world host, offline, with the land beyond the Bay streamed (its boot says
+ *  so). The map's travel to a place reads it; a change moves the version, so the ink is made again. */
+export function setArenaStanding(on) {
+  if (!!on === _standing) return;
+  _standing = !!on;
+  _version++;
+}
+export const arenaStanding = () => _standing;

@@ -281,7 +281,8 @@ import { LPT_SCALE_MAX, lptVariety, buildTreeSet } from '../world/lowPolyTrees.j
 import { realForestsOn, FOREST_HIDDEN_LOCATION_TYPES, roadVergesOn, climateBlendOn } from './shared.js';   // FOREST1: the Real forests switch, and the places the woods hide; VERGE1: the clear roadsides' switch; ECOTONE1: the blended climates'
 import { landformsOn, tamrielLandOn, tamrielTraceOn, etherSeaOn, etherCrossOutOn, arenaPlacesOn } from './shared.js';   // LANDFORM1-3: the Landforms switch; TAMRIEL2: the land beyond the Bay's; TAMRIEL3: the trace's door; ETHER-SEA: the Etheric Sea's
 import { preloadTamrielTrace } from '../ui/tamrielTrace.js';   // TAMRIEL3: Daggerfall's own map of Tamriel, off the player's two files
-import { arenaPlaces, setArenaCityData } from '../world/arenaPlaces.js';   // TESA1: Arena's places on it
+import { arenaPlaces, arenaPixels, arenaPlaceOnPixel, setArenaCityData, setArenaStanding } from '../world/arenaPlaces.js';   // TESA1: Arena's places on it; TESA2: the pixels they stand on
+import { arenaTemplates, arenaTemplateOf, synthesizeArenaLocation, ARENA_LOAD_WAIT_MS } from '../world/arenaLocations.js';   // TESA2: the places stood, each a Daggerfall town or dungeon cloned
 import { fitBayToPicture } from '../world/tamrielLand.js';   // TAMRIEL3: where the Bay stands on it
 import { groundWoods, groundClimateIndex } from '../world/tamrielGround.js';   // TAMRIEL2: the continent's ground round the Bay, for the kernels and the far ring
 import { etherWoods, etherClimateIndex, etherPoliticIndex, etherFrame, inEther, inEtherLaw, isleAt, islesNear, veilhaven, ETHER_HARBOUR_REACH, ETHER_SEA_NAME, CROSS_X, CROSS_LAND_PX, etherLight, ETHER_KEY_TINT } from '../world/ethericSea.js';   // ETHER-SEA: the Etheric Sea's ground and its box
@@ -1334,6 +1335,11 @@ export async function bootWorld(canvas, renderer, params, status) {
     maps.getClimateIndex = groundClimateIndex(maps.getClimateIndex.bind(maps));
   }
   StreamingWorldState.frame = tamrielLand ? tamrielFrameInBay() : null;
+  // TESA2 (bible/03-World/Arena-Provinces.md): ARENA'S PLACES STAND on the land beyond the Bay - offline alone: they are
+  // the player's own copy of Arena's, which another player in the room may not have, and a town one client stands and
+  // its peer does not is a wall nobody else can see. The map still shows them online (TESA1).
+  const arenaStands = tamrielLand && arenaPlacesOn() && !params.has('online');
+  setArenaStanding(arenaStands);
   // ETHER-SEA (bible/03-World/Etheric-Sea.md): THE ETHERIC SEA'S GROUND - its isles and its open water, composed over
   // whatever the world grows past the Bay (world/ethericSea.js: its own box, far north of the continent's frame; the
   // worker composes its copy the same way), its climate read beside it, and its box a frame the world streams over
@@ -1534,6 +1540,28 @@ export async function bootWorld(canvas, renderer, params, status) {
     for (const k of again) destroyPixel(k.px, k.py, { collectLoose: false });
     queue.push(...again.sort(nearestFirstFrom(state.current)));
   }
+  /** TESA2: THE ARENA SWEEP - a pixel beyond the Bay built before Arena's places stood as they stand now (the trace or
+   *  the data landing after it, the Arena card's Attach or Remove) is built again, the way the late Hollow's is
+   *  (sweepSdLate): each built pixel's Arena place (`arenaKey`) against the one standing on it now. Asked on the frame
+   *  when the pixels' set moves (world/arenaPlaces.js arenaPixels: a new set a trace, a fit, a data set). */
+  let _arenaSwept = null;
+  function sweepArenaPixels() {
+    const now = arenaPixels();
+    if (now === _arenaSwept) return;
+    _arenaSwept = now;
+    const again = [];
+    for (const [, p] of built) {
+      if (onTheBay(p.px, p.py)) continue;
+      const place = now?.byPixel.get(`${p.px},${p.py}`) ?? null;
+      if ((place ? `${place.provinceIndex}|${place.id}` : null) !== (p.arenaKey ?? null)) again.push({ px: p.px, py: p.py });
+    }
+    if (!again.length) return;
+    const under = `${state.current.x},${state.current.y}`;
+    if (walkMode && playerSpawned && again.some((k) => `${k.px},${k.py}` === under)) _seasonHoldKey = under;
+    for (const k of again) destroyPixel(k.px, k.py, { collectLoose: false });
+    queue.push(...again.sort(nearestFirstFrom(state.current)));
+    console.log(`[arena] ${again.length} pixel(s) beyond the Bay built again for Arena's places`);
+  }
   // LocationLoader.cs:146-151 asks the Basic Roads MOD for the pixel's
   // road|track mask - so only Hazelnut's own arrays answer; the port's
   // generated fallback is not his mod, and with it the static stays 0.
@@ -1663,6 +1691,9 @@ export async function bootWorld(canvas, renderer, params, status) {
   // clone, off the SAME rows (the game's own, as MAPS.BSA holds them: every client clones the same place), kept before
   // the rows go
   const _etherTemplates = etherSea ? etherTemplates(_classicRows ?? _hubRows.map(classicRow).filter(Boolean), isMainStoryDungeon) : null;
+  // TESA2 (world/arenaLocations.js): THE ARENA PLACES' TEMPLATES - the cities, hamlets, villages, labyrinths and keeps an
+  // Arena place may clone, off the same rows (the game's own, as MAPS.BSA holds them), kept before the rows go
+  const _arenaTemplates = arenaStands ? arenaTemplates(_classicRows ?? _hubRows.map(classicRow).filter(Boolean), isMainStoryDungeon) : null;
   _classicRows = null;   // read, let go
   // HUB1: every region's main city, one answer on every client (systems/regionHubs.js) - read online alone
   const regionHubs = pickRegionHubs(_hubRows, { regionNameOf: (r) => maps.getRegionName(r) });
@@ -2395,6 +2426,7 @@ export async function bootWorld(canvas, renderer, params, status) {
    *  the Overworld (tvSpawnGone) had it gone. */
   function _locationToBuild(px, py) {
     if (etherSea && inEther(px, py)) return etherPlaceAt(px, py);   // ETHER-PLACES: an isle's place, or the open sea's none
+    if (_arenaTemplates && !onTheBay(px, py)) return arenaLocationAt(px, py);   // TESA2: past the Bay, Arena's place or none
     const key = `${px},${py}`;
     const loc = locationIndex.get(key);
     if (loc?.spawned && _spawnLedger.expired(key, _spawnClock()) && !_insideSpawn(key)) {
@@ -2417,6 +2449,29 @@ export async function bootWorld(canvas, renderer, params, status) {
     const template = etherTemplateOf(_etherTemplates, isle);
     if (!template) return null;
     const loc = synthesizeEtherLocation(template, isle, { regionIndex: ETHER_REGION, regionName: REGION_NAMES[ETHER_REGION] ?? ETHER_REGION_NAME, politic: 128 + ETHER_REGION, climate: getWorldClimateSettings(isle.climate) });   // AUDIT CAPTAIN'S SEA P8: its region's own name - the quests resolve and gate a site by it
+    _locIndexGen += 1;
+    locationIndex.set(key, loc);
+    return loc;
+  }
+  /** TESA2 (world/arenaLocations.js): THE PLACE AN ARENA PIXEL STANDS - the Arena place standing on it (world/arenaPlaces.js
+   *  arenaPlaceOnPixel: the player's own Arena, on the trace) cloned off the game's own rows under its own id, name and
+   *  index, the region and the climate the pixel's (TAMRIEL2: the province's climate; the region the clamp's until TESA3) -
+   *  stood in the index once, or null: no place there, or none stood yet (the trace or the data still to land; the sweep
+   *  builds the pixel again when they do). A place taken off (the Arena card's Remove) leaves the index here. */
+  function arenaLocationAt(px, py) {
+    const key = `${px},${py}`;
+    const place = arenaPlaceOnPixel(px, py);
+    const had = locationIndex.get(key);
+    if (had?.arena) {
+      if (place && had.arena.provinceIndex === place.provinceIndex && had.arena.id === place.id) return had;
+      _locIndexGen += 1;
+      locationIndex.delete(key);
+    }
+    if (!place) return null;
+    const template = arenaTemplateOf(_arenaTemplates, place);
+    if (!template) return null;
+    const regionIndex = maps.getRegionIndexAt(px, py);
+    const loc = synthesizeArenaLocation(template, place, { regionIndex, regionName: REGION_NAMES[regionIndex], politic: 128 + regionIndex, climate: getWorldClimateSettings(maps.getClimateIndex(px, py)) });
     _locIndexGen += 1;
     locationIndex.set(key, loc);
     return loc;
@@ -6653,6 +6708,7 @@ export async function bootWorld(canvas, renderer, params, status) {
       wodReach: gateLedger.reach.length ? Float32Array.from(gateLedger.reach) : null,   // GATE-CLEAR: what it stood, for the next gate's sweep
       placeHold: pipeline,
       location: dfLocation ? dfLocation.name : null,
+      arenaKey: dfLocation?.arena ? `${dfLocation.arena.provinceIndex}|${dfLocation.arena.id}` : null,   // TESA2: the Arena place it stood, for the sweep
       centerHeight: samples[64 * HEIGHTMAP_DIMENSION + 64] * worldHeight,
       avgY: dfLocation ? avg * worldHeight : 0,
     });
@@ -7793,7 +7849,13 @@ export async function bootWorld(canvas, renderer, params, status) {
     ? registerArenaData().then((n) => { if (n) arenaWarm(); return n; })
       .catch((e) => { console.warn('[arena] the Arena data could not be read; the authored cities stand:', e?.message ?? e); return 0; })
     : Promise.resolve(setArenaCityData(null)).then(() => 0);
+  // TESA2: the trace's landing (or its failing, or the door shut - then no place stands, and nothing waits on it), for
+  // the boot's load
+  let arenaTraceLanded = () => {};
+  const arenaTraced = new Promise((r) => { arenaTraceLanded = r; });
+  let arenaTraceAsked = false;
   if (tamrielTraceOn()) {
+    arenaTraceAsked = true;
     preloadTamrielTrace({ fetchBytes, palette }).then((trace) => {
       if (!trace) { console.warn('[tamriel] the picture traced to nothing; the authored continent stands'); return; }
       const fit = fitBayToPicture({ bayLand: (x, y) => !isWaterPixel(maps.getClimateIndex(x, y), woods.getHeightMapValue(x, y)), trace });
@@ -7802,8 +7864,10 @@ export async function bootWorld(canvas, renderer, params, status) {
       StreamingWorldState.frame = tamrielLand ? tamrielFrameInBay() : null;
       console.log(`[tamriel] the picture traced: ${trace.land.reduce((n, v) => n + v, 0)} land pixels; the Bay fitted at picture (${fit?.ox}, ${fit?.oy}) x${fit?.ppu}, ${fit ? Math.round((100 * fit.score) / fit.cells) : 0}% of its cells and ${fit ? Math.round((100 * fit.seam) / fit.edge) : 0}% of its edge agreeing`);   // TAMRIEL4: the seam the fit is made for
       arenaReady.then((n) => { if (n) arenaWarm(); });   // TESA1: the places onto the trace that just landed
-    }).catch((e) => console.warn('[tamriel] TMAP00I0/TAMRIEL2 unavailable; the authored continent stands:', e?.message ?? e));
+    }).catch((e) => console.warn('[tamriel] TMAP00I0/TAMRIEL2 unavailable; the authored continent stands:', e?.message ?? e))
+      .finally(() => arenaTraceLanded());   // TESA2: landed, or never will
   }
+  if (!arenaTraceAsked) arenaTraceLanded();   // TESA2: the door shut - no trace to wait for
   // TO1: the mod's own control strip, beside it. Its own loader
   // swallows a missing file - the panel then draws its text on the
   // bare screen, which is what the mod's `Debug.LogError` arm leaves.
@@ -19060,6 +19124,15 @@ export async function bootWorld(canvas, renderer, params, status) {
       sea: state.pixelTranslation(e.px, e.py, [0, 0, 0])[1] + deepWaters.oceanLocalY }))
       .filter((r) => r.d && r.d !== 'rejected:not-selected') : null);
     window.__currentPixel = () => `${state.current.x},${state.current.y}`;
+    // TESA2 probe surface (bible/03-World/Arena-Provinces.md): a jump to a pixel, as a fast travel lands (its start marker),
+    // and what a built pixel stands - its place's name, its Arena slot, its blocks and buildings
+    window.__tesaJump = (x, y) => _teleportToPixel(x, y, null, { reposition: REPOSITION.RandomStartMarker });
+    window.__tesaPlace = (x, y) => {
+      const b = built.get(`${x},${y}`), loc = locationIndex.get(`${x},${y}`);
+      return { built: !!b, location: b?.location ?? null, arenaKey: b?.arenaKey ?? null, name: loc?.name ?? null, arena: loc?.arena ?? null,
+        mapId: loc?.mapTableData?.mapId ?? null, blocks: loc ? [loc.exterior?.exteriorData?.width, loc.exterior?.exteriorData?.height] : null,
+        buildings: loc?.exterior?.buildings?.length ?? null, region: loc?.regionName ?? null };
+    };
     // ARENA2 probe surface (tools/arenaProbe.mjs): the city floor's sand and the Herald's place, the bout standing (its
     // phase, its fighters' health, the crowd's mood and how many sit), and the Herald's three doors pressed as his choice
     window.__arena = () => {
@@ -21701,6 +21774,7 @@ export async function bootWorld(canvas, renderer, params, status) {
     let pick = null;
     if (c.place != null) {
       const places = [...locationIndex.entries()].map(([k, loc]) => { const [px, py] = k.split(',').map(Number); return { name: loc.name, px, py }; });
+      if (_arenaTemplates) for (const a of arenaPixels()?.stood ?? []) if (!locationIndex.has(`${a.bx},${a.by}`)) places.push({ name: a.name, px: a.bx, py: a.by });   // TESA2: an Arena place, stood or not yet
       const hit = findPlace(places, c.place);
       if (!hit) { say(`No place called "${c.place}".`); return; }
       pick = { pixel: { x: hit.px, y: hit.py }, name: hit.name };
@@ -30477,6 +30551,10 @@ export async function bootWorld(canvas, renderer, params, status) {
     // a bare ?load keeps the most-recent shape. MW-EARLY: decided once,
     // at the boot's top, where the arms' early build read the same pick
     // - and AUDIT MW-EARLY F3: its one parse, handed in and let go.
+    // TESA2: a save made in an Arena town loads into it - the places stand once the data and the trace have landed, so
+    // with the player's Arena attached the load waits for both, ARENA_LOAD_WAIT_MS at most (a trace that never lands
+    // costs that and no more)
+    if (_arenaTemplates) await arenaReady.then((n) => (n ? Promise.race([arenaTraced, new Promise((r) => setTimeout(r, ARENA_LOAD_WAIT_MS))]) : 0));
     const snap = bootSnap();
     bootSnapRead = null;
     await worldQuickLoad({ ...bootLoadPick, snap });
@@ -34229,6 +34307,7 @@ const _pixelOrder = [];   // NEAR-FIRST: the frame's pixel walk, nearest first -
     if (_wodLate.size && !building) sweepWodLate();   // WOD6: a late region's pixels, the same way
     if (!building) sweepGateClear();   // GATE-CLEAR: the gate the clock is about turned - its clearing in, the last one's rock back
     if (_sdLate.size && !building) sweepSdLate();   // SD2b: the Hollow's pixel, the same way
+    if (_arenaTemplates && !building) sweepArenaPixels();   // TESA2: Arena's places landed or changed - their pixels, the same way
     if (seasonsActive) seasons.tick();   // SIB1: RefreshSeasonAfterLoad's second half, the frame after a load
     refreshHomeLooks();   // HOME-LOOK: a look landed or changed repaints the home where it stands
     // W1/S41: the DRAIN ticks on the exterior frame, which is
