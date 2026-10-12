@@ -173,10 +173,11 @@ into, a dungeon to go down - and the held map takes the player there.
   one client stands and its peer does not is a wall nobody else can see. Online the map still shows them (TESA1); a
   press there picks nothing. `_arenaTemplates` is made off the game's rows before they go; `_locationToBuild` asks
   `arenaLocationAt` of every pixel past the Bay, which stands the clone in the index once (and takes an Arena place's
-  clone out of the index when its place has gone); the built pixel keeps its place as `arenaKey`.
+  clone out of the index when its place has gone); the built pixel keeps its Arena slot (its entry's
+  `arena`).
 - **Late, and changed** (`sweepArenaPixels`, sweepSdLate's shape): on the frame, when the pixels' set moves (the trace or
   the data landing after a pixel built, the Arena card's Attach or Remove), every built pixel past the Bay whose
-  `arenaKey` is not the place standing on it now is built again.
+  Arena slot is not the place standing on it now is built again.
 - **A save made in an Arena town** loads into it: with the player's Arena attached, the boot's load waits for the data and
   the trace (`arenaTraced`), ARENA_LOAD_WAIT_MS (8 s) at most.
 - **The journey** (`ui/heldMap.js` `_pickAt`, `ui/tamrielInk.js` tamrielCityAt): where a host stands the places

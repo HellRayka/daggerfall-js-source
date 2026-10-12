@@ -200,8 +200,8 @@
   {
     "name": "TESA2-no-key",
     "file": "src/scenes/world.js",
-    "old": "      arenaKey: dfLocation?.arena ? `${dfLocation.arena.provinceIndex}|${dfLocation.arena.id}` : null,",
-    "new": "      arenaKey: null,",
+    "old": "      arena: dfLocation?.arena ?? null,\n",
+    "new": "      arena: null,\n",
     "tests": [
       "test/tesa2_arena.test.js"
     ]
@@ -218,7 +218,7 @@
   {
     "name": "TESA2-the-load-waits-not",
     "file": "src/scenes/world.js",
-    "old": "    if (_arenaTemplates) await arenaReady.then((n) => (n ? Promise.race([arenaTraced, new Promise((r) => setTimeout(r, ARENA_LOAD_WAIT_MS))]) : 0));\n",
+    "old": "  if (_arenaTemplates && params.has('load')) await arenaReady.then((n) => (n ? Promise.race([arenaTraced, new Promise((r) => setTimeout(r, ARENA_LOAD_WAIT_MS))]) : 0));\n",
     "new": "\n",
     "tests": [
       "test/tesa2_arena.test.js"

@@ -1542,7 +1542,7 @@ export async function bootWorld(canvas, renderer, params, status) {
   }
   /** TESA2: THE ARENA SWEEP - a pixel beyond the Bay built before Arena's places stood as they stand now (the trace or
    *  the data landing after it, the Arena card's Attach or Remove) is built again, the way the late Hollow's is
-   *  (sweepSdLate): each built pixel's Arena place (`arenaKey`) against the one standing on it now. Asked on the frame
+   *  (sweepSdLate): each built pixel's Arena slot (its entry's `arena`) against the place standing on it now. Asked on the frame
    *  when the pixels' set moves (world/arenaPlaces.js arenaPixels: a new set a trace, a fit, a data set). */
   let _arenaSwept = null;
   function sweepArenaPixels() {
@@ -1553,7 +1553,7 @@ export async function bootWorld(canvas, renderer, params, status) {
     for (const [, p] of built) {
       if (onTheBay(p.px, p.py)) continue;
       const place = now?.byPixel.get(`${p.px},${p.py}`) ?? null;
-      if ((place ? `${place.provinceIndex}|${place.id}` : null) !== (p.arenaKey ?? null)) again.push({ px: p.px, py: p.py });
+      if ((place ? `${place.provinceIndex}|${place.id}` : null) !== (p.arena ? `${p.arena.provinceIndex}|${p.arena.id}` : null)) again.push({ px: p.px, py: p.py });
     }
     if (!again.length) return;
     const under = `${state.current.x},${state.current.y}`;
@@ -1687,13 +1687,13 @@ export async function bootWorld(canvas, renderer, params, status) {
   // a region's cities apart: its Hollow stood by another city, on another pixel, in another room.
   const _sdCityRows = params.has('online') ? _classicRows.filter((loc) => !!hubClaim(loc, maps.getRegionName(loc.regionIndex))) : [];
   const _sdTemplateRows = params.has('online') ? sdTemplates(_classicRows, isMainStoryDungeon) : [];
+  // TESA2 (world/arenaLocations.js): THE ARENA PLACES' TEMPLATES - the cities, hamlets, villages, labyrinths and keeps an
+  // Arena place may clone, off the same rows (the game's own, as MAPS.BSA holds them), kept before the rows go
+  const _arenaTemplates = arenaStands ? arenaTemplates(_classicRows ?? _hubRows.map(classicRow).filter(Boolean), isMainStoryDungeon) : null;
   // ETHER-PLACES (world/etherPlaces.js): THE ISLES' TEMPLATES - the towns and the ruins an Etheric isle's place may
   // clone, off the SAME rows (the game's own, as MAPS.BSA holds them: every client clones the same place), kept before
   // the rows go
   const _etherTemplates = etherSea ? etherTemplates(_classicRows ?? _hubRows.map(classicRow).filter(Boolean), isMainStoryDungeon) : null;
-  // TESA2 (world/arenaLocations.js): THE ARENA PLACES' TEMPLATES - the cities, hamlets, villages, labyrinths and keeps an
-  // Arena place may clone, off the same rows (the game's own, as MAPS.BSA holds them), kept before the rows go
-  const _arenaTemplates = arenaStands ? arenaTemplates(_classicRows ?? _hubRows.map(classicRow).filter(Boolean), isMainStoryDungeon) : null;
   _classicRows = null;   // read, let go
   // HUB1: every region's main city, one answer on every client (systems/regionHubs.js) - read online alone
   const regionHubs = pickRegionHubs(_hubRows, { regionNameOf: (r) => maps.getRegionName(r) });
@@ -6708,7 +6708,7 @@ export async function bootWorld(canvas, renderer, params, status) {
       wodReach: gateLedger.reach.length ? Float32Array.from(gateLedger.reach) : null,   // GATE-CLEAR: what it stood, for the next gate's sweep
       placeHold: pipeline,
       location: dfLocation ? dfLocation.name : null,
-      arenaKey: dfLocation?.arena ? `${dfLocation.arena.provinceIndex}|${dfLocation.arena.id}` : null,   // TESA2: the Arena place it stood, for the sweep
+      arena: dfLocation?.arena ?? null,
       centerHeight: samples[64 * HEIGHTMAP_DIMENSION + 64] * worldHeight,
       avgY: dfLocation ? avg * worldHeight : 0,
     });
@@ -19129,7 +19129,7 @@ export async function bootWorld(canvas, renderer, params, status) {
     window.__tesaJump = (x, y) => _teleportToPixel(x, y, null, { reposition: REPOSITION.RandomStartMarker });
     window.__tesaPlace = (x, y) => {
       const b = built.get(`${x},${y}`), loc = locationIndex.get(`${x},${y}`);
-      return { built: !!b, location: b?.location ?? null, arenaKey: b?.arenaKey ?? null, name: loc?.name ?? null, arena: loc?.arena ?? null,
+      return { built: !!b, location: b?.location ?? null, arenaKey: b?.arena ? `${b.arena.provinceIndex}|${b.arena.id}` : null, name: loc?.name ?? null, arena: loc?.arena ?? null,
         mapId: loc?.mapTableData?.mapId ?? null, blocks: loc ? [loc.exterior?.exteriorData?.width, loc.exterior?.exteriorData?.height] : null,
         buildings: loc?.exterior?.buildings?.length ?? null, region: loc?.regionName ?? null };
     };
@@ -30537,6 +30537,10 @@ export async function bootWorld(canvas, renderer, params, status) {
   // their save was to start a new game and press F11. A load is not a
   // new game, so it takes the classic start's place rather than
   // running after it.
+  // TESA2: a save made in an Arena town loads into it - the places stand once the data and the trace have landed, so
+  // with the player's Arena attached a load waits for both, ARENA_LOAD_WAIT_MS at most (a trace that never lands costs
+  // that and no more)
+  if (_arenaTemplates && params.has('load')) await arenaReady.then((n) => (n ? Promise.race([arenaTraced, new Promise((r) => setTimeout(r, ARENA_LOAD_WAIT_MS))]) : 0));
   let _loadedGame = false;   // EOTB-IL: which of StartGameBehaviour's two events this boot is
   if (params.has('classicload') && peekPendingClassicSave()) {
     // SAV3: the classic import takes the load's place in the boot walk
@@ -30551,10 +30555,6 @@ export async function bootWorld(canvas, renderer, params, status) {
     // a bare ?load keeps the most-recent shape. MW-EARLY: decided once,
     // at the boot's top, where the arms' early build read the same pick
     // - and AUDIT MW-EARLY F3: its one parse, handed in and let go.
-    // TESA2: a save made in an Arena town loads into it - the places stand once the data and the trace have landed, so
-    // with the player's Arena attached the load waits for both, ARENA_LOAD_WAIT_MS at most (a trace that never lands
-    // costs that and no more)
-    if (_arenaTemplates) await arenaReady.then((n) => (n ? Promise.race([arenaTraced, new Promise((r) => setTimeout(r, ARENA_LOAD_WAIT_MS))]) : 0));
     const snap = bootSnap();
     bootSnapRead = null;
     await worldQuickLoad({ ...bootLoadPick, snap });
