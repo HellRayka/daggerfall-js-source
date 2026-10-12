@@ -34131,10 +34131,10 @@ const _pixelOrder = [];   // NEAR-FIRST: the frame's pixel walk, nearest first -
         clearSceneCache(playerEntity.sceneCache, { start: false });
       }
       queue.push(...r.load);
-      announceNearbySpawns(r.current.x, r.current.y, walkMode ? player.pos : cam.pos);
-      arenaBeyondNotice(r.current.x, r.current.y);   // TESA-ONLINE: online, the land past the Bay without Arena's places, said once   // SPAWNED-DUNGEONS2: said on ENTERING the pixel, not when it is rolled (that is three pixels ahead); SPAWNED-DUNGEONS3: from where the player stands, in metres
+      announceNearbySpawns(r.current.x, r.current.y, walkMode ? player.pos : cam.pos);   // SPAWNED-DUNGEONS2: said on ENTERING the pixel, not when it is rolled (that is three pixels ahead); SPAWNED-DUNGEONS3: from where the player stands, in metres
       if (dwDecor) dwDecor.onMapPixelChanged(r.current);   // DW-E2: PlayerGPS.OnMapPixelChanged -> HandleMapPixelChanged
       ohAbyss?.onMapPixelChanged();   // OH-D: PlayerGPS.OnMapPixelChanged -> OceanHoles.OnMapPixelChanged (the rename held for its own pixel)
+      arenaBeyondNotice(r.current.x, r.current.y);   // TESA-ONLINE: online, the land past the Bay without Arena's places, said once
       // WOD5: PlayerGPS raises OnRegionIndexChanged on the frame the
       // region changes, and it changes only on a crossing - so the loader
       // hears it here as well as at a build: a visit shorter than a build

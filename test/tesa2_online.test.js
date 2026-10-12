@@ -108,7 +108,7 @@ test('TESA-ONLINE the host: the places stand online and off, the room\'s word gi
   const fn = w.slice(w.indexOf('  function arenaBeyondNotice(x, y) {'), w.indexOf('  /** AUDIT OW4 D4: THE CLONE a pixel\'s spawn IS'));
   assert.match(fn, /if \(_arenaNoticed \|\| !_arenaTemplates \|\| !params\.has\('online'\) \|\| onTheBay\(x, y\) \|\| \(etherSea && inEther\(x, y\)\)\) return;/);
   assert.match(fn, /if \(arenaPixels\(\) \|\| maps\.getClimateIndex\(x, y\) === CLIMATES\.Ocean\) return;\n\s+_arenaNoticed = true;\n\s+tvSay\(ARENA_PLACES_TEXT\.beyondWithout, 8\);/);
-  assert.match(w, /announceNearbySpawns\(r\.current\.x, r\.current\.y, walkMode \? player\.pos : cam\.pos\);[^\n]*\n\s+arenaBeyondNotice\(r\.current\.x, r\.current\.y\);/, 'on the crossing');
+  assert.match(w, /ohAbyss\?\.onMapPixelChanged\(\);[^\n]*\n\s+arenaBeyondNotice\(r\.current\.x, r\.current\.y\);/, 'on the crossing, after PlayerGPS.OnMapPixelChanged\'s own hearers');
   assert.equal(ARENA_PLACES_TEXT.beyondWithout, 'Players with The Elder Scrolls: Arena attached see its cities and dungeons in these lands. Attach your own copy (free from Bethesda) in Mods & files.');
   const id = arenaPlaceId({ provinceIndex: 7, id: 33 });
   assert.equal(isWorldRoom(`dungeon:m${id}`), true, 'an Arena dungeon is one room for every player in it');
