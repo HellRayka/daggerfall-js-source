@@ -284,6 +284,9 @@ import { preloadTamrielTrace } from '../ui/tamrielTrace.js';   // TAMRIEL3: Dagg
 import { arenaPlaces, arenaPixels, arenaPlaceOnPixel, setArenaCityData, setArenaStanding, setArenaRoom } from '../world/arenaPlaces.js';   // TESA1: Arena's places on it; TESA2: the pixels they stand on
 import { arenaTemplates, arenaTemplateOf, synthesizeArenaLocation, ARENA_LOAD_WAIT_MS, ARENA_PLACES_TEXT } from '../world/arenaLocations.js';   // TESA2: the places stood, each a Daggerfall town or dungeon cloned
 import { fitBayToPicture } from '../world/tamrielLand.js';   // TAMRIEL3: where the Bay stands on it
+import { provinceKeyBeyondBay } from '../world/tamrielLand.js';   // TESA3: the province a pixel past the Bay stands on
+import { provinceByKey } from '../world/tamrielGeography.js';   // TESA3: its name and race
+import { provinceNameBank } from '../world/tamrielPeople.js';   // TESA3: its people's names
 import { groundWoods, groundClimateIndex } from '../world/tamrielGround.js';   // TAMRIEL2: the continent's ground round the Bay, for the kernels and the far ring
 import { etherWoods, etherClimateIndex, etherPoliticIndex, etherFrame, inEther, inEtherLaw, isleAt, islesNear, veilhaven, ETHER_HARBOUR_REACH, ETHER_SEA_NAME, CROSS_X, CROSS_LAND_PX, etherLight, ETHER_KEY_TINT } from '../world/ethericSea.js';   // ETHER-SEA: the Etheric Sea's ground and its box
 import { etherTemplates, etherTemplateOf, synthesizeEtherLocation, ETHER_REGION, ETHER_REGION_NAME } from '../world/etherPlaces.js';   // ETHER-PLACES: the isles' towns and ruins
@@ -436,7 +439,7 @@ import { hasSpecialAbility, SPECIAL_ABILITY } from '../systems/rest.js';   // F-
 import { locationCompassDirection, buildingCompassDirection, findFactionByTypeAndRegion, directionHintString } from '../systems/talk.js';   // wave 26: %di's remote arm + the region-faction search; the LOCAL arm beside it; SPAWNED-DUNGEONS2b: the same eight-word compass
 import { seasonValue, MINUTES_PER_DAY, dateFromClassicMinutes, dateTimeString, midDateTimeString } from '../systems/gameDate.js';   // AUDIT 23 (wts-1); Q4-v: the notebook's header shapes
 import { regionPriceAdjustment, worldPriceTiltOf, TRANSPORT_HORSE, TRANSPORT_SMALL_CART } from '../systems/shopStock.js';   // Q4-v: CreateGold's regional term (the shops' own producer); U41: Items.Contains(Transportation, ...)
-import { getNameBankOfRegion, getRandomFullName } from '../characters/nameHelper.js';   // AUDIT 23 (characters-5); AUDIT 58: MacroHelper.GetRandomFullName, one home
+import { getNameBankOfRegion, getRandomFullNameOfBank } from '../characters/nameHelper.js';   // AUDIT 23 (characters-5); AUDIT 58: MacroHelper.GetRandomFullName, one home - TESA3: its draw, from the bank where the player stands
 import { createHitEffects, setSplashObserver } from './hitEffects.js';
 import { noteMyBlow, noteMyHurt, isHurtClip, poseFx, createPeerFxPlayer } from '../net/peerFx.js';   // PEERFX1: the others see and hear my blows, and hear me struck
 import { hitFlashStrength, setBatchHitFlash, HIT_FLASH_S } from '../systems/hitFlash.js';   // HITFLASH1: a struck body's red - the peers' curve is the foes'
@@ -7727,6 +7730,7 @@ export async function bootWorld(canvas, renderer, params, status) {
     // declared below this call, so the arrow defers the read to call
     // time, which is what makes it live in the first place.
     regionIndex: () => _questRegionIndex(),
+    nameBank: () => provinceBankHere(),   // TESA3: past the Bay the province's people
     onCrime: () => _crimeResponse(),   // G1: late-bound - the guards mount below
     // QP1: GetBuildingList's questor half lands in the pool. Late-bound
     // like onCrime - npcSession mounts below, and the first topics set
@@ -8245,7 +8249,7 @@ export async function bootWorld(canvas, renderer, params, status) {
     // had no caller; the fifth (OnEncounter) is wired at the seam below.
     if (travelOptions) {
       travelOptions.onMapPixelChanged(playerTravelPixel());
-      const _region = _questRegionIndex();
+      const _region = `${_questRegionIndex()}|${provinceHere()?.key ?? ''}`;   // TESA3: past the Bay a province's edge is a region's
       if (_travelRegionSeen !== null && _region !== _travelRegionSeen) travelOptions.onRegionIndexChanged();
       _travelRegionSeen = _region;
     }
@@ -17384,7 +17388,7 @@ export async function bootWorld(canvas, renderer, params, status) {
     locationTypeName: () => travelLocationTypeName(_musicLocationType()),
     climateIndex: () => { const px = playerTravelPixel(); return maps.getClimateIndex(px.x, px.y); },
     atSea: () => !!tvSea.means && (!!csaBoatUnderMe() || tvSea.phase === 'landing'),   // AUDIT OW5 S1: the CROSSING's alone - a journey of the mod's own begun at a helm (a map pick under First Person Travel, or the classic skin's) was never steered by it, and with the ocean stop stood down the boat ran on at the journey's speed and never arrived; the mod's stop ends it now, as the mod does. OWS2: at a helm or aboard - or coming ashore, the mod's disembark holding the traveller at the helm a second - the mod's ocean stop is for a traveller who walked into it
-    regionName: () => maps.getRegionName(_questRegionIndex()),
+    regionName: () => provinceHere()?.name ?? maps.getRegionName(_questRegionIndex()),   // TESA3: past the Bay, the province's
     entity: () => ({
       health: playerEntity.health, maxHealth: playerEntity.maxHealth, fatigue: playerEntity.fatigue,
       luck: liveStat(playerEntity, 'luck'), stealth: skillValue(playerEntity, SKILLS.Stealth),
@@ -19648,12 +19652,27 @@ export async function bootWorld(canvas, renderer, params, status) {
     const px = playerTravelPixel();
     return maps.getRegionIndexAt(px.x, px.y);
   }
+  /** TESA3 (bible/03-World/Arena-Provinces.md): THE PROVINCE PAST THE BAY - the province (world/tamrielGeography.js: its
+   *  key, its name, its race) a pixel beyond the Bay stands on (world/tamrielLand.js provinceKeyBeyondBay: the trace's, or
+   *  the authored shape's), or null: the Bay's own ground, the sea, past the Veil, the land beyond the Bay not streamed.
+   *  What it answers is a name and a people - never a region index: every system keyed by region (chat, banks, law,
+   *  prices, seats, the services) keeps the 62 regions' law (the clamp past the Bay, TAMRIEL2). */
+  function provinceAt(x, y) {
+    if (!tamrielLand || onTheBay(x, y) || (etherSea && inEther(x, y))) return null;
+    return provinceByKey(provinceKeyBeyondBay(x, y));
+  }
+  const provinceHere = () => { const px = playerTravelPixel(); return provinceAt(px.x, px.y); };
+  /** TESA3: THE NAMES OF THE PEOPLE WHERE THE PLAYER STANDS - past the Bay the province's own bank (world/tamrielPeople.js:
+   *  a Nord's in Skyrim, a Khajiit's in Elsweyr, the Imperial bank in Black Marsh by DFU's own Argonian law), else the
+   *  region's (MapsFile.GetNameBankOfRegion, verbatim). A raid's pinned region (AUDIT NAV1) names by its region. */
+  const provinceBankHere = () => (_questRegionPin == null ? provinceNameBank(provinceHere()?.key) : null);
+  const nameBankHere = () => provinceBankHere() ?? getNameBankOfRegion(_questRegionIndex());
   // LOAD1: WHERE A LOADING SCREEN AND A KEPT SCREENSHOT SAY THE PLAYER IS - the location at a map pixel, else its region
   // (the wilderness, the sea); underground, the dungeon's own record, as the quest system's own read has it.
   function placeAtPixel(px, py) {
     const key = `${px},${py}`;
     if (_ohGpsName?.key === key && _ohGpsName.name) return _ohGpsName.name;   // AUDIT LOAD1 4: the abyss wears its own name over the pixel it borrows (_questLoc's law)
-    return locationIndex.get(key)?.name || (etherSea && inEther(px, py) ? ETHER_SEA_NAME : REGION_NAMES[maps.getRegionIndexAt(px, py)]) || '';   // ETHER-SEA: the sea's own name past the Veil
+    return locationIndex.get(key)?.name || provinceAt(px, py)?.name || (etherSea && inEther(px, py) ? ETHER_SEA_NAME : REGION_NAMES[maps.getRegionIndexAt(px, py)]) || '';   // ETHER-SEA: the sea's own name past the Veil; TESA3: a province's past the Bay
   }
   function placeHere() {
     const px = playerTravelPixel();
@@ -20321,7 +20340,7 @@ export async function bootWorld(canvas, renderer, params, status) {
     // and the decision is made here, its sibling's convention).
     courtOfCurrentRegion: () => getCourtOfCurrentRegion(_questStore()?.dict ?? null, _questLoc()?.regionIndex ?? -1)?.id ?? 0,
     currentLocationIndex: () => _questLoc()?.locationIndex ?? 0,
-    nameBankOfCurrentRegion: () => getNameBankOfRegion(_questRegionIndex()),   // AUDIT 24: the POLITIC-derived index, like every other region read - the location's is -1 across the whole wilderness
+    nameBankOfCurrentRegion: () => nameBankHere(),   // AUDIT 24: the POLITIC-derived index, like every other region read - the location's is -1 across the whole wilderness; TESA3: past the Bay, the province's people
     // AUDIT 39 (#112): GetQuestorName (TalkManager.cs:2586-2590) is
     // srand(entry nameSeed) then NameHelper.FullName over the ENTRY's
     // OWN nameBank - not the region's, so this is not talkMcp's
@@ -20418,7 +20437,7 @@ export async function bootWorld(canvas, renderer, params, status) {
    *  LOCATION's regionIndex is -1 across the whole wilderness and fell
    *  through getNameBankOfRegion to Breton, the same drift AUDIT 24
    *  fixed on the quest side. */
-  const talkFullName = (gender) => nameHelperFullName(getNameBankOfRegion(_questRegionIndex()), gender);
+  const talkFullName = (gender) => nameHelperFullName(nameBankHere(), gender);   // TESA3: the province's people past the Bay
 
   /** TalkManagerMCP's context: the two engine objects plus the host
    *  data the thirteen handlers read. Built lazily because the
@@ -20436,7 +20455,7 @@ export async function bootWorld(canvas, renderer, params, status) {
     // through to MacroHelper.GetRandomFullName, whose gender is a coin
     // flip on the DFRandom stream (:333-341) - not Male. One home, in
     // nameHelper.js beside its GetRandomNameBank sibling.
-    randomFullName: () => getRandomFullName(_questRegionIndex()),
+    randomFullName: () => getRandomFullNameOfBank(nameBankHere()),   // TESA3: MacroHelper.GetRandomFullName's draw, from the bank where the player stands
     fullName: (gender) => talkFullName(gender === 'female' ? GENDERS.Female : GENDERS.Male),
     localizedText: (key) => TALK_STRINGS[key] ?? '',
     // ROAD-E E7: THE ONE GAMEMANAGER. MacroHelper's GLOBAL rows read
@@ -20459,7 +20478,7 @@ export async function bootWorld(canvas, renderer, params, status) {
     // AUDIT 24: over the POLITIC-derived region index, like every
     // other region read - the location's regionIndex is -1 across the
     // whole wilderness and sent this to Breton everywhere outdoors.
-    raceOfCurrentRegion: () => (RACE_BY_NAME_BANK[getNameBankOfRegion(_questRegionIndex())] ?? 'Breton'),
+    raceOfCurrentRegion: () => (RACE_BY_NAME_BANK[nameBankHere()] ?? 'Breton'),   // TESA3
     factionRaceId: (race) => (OATH_RACE_INDEX[race] ?? 0),
     // AUDIT 26 F097: GetMacroDataSource copies potentialQuestorGender
     // ONLY when the current question is Work and there are NPCs with
@@ -30881,7 +30900,7 @@ const _pixelOrder = [];   // NEAR-FIRST: the frame's pixel walk, nearest first -
   };
   const travelViewWhere = () => {
     const px = playerTravelPixel();
-    const region = (etherSea && inEther(px.x, px.y) ? ETHER_SEA_NAME : maps.getRegionName(maps.getRegionIndexAt(px.x, px.y))) || '';   // ETHER-SEA: the sea's own name past the Veil
+    const region = provinceAt(px.x, px.y)?.name || (etherSea && inEther(px.x, px.y) ? ETHER_SEA_NAME : maps.getRegionName(maps.getRegionIndexAt(px.x, px.y))) || '';   // ETHER-SEA: the sea's own name past the Veil; TESA3: a province's past the Bay
     const loc = locationIndex.get(`${px.x},${px.y}`);
     const inside = loc?.name && _inAnyLocationRect(walkMode ? player.pos : cam.pos);
     return travelViewLine({ place: inside ? loc.name : null, near: !inside && loc?.name ? loc.name : null, region });

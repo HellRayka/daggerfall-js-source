@@ -1,4 +1,4 @@
-# The Arena provinces - The Elder Scrolls: Arena on Daggerfall's Tamriel (TESA1, TESA2, TESA-ONLINE)
+# The Arena provinces - The Elder Scrolls: Arena on Daggerfall's Tamriel (TESA1, TESA2, TESA-ONLINE, TESA3)
 
 Opened 2026-10-12. The owner: *"I think I want to begin implementing Elder Scrolls arena into our world of tamriel"*.
 Asked how, they chose **Arena's map, our engine** (Arena's cities, towns, villages and named dungeons stand on the
@@ -223,14 +223,64 @@ own copy, and a room that agrees which copy**.
   on ground the town's own flattening has moved a little; the town's people, its shops and its dungeons are the
   holders' alone, as every room's are.
 
+## TESA3 - the province's name and its people (2026-10-12)
+
+The owner: *"Continue"*. Past the Bay the region read is still `getRegionIndexAt`'s clamp, the Alik'r Desert (TAMRIEL2),
+and every town of Skyrim said so and named its people as Redguards.
+
+**WHY NOT A REGION OF ITS OWN.** A sweep of every region read (world.js's 35, and the rest of `src/`) found the 62
+regions are a wall the whole online game stands on: `net/wire.js` CHAT_REGION_COUNT and the relay's CHAT_ROOMS whitelist,
+`net/hubShards.js` REGION_CHANNELS, `net/nodeLaw.js` regionOk (professions, the market, writs, contracts, cards, halls,
+chapters, receipts), `net/townSeatLaw.js` seatRegionOk, the banks' BANK_REGION_COUNT, `systems/regionConditions.js`
+REGION_COUNT (prices, flags, stock) and the save's 62 legal reputations - an index of 62 or past it is refused or
+silently off in each, and the bare `REGION_NAMES[r]` / `REGION_RACES[r]` reads answer undefined. Nine more regions is the
+save's shape, the services' and the relay's at once - its own arc, and the owner's to call. So the province answers what
+the player READS and whose NAMES they hear, and never a region index.
+
+- **The province** (`world/tamrielLand.js` provinceKeyBeyondBay): a Bay pixel past the Bay answers the province its
+  CENTRE stands on (provinceKeyAt - the trace's, else the authored rings'), or null on the Bay's own pixels (Daggerfall's
+  regions answer there) and at sea. Pure: the worker's land module (it reads nothing of characters/).
+- **The host** (`scenes/world.js` provinceAt, provinceHere): the province where the land beyond the Bay streams, never on
+  the Bay, at sea or past the Veil. It names:
+  - the loading screen and a kept screenshot's place (LOAD1's `placeAtPixel`: a location, else the province, else the
+    sea or the region);
+  - the Overworld's line;
+  - Travel Options' new region (`regionName`), and its EDGE: the region key of the crossing is the region and the
+    province together, so walking from Skyrim into Morrowind past the Bay is a new region's word.
+- **The people** (`world/tamrielPeople.js` provinceNameBank): each province's DFU name bank off its race through
+  GetNameBank - High Rock Breton, Hammerfell Redguard, Skyrim Nord, Morrowind Dark Elf, Sumurset High Elf, Valenwood Wood
+  Elf, Elsweyr Khajiit, Black Marsh the IMPERIAL bank (DFU's own law: "Imperial names appear where one would expect
+  Argonian names", NameHelper.cs:50), the Imperial Province, which no race claims, Imperial. `nameBankHere` is the one
+  answer - the province's past the Bay, else GetNameBankOfRegion, verbatim - and a raid's pinned region (AUDIT NAV1)
+  names by its region. It answers the talk's names and %fn/%mn (`talkFullName`, the town talk's `nameBank`), the
+  stranger's name (`randomFullName`: getRandomFullName's own draw from a bank in hand, `nameHelper.js`
+  getRandomFullNameOfBank, which getRandomFullName now calls - the same coin, the same stream), the quest machine's
+  people (`nameBankOfCurrentRegion`), the oath's race (`raceOfCurrentRegion`) and the town's building names (the town
+  talk's nameOpts).
+- **What stays the region's**: everything keyed by region index - chat and presence, banks, law and the guards, prices
+  and stock, seats, the services, the quest machine's local sites (place.js picks from the region's MAPS rows), the
+  quest macros' own name banks, the townsfolk's sprites (REGION_RACES: Breton and Redguard art alone). Recorded: a
+  traveller in Skyrim talks to Nords whose law, prices and region chat are the Alik'r Desert's.
+- **Online**: names are drawn on each client, as every talk name is - nothing crosses the wire; the province is read off
+  each player's own trace of Daggerfall's picture.
+
 ## The arc - what comes next
 
-- **TESA3 - the provinces as regions.** Past the Bay the region still reads as `getRegionIndexAt`'s clamp, the Alik'r
-  Desert (TAMRIEL2); a province of its own for weather, factions and the travel map's words.
-- **Later.** Travel and the Overworld to Arena's places; the dungeons' names (Arena's own roll, from A.EXE's tables);
-  roads between them.
+- **The provinces as regions of their own** - their own chat rooms, banks, law, prices and quest sites. The save's shape,
+  the relay's whitelist and the account services' validators move together: the owner's call.
+- **The dungeons' names** - Arena's own roll (from A.EXE's tables) for the fourteen a province, so they stand too.
+- **Roads** between Arena's places, and their ports.
 
 ## Pins
+
+`test/tesa3_provinces.test.js` (5, TESA3): the province past the Bay (the centre's, none on the Bay's own ground with
+land under it or at sea, the authored shape without a trace); the people's banks for all nine (GetNameBank's, the
+Imperial arm, none for none); the stranger's draw equal to getRandomFullName's over six seeds and a Nord's -sen; the
+host by source (provinceAt's gates, the pin's exception, the loading screen, the Overworld, the new region and its edge,
+every name site, the town talk told, the player's region index untouched, the land module free of characters/); with
+ARENA2_PATH, Winterhold's pixel Skyrim's, Mournhold's Morrowind's, Daggerfall none. Mutants `tools/mutants/tesa3.json`
+(13, all dead). PIN MOVED: `test/audit58_magic.test.js` (the talk's and the stranger's names through nameBankHere and
+getRandomFullNameOfBank).
 
 `test/tesa2_online.test.js` (5, TESA-ONLINE): the print (SHA-256 in hex, every byte two digits, the one list, case
 held), the room (online only a known release stands; offline any copy; the switch's version), the registration and the
