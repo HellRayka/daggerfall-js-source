@@ -323,8 +323,9 @@ test('ONLINE1: the others drawn through a fake renderer - the figure cropped to 
 
 test('ONLINE1: the compositor\'s door is PURE - composePaperDollPixels composes over its own art set and buffer, and the compose body reads nothing of the singleton (mutant: the peer composed through the inventory\'s doll)', () => {
   const pd = rd('src/ui/paperDoll.js');
-  assert.match(pd, /export async function composePaperDollPixels\(deps, entity, \{ context = 'town', background = true \} = \{\}\)/);
-  const from = pd.indexOf('async function composeDoll(art, deps, entity, { background = true, scale: S = 1 } = {}) {');
+  // PIN MOVED (DOLL-SKIN): and `labels`, the layer each pixel came from, for the doll skin's puppet (dollskin1.test.js)
+  assert.match(pd, /export async function composePaperDollPixels\(deps, entity, \{ context = 'town', background = true, labels = false \} = \{\}\)/);
+  const from = pd.indexOf('async function composeDoll(art, deps, entity, { background = true, scale: S = 1, labels = null } = {}) {');   // PIN MOVED (DOLL-SKIN): and the labels it fills
   assert.ok(from > 0, 'the compose is a function of its art and deps');
   const body = pd.slice(from, pd.indexOf('\nexport async function refreshPaperDoll(', from));
   const names = (text, list, what) => { for (const name of list) assert.ok(!new RegExp(`\\b${name}\\b`).test(text), `${what} ${name}`); };

@@ -113,15 +113,15 @@ export function motionBagOf(player) {
  *  step down off a kerb or a stair is never a jump. */
 export const AIR_RISE = 0.5;
 export const AIR_FALL_MS = 150;
-export function airOf(bag = {}) {
+export function airborneOf(bag = {}) {
   if (bag.grounded !== false || bag.swimming || bag.levitating || bag.riding || bag.climbing) return 0;
   return (bag.velY || 0) > AIR_RISE ? 1 : 2;
 }
-/** One body's jump over time: `step(bag, nowMs)` -> 0, 1 or 2 (airOf, the fall held back AIR_FALL_MS). */
+/** One body's jump over time: `step(bag, nowMs)` -> 0, 1 or 2 (airborneOf, the fall held back AIR_FALL_MS). */
 export function createAirClock() {
   let since = null, rose = false;
   return (bag, now) => {
-    const raw = airOf(bag);
+    const raw = airborneOf(bag);
     if (!raw) { since = null; rose = false; return 0; }
     if (since === null) since = now;
     if (raw === 1) rose = true;

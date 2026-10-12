@@ -34,7 +34,7 @@ export const DOLL_PEER_SLOTS = 12;
  *  this, so a doll of any race stands at a man's height. */
 export const DOLL_FIGURE_PX = 100;
 /** Frames drawn a task, at most. */
-export const DOLL_FRAMES_A_TASK = 6;
+export const DOLL_FRAMES_A_TASK = 2;
 /** How long an outgrown generation's textures are kept after its successor is first asked for (ms) - long enough for
  *  the new frames to come up, so the figure never goes blank between two outfits. */
 export const DOLL_RETIRE_MS = 3000;

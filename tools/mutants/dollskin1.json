@@ -2,7 +2,7 @@
   {
     "name": "DS-1-a-layer-unmarked",
     "file": "src/ui/paperDoll.js",
-    "old": "    blit(out, art.nude, art.palette, { S });\n    mark(DOLL_LAYER.body);\n",
+    "old": "    blit(out, art.nude, art.palette, { S });\n    mark(DOLL_LAYER.body, (b) => blit(b, art.nude, art.palette, { S }));\n",
     "new": "    blit(out, art.nude, art.palette, { S });\n",
     "tests": [
       "test/dollskin1.test.js"
@@ -12,8 +12,8 @@
   {
     "name": "DS-2-the-helm-as-the-face",
     "file": "src/characters/dollPuppet.js",
-    "old": "  if (slot === EQUIP_SLOTS.Head) return DOLL_LAYER.helm;",
-    "new": "  if (slot === EQUIP_SLOTS.Head) return DOLL_LAYER.head;",
+    "old": "  [EQUIP_SLOTS.Head, L.helm], [EQUIP_SLOTS.Cloak1, L.cloak],",
+    "new": "  [EQUIP_SLOTS.Head, L.head], [EQUIP_SLOTS.Cloak1, L.cloak],",
     "tests": [
       "test/dollskin1.test.js"
     ],
@@ -42,8 +42,8 @@
   {
     "name": "DS-5-the-weapon-side-fixed",
     "file": "src/characters/dollPuppet.js",
-    "old": "  const weaponSide = itemSum[DOLL_LAYER.right][1] ? itemSide[DOLL_LAYER.right] : -1;",
-    "new": "  const weaponSide = 1;",
+    "old": "  const weaponSide = held.get(L.right)[1] ? itemSide.get(L.right) : -1;",
+    "new": "  const weaponSide = -1;",
     "tests": [
       "test/dollskin1.test.js"
     ],
@@ -52,8 +52,8 @@
   {
     "name": "DS-6-an-arm-abducted-at-rest",
     "file": "src/characters/dollPuppet.js",
-    "old": "const arm = (sh = 0, el = 0, ab = 0) => ({ sh, el, ab });",
-    "new": "const arm = (sh = 0, el = 0, ab = 4) => ({ sh, el, ab });",
+    "old": "const arm = (sh = 0, el = 0, ab = 0, yw = 0) => ({ sh, el, ab, yw });",
+    "new": "const arm = (sh = 0, el = 0, ab = 4, yw = 0) => ({ sh, el, ab, yw });",
     "tests": [
       "test/dollskin1.test.js"
     ],
@@ -62,8 +62,8 @@
   {
     "name": "DS-7-the-frame-off-its-centre",
     "file": "src/characters/dollPuppet.js",
-    "old": "  const ox = rig.cx - hw, oy = rig.yBot + 1 - height;",
-    "new": "  const ox = rig.cx - hw + 3, oy = rig.yBot + 1 - height;",
+    "old": "    const sx0 = rig.cx - hw - ox, a = Math.max(0, -sx0)",
+    "new": "    const sx0 = rig.cx - hw - ox + 2, a = Math.max(0, -sx0)",
     "tests": [
       "test/dollskin1.test.js"
     ],
@@ -72,8 +72,8 @@
   {
     "name": "DS-8-the-back-unmirrored",
     "file": "src/characters/dollPuppet.js",
-    "old": "    const wk = (back ? -1 : 1) * (depthK + (1 - depthK) * Math.abs(cphi));",
-    "new": "    const wk = (depthK + (1 - depthK) * Math.abs(cphi));",
+    "old": "  const SX = [Math.cos(phi), 0, -Math.sin(phi)], CAM",
+    "new": "  const SX = [Math.abs(Math.cos(phi)), 0, -Math.sin(phi)], CAM",
     "tests": [
       "test/dollskin1.test.js"
     ],
@@ -82,8 +82,8 @@
   {
     "name": "DS-9-the-face-kept-from-behind",
     "file": "src/characters/dollPuppet.js",
-    "old": "    const src = p.back && p.name === 'head' && part.back ? part.back : part.rgba;",
-    "new": "    const src = part.rgba;",
+    "old": "        const art = ct >= 0 && img.rgba[o * 4 + 3] ? 1 - smooth(",
+    "new": "        const art = img.rgba[o * 4 + 3] ? 1 - smooth(",
     "tests": [
       "test/dollskin1.test.js"
     ],
@@ -92,8 +92,8 @@
   {
     "name": "DS-10-the-cloak-under-the-body-from-behind",
     "file": "src/characters/dollPuppet.js",
-    "old": "  put('cape', segment(J.pelvis, J.neck, pts.pelvis, pts.neck, PART_DEPTH.cape), back ? 8 : -8);",
-    "new": "  put('cape', segment(J.pelvis, J.neck, pts.pelvis, pts.neck, PART_DEPTH.cape), -8);",
+    "old": "    parts.cape.zShiftAt = Float32Array.from(cp.a, (a, k) => -(deepAt(cp.kMin + k) + a * PART_SHAPE.cape.depth));",
+    "new": "    parts.cape.zShiftAt = Float32Array.from(cp.a, () => 0);",
     "tests": [
       "test/dollskin1.test.js"
     ],
@@ -102,8 +102,8 @@
   {
     "name": "DS-11-the-side-facing-right",
     "file": "src/characters/dollPuppet.js",
-    "old": "  const project = (v) => [cx + v[0] * cphi - v[2] * sphi, cy + v[1], v[0] * sphi + v[2] * cphi];",
-    "new": "  const project = (v) => [cx + v[0] * cphi + v[2] * sphi, cy + v[1], v[0] * sphi + v[2] * cphi];",
+    "old": "  const SX = [Math.cos(phi), 0, -Math.sin(phi)], CAM",
+    "new": "  const SX = [Math.cos(phi), 0, Math.sin(phi)], CAM",
     "tests": [
       "test/dollskin1.test.js"
     ],
@@ -318,5 +318,235 @@
       "test/dollskin1.test.js"
     ],
     "note": "A struck peer in their paperdoll drops into the fall's first frame for every blow."
+  },
+  {
+    "name": "DS-33-a-pixel-drawn-its-own-colour-left-to-the-layer-under-it",
+    "file": "src/ui/paperDoll.js",
+    "old": "      redraw(probe);\n",
+    "new": "",
+    "tests": [
+      "test/dollskin1.test.js"
+    ],
+    "note": "The cover pass is skipped: a body pixel the colour of the lining under it stays the lining's, and the robe tears off with the cloak."
+  },
+  {
+    "name": "DS-34-the-cloak-measured-as-the-figure",
+    "file": "src/characters/dollPuppet.js",
+    "old": "const isFigure = (l) => l !== L.none && l !== L.lining && l !== L.cloak && !ITEMS.has(l);",
+    "new": "const isFigure = (l) => l !== L.none && l !== L.lining && !ITEMS.has(l);",
+    "tests": [
+      "test/dollskin1.test.js"
+    ],
+    "note": "The cloak's own layer is measured as the figure: its drape beside the body stands apart, and is read as the arm down to its hem."
+  },
+  {
+    "name": "DS-35-a-fold-read-as-the-hand",
+    "file": "src/characters/dollPuppet.js",
+    "old": "      if (y > crotchY && !(apart && wasApart)) break;\n",
+    "new": "",
+    "tests": [
+      "test/dollskin1.test.js"
+    ],
+    "note": "Below the crotch any run standing out of the leg is the arm: a fold of the trousers becomes the hand."
+  },
+  {
+    "name": "DS-36-the-underlays-not-drawn",
+    "file": "src/characters/dollPuppet.js",
+    "old": "    if (cv.rgba[i * 4 + 3] || !cv.under[i * 4 + 3]) continue;",
+    "new": "    continue;",
+    "tests": [
+      "test/dollskin1.test.js"
+    ],
+    "note": "The joints' underlays are cut but never drawn: a bent knee opens a hole."
+  },
+  {
+    "name": "DS-37-the-cloaks-back-left-open",
+    "file": "src/characters/dollPuppet.js",
+    "old": "      const i = y * W + x, o = ((y - y0) * w + (x - x0)) * 4;\n      if (isLining(i))",
+    "new": "      const i = y * W + x, o = ((y - y0) * w + (x - x0)) * 4;\n      if (!isLining(i) && !isCloak(i)) continue;\n      if (isLining(i))",
+    "tests": [
+      "test/dollskin1.test.js"
+    ],
+    "note": "The cloak's back is only the lining Daggerfall drew - cut round the body - so from behind the body's front shows through it."
+  },
+  {
+    "name": "DS-38-the-cloaks-back-in-the-linings-colour",
+    "file": "src/characters/dollPuppet.js",
+    "old": "  const base = outer ?? (",
+    "new": "  const base = null ?? (",
+    "tests": [
+      "test/dollskin1.test.js"
+    ],
+    "note": "The cloak's back is drawn in its lining's colour, not its outside's."
+  },
+  {
+    "name": "DS-39-the-drape-hung-with-the-arm",
+    "file": "src/characters/dollPuppet.js",
+    "old": "    if (l === L.cloak) { partOf[i] = ID.drape; continue; }\n",
+    "new": "",
+    "tests": [
+      "test/dollskin1.test.js"
+    ],
+    "note": "The cloak's own pixels fall to the part by position: the drape beside the arm swings with the arm."
+  },
+  {
+    "name": "DS-40-the-stand-in-never-handed",
+    "file": "src/net/remotePlayers.js",
+    "old": "setDollPeerEntity(peerStubEntity);   // DOLL-SKIN",
+    "new": "// setDollPeerEntity(peerStubEntity);   // DOLL-SKIN",
+    "tests": [
+      "test/dollskin1.test.js"
+    ],
+    "note": "The skin is never told how a peer's look becomes an entity: no peer's paperdoll is ever composed."
+  },
+  {
+    "name": "DS-41-the-cross-section-unread",
+    "file": "src/characters/dollPuppet.js",
+    "old": "    const b = part.deepAt ? part.deepAt[k] : a * depth, zo = shape.forward * a + (zAt ? zAt[k] : zShift), A = a * hq, B = b * dq;",
+    "new": "    const b = part.deepAt ? part.deepAt[k] : a * depth, zo = shape.forward * a + (zAt ? zAt[k] : zShift), A = a * hq, B = 0;",
+    "tests": [
+      "test/dollskin1.test.js"
+    ],
+    "note": "A part has no depth: side-on it is a sliver, the head's profile gone."
+  },
+  {
+    "name": "DS-42-the-flank-smeared",
+    "file": "src/characters/dollPuppet.js",
+    "old": "        const art = ct >= 0 && img.rgba[o * 4 + 3] ? 1 - smooth((stretch - DOLL_STRETCH.from) / (DOLL_STRETCH.to - DOLL_STRETCH.from)) : 0;",
+    "new": "        const art = ct >= 0 && img.rgba[o * 4 + 3] ? 1 : 0;",
+    "tests": [
+      "test/dollskin1.test.js"
+    ],
+    "note": "The doll's picture is used however far it is stretched: its dark edge smears down every flank turned to the eye."
+  },
+  {
+    "name": "DS-43-the-made-unlit",
+    "file": "src/characters/dollPuppet.js",
+    "old": "    const d = nx * LX + ny * LY + nz * LZ, k = DOLL_LIGHT.ambient + DOLL_LIGHT.direct * (d > 0 ? d : 0);",
+    "new": "    const d = nx * LX + ny * LY + nz * LZ, k = 1 + 0 * d;",
+    "tests": [
+      "test/dollskin1.test.js"
+    ],
+    "note": "The made surfaces are their stuff's flat colour: no light falls on them by their facing."
+  },
+  {
+    "name": "DS-44-the-back-the-front-mirrored",
+    "file": "src/characters/dollPuppet.js",
+    "old": "    rear.set(back.subarray(i * 4, i * 4 + 4), o * 4);",
+    "new": "    rear.set(rgba.subarray(i * 4, i * 4 + 4), o * 4);",
+    "tests": [
+      "test/dollskin1.test.js"
+    ],
+    "note": "Every part's back is its front: a buckle, a face, an open shirt are all on the back."
+  },
+  {
+    "name": "DS-45-no-spine",
+    "file": "src/characters/dollPuppet.js",
+    "old": "      bump[i] -= 1.4 * Math.exp(-((dx / 1.1) ** 2)) * fade;   // the spine\n",
+    "new": "",
+    "tests": [
+      "test/dollskin1.test.js"
+    ],
+    "note": "A bare back has no spine."
+  },
+  {
+    "name": "DS-46-the-jaw-from-behind",
+    "file": "src/characters/dollPuppet.js",
+    "old": "    } else if (Math.abs(x + 0.5 - (cx + 0.5)) > neckHalf + 1 && y > to) { out[o + 3] = 0; continue; }",
+    "new": "    } else if (false) { out[o + 3] = 0; continue; }",
+    "tests": [
+      "test/dollskin1.test.js"
+    ],
+    "note": "Below the hair the back of the head keeps the jaw's width: a box from behind."
+  },
+  {
+    "name": "DS-47-the-open-shirt-open-behind",
+    "file": "src/characters/dollPuppet.js",
+    "old": "      mat[i] = mat[y * W + (x - l <= r - x ? l : r)];",
+    "new": "      void l; void r;",
+    "tests": [
+      "test/dollskin1.test.js"
+    ],
+    "note": "A shirt open down the front shows the chest down the back too."
+  },
+  {
+    "name": "DS-48-the-shield-turned-with-the-forearm",
+    "file": "src/characters/dollPuppet.js",
+    "old": "    if (rig.parts[`item${s}`]?.shield) {",
+    "new": "    if (false) {",
+    "tests": [
+      "test/dollskin1.test.js"
+    ],
+    "note": "A shield turns with its forearm: raised, it lies flat."
+  },
+  {
+    "name": "DS-49-the-shields-inside-its-face",
+    "file": "src/characters/dollPuppet.js",
+    "old": "  backOfShields({ W, H, rgba, out, partOf, names, lab, across });",
+    "new": "  void backOfShields;",
+    "tests": [
+      "test/dollskin1.test.js"
+    ],
+    "note": "A shield has no inside drawn: from behind it is gone."
+  },
+  {
+    "name": "DS-50-the-hidden-arm-left-out",
+    "file": "src/characters/dollPuppet.js",
+    "old": "  if (shieldArm) for (const seg of ['uarm', 'larm']) {",
+    "new": "  if (false) for (const seg of ['uarm', 'larm']) {",
+    "tests": [
+      "test/dollskin1.test.js"
+    ],
+    "note": "The arm behind a shield is left out: when the shield swings away there is no forearm."
+  },
+  {
+    "name": "DS-51-the-bow-flat",
+    "file": "src/characters/dollPuppet.js",
+    "old": "    pose.turn = { [w]: 90 };\n",
+    "new": "",
+    "tests": [
+      "test/dollskin1.test.js"
+    ],
+    "note": "A raised bow lies flat along the arm, edge-on from the side."
+  },
+  {
+    "name": "DS-52-the-robe-split-in-two-legs",
+    "file": "src/characters/dollPuppet.js",
+    "old": "!crotchFound ? ID.skirt :",
+    "new": "false ? ID.skirt :",
+    "tests": [
+      "test/dollskin1.test.js"
+    ],
+    "note": "A robe is cut into two legs: it splits when the feet step."
+  },
+  {
+    "name": "DS-53-the-walk-stiff",
+    "file": "src/characters/dollPuppet.js",
+    "old": "    turn(st.twist); pose.hips = w * st.hips;\n",
+    "new": "",
+    "tests": [
+      "test/dollskin1.test.js"
+    ],
+    "note": "The walk turns nothing: the shoulders and hips stay square."
+  },
+  {
+    "name": "DS-54-the-stroke-all-arm",
+    "file": "src/characters/dollPuppet.js",
+    "old": "      pose.lean = lean; turn(t);",
+    "new": "      pose.lean = lean;",
+    "tests": [
+      "test/dollskin1.test.js"
+    ],
+    "note": "The stroke is the arm alone: the body neither winds nor drives."
+  },
+  {
+    "name": "DS-55-the-archer-square-on",
+    "file": "src/characters/dollPuppet.js",
+    "old": "    pose.twist = -w * 55; pose.head = -pose.twist * 0.9; pose.hips = -w * 35;",
+    "new": "    pose.twist = 0; pose.head = 0; pose.hips = 0;",
+    "tests": [
+      "test/dollskin1.test.js"
+    ],
+    "note": "The archer faces the mark square-on."
   }
 ]

@@ -21,6 +21,7 @@
 // the singleton and could hand the inventory a stranger's doll, or the
 // stranger the player's, panel and all.
 import { composePaperDollPixels } from '../ui/paperDoll.js';
+import { setDollPeerEntity } from '../player/dollSkin.js';   // DOLL-SKIN: a peer's paperdoll skin is composed off the same stand-in
 import { equipTableOf } from '../systems/equip.js';
 import { createEquipTable } from '../characters/equipTable.js';
 import { CAPSULE_HEIGHT } from '../player/motor.js';
@@ -438,6 +439,7 @@ export function peerStubEntity(look) {
   }
   return entity;
 }
+setDollPeerEntity(peerStubEntity);   // DOLL-SKIN: the doll skin composes a peer's figure off their look's stand-in, as the flat doll is
 
 /**
  * The figure's bounds in an RGBA buffer - the rows and columns with any

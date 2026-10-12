@@ -529,13 +529,20 @@ async function composeDoll(art, deps, entity, { background = true, scale: S = 1,
   const out = new Uint8Array(OW * OH * 4);
   const layout = [];
   // DOLL-SKIN: WHICH LAYER DREW EACH PIXEL - read off the buffer after each layer, so the blits below are untouched: a
-  // pixel the layer changed is the layer's (or nothing's, where a mask holed it through to a clear panel)
+  // pixel the layer changed is the layer's (or nothing's, where a mask holed it through to a clear panel). A layer that
+  // drew a pixel the colour it already was changed nothing, so `redraw` draws the layer again into a clear buffer and
+  // every pixel it covers is the layer's too (a robe's fold the colour of the lining under it is the robe's).
   let seen = labels ? new Uint32Array(out.buffer).slice() : null;
   let lining = null;
-  const mark = (kind) => {
+  const mark = (kind, redraw = null) => {
     if (!labels) return;
     const now = new Uint32Array(out.buffer);
     for (let i = 0; i < now.length; i++) if (now[i] !== seen[i]) labels[i] = out[i * 4 + 3] ? kind : DOLL_LAYER.none;
+    if (redraw) {
+      const probe = new Uint8Array(out.length);
+      redraw(probe);
+      for (let i = 0; i < now.length; i++) if (probe[i * 4 + 3] && out[i * 4 + 3]) labels[i] = kind;
+    }
     seen = now.slice();
   };
   // V5: the racial override's three art laws - the beast/crypt
@@ -592,7 +599,7 @@ async function composeDoll(art, deps, entity, { background = true, scale: S = 1,
   // body + welds + head (BlitBody) - all skipped while suppressed
   if (!suppress) {
     blit(out, art.nude, art.palette, { S });
-    mark(DOLL_LAYER.body);
+    mark(DOLL_LAYER.body, (b) => blit(b, art.nude, art.palette, { S }));
     const split = WAIST_HEIGHT;
     // BlitBody (PaperDollRenderer.cs:346-353): the WELDS as a whole
     // hang off the setting - the nude body above is drawn either
@@ -606,9 +613,9 @@ async function composeDoll(art, deps, entity, { background = true, scale: S = 1,
     // V5: the vampire's clanless head replaces the racial one
     const headOv = racialOverrideHeadArt(entity);
     const headArt = headOv ? await loadOverrideArt(headOv.file, headOv.record, deps, art.palette) : null;
-    mark(DOLL_LAYER.body);   // DOLL-SKIN: the welds are the body's
+    mark(DOLL_LAYER.under);   // DOLL-SKIN: the welds - the smallclothes the body wears with nothing over them
     blit(out, headArt ?? art.head, art.palette, { S });
-    mark(DOLL_LAYER.head);
+    mark(DOLL_LAYER.head, (b) => blit(b, headArt ?? art.head, art.palette, { S }));
   }
   // items ascending drawOrder (BlitItems)
   const ordered = suppress ? [] : paperdollOrder(worn.map((w) => ({ ...w.it, drawOrder: w.t.drawOrderOrEffect })));
@@ -621,10 +628,10 @@ async function composeDoll(art, deps, entity, { background = true, scale: S = 1,
     // through the palette - it hands back RGBA instead, and it is the
     // port's own art rather than DFU's, so it takes neither the dye
     // nor the helm mask.
-    if (img.bmp?.rgba) { blitRgba(out, img, { under, S }); mark(dollLayerOfSlot(it.equipSlot)); layout.push({ slot: it.equipSlot, img }); continue; }   // RRI1: the imported helmet's mask erases the hair under it
+    if (img.bmp?.rgba) { blitRgba(out, img, { under, S }); mark(dollLayerOfSlot(it.equipSlot, it), (b) => blitRgba(b, img, { under, S })); layout.push({ slot: it.equipSlot, img }); continue; }   // RRI1: the imported helmet's mask erases the hair under it
     const remap = res.target == null ? null : (i) => applyDyeToIndex(i, res.dye, res.target);
     blit(out, img, art.palette, { remap, under, S });   // HM1: the helm's mask erases the hair
-    mark(dollLayerOfSlot(it.equipSlot));   // DOLL-SKIN
+    mark(dollLayerOfSlot(it.equipSlot, it), (b) => blit(b, img, art.palette, { remap, under, S }));   // DOLL-SKIN: by what it is
     layout.push({ slot: it.equipSlot, img });
   }
   return { out, layout, bgSize: [bg.width, bg.height], width: OW, height: OH, lining };
@@ -781,6 +788,10 @@ export function slotAtPaperDoll(px, py) {
  */
 export const paperDollPixels = () => _pixels;
 
+/** DOLL-SKIN: the compositor's own deps (fetchBytes, palette, getTexture, renderer - what the hosts preloaded the
+ *  player's art with), or null before a host has: the doll skin composes the player's figure through them. */
+export const paperDollDeps = () => _deps;
+
 
 /**
  * ONLINE1 (AUDIT ONLINE C1-C4, C8, C9): A DOLL FOR SOMEONE ELSE. The
@@ -807,10 +818,6 @@ export async function composePaperDollPixels(deps, entity, { context = 'town', b
     return lab ? { width: PAPERDOLL_W, height: PAPERDOLL_H, rgba: out, labels: lab, lining } : { width: PAPERDOLL_W, height: PAPERDOLL_H, rgba: out };
   } catch { return null; }
 }
-
-/** DOLL-SKIN: the compositor's own deps (fetchBytes, palette, getTexture, renderer - what the hosts preloaded the
- *  player's art with), or null before a host has: the doll skin composes the player's figure through them. */
-export const paperDollDeps = () => _deps;
 
 /** Test seam. */
 export const _debugPaperDoll = () => ({ live: !!_live, layers: _layout.map((l) => l.slot), version: _version });

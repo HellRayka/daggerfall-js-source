@@ -62,7 +62,8 @@ test('PROFILE2 wire: `look` is the hello\'s look without the hello - after one o
   assert.deepEqual(parseClient(JSON.stringify({ t: 'look', look: LOOK_B }), { hasHello: true }), { t: 'look', look: LOOK_B });
   assert.deepEqual(parseClient(JSON.stringify({ t: 'look', look: LOOK_B })), { error: 'look before hello' });
   assert.deepEqual(parseClient(JSON.stringify({ t: 'look', look: 'x' }), { hasHello: true }), { error: 'bad look' });
-  assert.equal(parseClient(JSON.stringify({ t: 'look', look: { ...LOOK_B, eo: 999 } }), { hasHello: true }).look.eo, 35, 'clamped at the door as the hello\'s is');
+  // PIN MOVED (DOLL-SKIN): the paperdoll is the last on-foot skin, 36 (dollskin1.test.js)
+  assert.equal(parseClient(JSON.stringify({ t: 'look', look: { ...LOOK_B, eo: 999 } }), { hasHello: true }).look.eo, 36, 'clamped at the door as the hello\'s is');
   assert.equal(LOOK_RELAY_MIN, 109);
   assert.equal(relaySupportsLook('world108'), false, 'an older relay closes on an unknown frame');
   assert.equal(relaySupportsLook('world109'), true);
