@@ -173,7 +173,7 @@
   {
     "name": "TESA2-no-arm",
     "file": "src/scenes/world.js",
-    "old": "    if ((_arenaTemplates || _countryTemplates) && !onTheBay(px, py)) return (_arenaTemplates && arenaLocationAt(px, py)) || countryLocationAt(px, py);   // TESA2: Arena's; TESA7: else the country's\n",
+    "old": "    if ((_arenaTemplates || _countryTemplates) && !onTheBay(px, py)) return (_arenaTemplates && arenaLocationAt(px, py)) || countryLocationAt(px, py) || lairLocationAt(px, py);   // TESA2: Arena's; TESA7-8: the land's\n",
     "new": "\n",
     "tests": [
       "test/tesa2_arena.test.js"

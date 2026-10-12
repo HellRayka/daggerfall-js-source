@@ -147,6 +147,9 @@ let _liveKey = null;         // the dungeon the player stands in - structurally 
  *  speaks the region INDEX + location name - the same identity, one
  *  lookup earlier. */
 export const automapDungeonKey = (regionIndex, name) => `${regionIndex}/${name}`;
+/** TESA8: A DUNGEON'S KEY BY ITS LOCATION - DFU's (region, name) for every place of the game's; a lair past the Bay
+ *  (world/tamrielDungeons.js), whose names repeat in the clamp's region its whole length, takes its own map id after it. */
+export const automapKeyOf = (loc, name = loc?.name ?? '') => `${automapDungeonKey(loc?.regionIndex ?? -1, name)}${loc?.country ? `#${(loc.mapTableData?.mapId ?? 0) >>> 0}` : ''}`;
 
 /** Enter a dungeon: fetch-or-create its record, and on a REAL entry
  *  stamp the visit clock, reset visitedThisRun and prune. The LOAD

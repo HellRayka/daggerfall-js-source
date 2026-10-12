@@ -458,6 +458,59 @@ farms, homes, inns, temples and shrines the Bay stands, as thick on the ground.
   the Bay's, its streets and houses standing in Skyrim's ground; the eight pixels round it stand none, as the rate
   says they mostly will.
 
+## TESA8 - the lairs (2026-10-12)
+
+The owner: *"Populating the world with its own dungeons"* (the fourth ask). Past the Bay the land now stands its own
+labyrinths, keeps, ruins and graveyards - the lairs - as thick as the Bay's, and none is a copy of a Bay dungeon:
+each is laid out to a plan of its own from Daggerfall's dungeon blocks.
+
+- **One a cell** (`world/tamrielDungeons.js` lairCellOf, lairSite): a lair an 8 x 8 cell of the countryside's grid at most
+  (2^19 cells), on the one pixel of the cell its hash names. So its cell's index is its identity: the lairs' one lane
+  (LAIR_LANE, 0x340, after the country places' 64) with the cell in its low 19 bits and 0x80000 set - no two lairs share a
+  dungeon's identity (`net/nodeLaw.js` DUNGEON_ID_MAX, DFU's MapId & 0xfffff: a profession's veins, PROF2's witnessed
+  dungeon), none a Bay place's. Its location index counts down from -LAIR_INDEX_BASE (-40,000,000), past the
+  countryside's. `isCountryPlaceId` answers for it too: no house is sold and no deed read in a keep's grounds.
+- **The rate is the Bay's** (lairPick): the site's climate's count of each kind over the Bay's land (TESA7's count and
+  land, `countryRates` over LAIR_TYPES), times the cell's 64 pixels, at most 1; the kind in proportion; the template off
+  the cell's hash in map-id order. On the freeware, lairs a thousand land pixels: MountainWoods 20.2, HauntedWoodlands
+  16.3, Woodlands 15.9, Subtropical 15.0, Rainforest 14.5, Swamp 13.1, Mountain 10.9, Desert2 10.3, Desert 7.2 - a
+  cell's chance 1.00 for the first three (the cap: a lair a cell). Over the continent 78,093: 28,404 labyrinths, 15,133 keeps, 20,733 ruins,
+  13,823 graveyards, where the countryside stands none.
+- **The kinds** (LAIR_TYPES, lairTemplates): DungeonLabyrinth, DungeonKeep, DungeonRuin, Graveyard - the game's rows of
+  each with an exterior and a dungeon with an interior block (1,500, 843, 1,112 and 774 on the freeware), never a
+  main-story place nor one the port made. MAPS.BSA's covens have no dungeon blocks, and none stands.
+- **The plan is its own** (lairPools, lairLayout - GenerateSmallerDungeon's law widened, `world/smallerDungeons.js`): the
+  template's own count of interior blocks (Daggerfall's sizes for that kind: a labyrinth 1 to 9, a keep or a ruin 2 to
+  4, a graveyard 1), grown block by block from the starting block at (0, 0) into one connected shape - each step a laid
+  block's side, both drawn on DFRandom seeded on the map id as GenerateSmallerDungeon seeds it, the stream's state put
+  back after - each block from the pool of every interior block MAPS.BSA lays for the template's DUNGEON TYPE (79 to
+  133 a type, the cemeteries' 9: so its foes and its look are the type's), none laid twice while the pool allows; the
+  starting block one MAPS.BSA starts a dungeon in; every open side closed by one of the type's border blocks. Over 60
+  seeds a nine-block plan is 60 different shapes. The exterior (the entrance's ground) is the template's; the dungeon
+  record's header carries the lair's id and its new block count. Smaller and medium dungeons and the online sizes
+  re-lay it from its own list, as any dungeon.
+- **The name** (lairName): a labyrinth or a graveyard its dungeon type's frame (LAIR_NAME_FRAMES, all 19 types: "The
+  Barrow of %m", "The Gaol of %s", "The Cabal of %w", "The %m Web") round the province's people's stems (`%s`, `%w`) or
+  DFU's monster banks (`characters/nameHelper.js` monsterName: Monster1 for the orcs' holds and the nests, Monster2 for
+  the caves and the desecrated temples, Monster3 for the crypts and the vampires' houses); a keep a castle's frame
+  whatever its type; a ruin "Ruins of" a country place's name (a farm, a manor, a hovel) or a keep's. The frames are the
+  port's own words in the shape MAPS.BSA's names take.
+- **Its own map** (`systems/automap.js` automapKeyOf): DFU keys a dungeon's automap by region and name, and a lair's
+  name repeats in the clamp's region; its key takes its map id after it - the game's places keep DFU's key exactly
+  (`scenes/dungeonContext.js`, `scenes/worldModes.js`' beacon read). No spawn ever clones one (`spawnTemplates`).
+- **The host** (`scenes/world.js` lairLocationAt): `_locationToBuild` past the Bay asks Arena's place, else the
+  country's (TESA7, which leaves a lair to its own), else the lair's - on its cell's site, on the countryside's ground
+  law (no water, no Arena road or track, no sea's edge), named off its province's people (the clamp's region's bank
+  without one), stood in the index once, and taken out when the cell's roll moves. Its rates share the countryside's
+  count of the Bay's land, read once. `?country=off` stands neither.
+- **Online, apart**: as TESA7's - Arena's place and its roads are each player's own. A lair's room is its full map id
+  (`net/online.js` roomKeyFor `dungeon:m<id>`), one a lair. Its dungeon's identity may meet an isle's ruin's (the
+  isles' 500,000 and up) - two dungeons a world apart, never two lairs.
+- **What a lair is not yet**: on no map, in no quest, at no road's end.
+- **Measured in the game** (headless, the freeware's ARENA2): at (2179, -359) in Skyrim the cell's site stands a keep,
+  Ulrik's Hold - a Nord's name, a castle's frame - on its template's castle ground (CASTAA06.RMB, 18 entrance doors);
+  the player walks in through its gate and stands in its dungeon: its own plan built, one exit, 140 action objects.
+
 ## The arc - what comes next
 
 - **The provinces as regions of their own** - their own chat rooms, banks, law, prices and quest sites. The save's shape,
@@ -473,16 +526,41 @@ farms, homes, inns, temples and shrines the Bay stands, as thick on the ground.
 - **Roads, the rest** - TESA4 stands the roads between Arena's places, TESA5 joins them to the Bay's and TESA6 makes
   the coastal cities ports. Still to come: the landforms' cut along the roads, the maps' ink of them, Arena's ports on
   the contract board and the ship passage.
-- **The owner's four asks of 2026-10-12, the rest** - TESA8, dungeons of the land's own past the Bay (the Bay's count of
-  labyrinths, keeps, ruins, graveyards and covens a climate, as TESA7's); TESA9, Morrowind of Morrowind's own (the
+- **The owner's four asks of 2026-10-12, the rest** - TESA9, Morrowind of Morrowind's own (the
   player's Morrowind.esm read for Vvardenfell's towns at their places and Morrowind's ground, plants, rocks and buildings
   across the province: the owner chose "Real towns + MW look"); TESA10, the capitals built by hand ("You build them
   yourself. No files needed": the Imperial City's White-Gold Tower in its walled ring on Lake Rumare, Solitude's arch
   over the water, the Blue Palace and Castle Dour, and Arena's capitals of the rest) - their signature landmarks in a
   layout of the port's own, never a copy of another game's level design.
-- **The countryside, the rest** - its places on the held map and the travel map, roads to them, and quest sites in them.
+- **The countryside and the lairs, the rest** - their places on the held map and the travel map, roads to them, and quest
+  sites in them.
 
 ## Pins
+
+`test/tesa8_lairs.test.js` (10, TESA8): the cell (8 x 8 of the countryside's grid, 2^19 of them, its four edges and a
+point none, its site inside it off its hash); the id (the lairs' lane after the country places', the cell in the low 20
+with 0x80000, past every Bay pixel id, one a cell, a place the countryside made, no country place in its lane; the index
+past the countryside's); the templates (labyrinths, keeps, ruins and graveyards in map-id order with an interior block,
+no main-story, spawned, isle's, Arena or country place); the pools (each dungeon type's interior, starting and border
+blocks once in map-id order, a starting block an interior one too, a border block by its B either case); the pick (64
+times the rate at most 1, the kind in proportion, the template's hash, none past the chance, for no climate, off the
+grid or with no template; the rates realised over 20,000 cells, every cell under a chance past 1); the plan (its count
+from the start at the origin out of the starting pool, one connected shape, none laid twice, every open side closed by
+one border block and nothing else, the same seed the same plan, 60 seeds 60 nine-block shapes, the stream put back, a
+pool of one laid again, none without a pool or a count); the name (all 19 dungeon types' frames, an orc hold one word,
+a keep a castle whatever its type, a ruin "Ruins of", deterministic, varied, an unknown type none, the stream put back);
+the clone (non-mutating, its id in the row, the exterior and both records, the pixel's longitude and latitude, its own
+plan and the header's count, the host's region, `country` with its cell and `dungeon`); no spawn clones a lair and its
+automap is its own (DFU's key for the game's places, both callers through automapKeyOf); the host by source (the rows
+before they go under the countryside's door, the Bay's land read once for both rates, the build's order, the
+countryside leaving a lair alone) and run (on its cell's site alone, stood once under its province's name and its
+template's size, a climate with none takes it out, water and a road none, a road landed late takes it out). Mutants
+`tools/mutants/tesa8.json` (70, all dead). PIN MOVED: `test/spawneddungeons.test.js` (the build's window 600 -> 640),
+`test/roadc_automap_interior.test.js` (the beacon's read through automapKeyOf, DFU's string for the game's places),
+`test/tesa7_country.test.js` (the lairs' lane is no country place's, the Bay's land read once, the lair's ask after the
+country's), `test/tesa2_arena.test.js` (the build's order); `tools/mutants/tesa7.json`'s TESA7-is-id-lane-floor,
+TESA7-is-id-lane-ceiling, TESA7-is-id-low-bit, TESA7-host-rates-dry, TESA7-host-arena-last, TESA7-host-no-country,
+TESA7-host-road and TESA7-host-shore and `tesa2.json`'s TESA2-no-arm re-aimed by content, all judged dead again.
 
 `test/tesa7_country.test.js` (11, TESA7): the id (the grid's four edges, a point none, the 64 lanes from 0x300, the low
 20 bits past every Bay pixel id, one a pixel, never an Arena place's, an isle's or a spawn's under any salt; the index

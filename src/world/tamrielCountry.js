@@ -54,10 +54,14 @@ export function countryOrdinal(px, py) {
 }
 /** An ordinal's map id. */
 export const countryPlaceId = (n) => (((COUNTRY_LANE + (n >>> 19)) << 20) | 0x80000 | (n & 0x7ffff)) >>> 0;
-/** Is a map id a country place's? */
+/** TESA8 (world/tamrielDungeons.js): the lairs' one lane, after the country places' - a dungeon an 8 x 8 cell of the
+ *  grid at most, so its cell's index (19 bits) with 0x80000 set is its low 20: no two of them share a dungeon's identity
+ *  (net/nodeLaw.js DUNGEON_ID_MAX, DFU's MapId & 0xfffff), and none a Bay place's. */
+export const LAIR_LANE = COUNTRY_LANE + COUNTRY_LANES;
+/** Is a map id a place the countryside made - a country place's (TESA7) or a lair's (TESA8)? */
 export function isCountryPlaceId(id) {
   const v = Number(id) >>> 0, lane = (v >>> 20) & 0xfff;
-  return lane >= COUNTRY_LANE && lane < COUNTRY_LANE + COUNTRY_LANES && (v & 0x80000) !== 0;
+  return lane >= COUNTRY_LANE && lane <= LAIR_LANE && (v & 0x80000) !== 0;
 }
 /** An ordinal's location index: its own negative. */
 export const countryLocationIndex = (n) => -(COUNTRY_INDEX_BASE + n);
@@ -114,18 +118,19 @@ export function bayLand(climateAt, isWater) {
 
 /**
  * THE RATES: of each climate, its kinds' chances as a pixel's roll reads them - [type, the roll's ceiling for it] in
- * COUNTRY_TYPES order, the last ceiling the climate's whole chance. A climate with no land on the Bay stands none.
- * @param {Map<number, Map<number, number>>} counts @param {Map<number, number>} land
+ * `types` order (COUNTRY_TYPES; TESA8's LAIR_TYPES), the last ceiling the climate's whole chance. A climate with no land
+ * on the Bay stands none.
+ * @param {Map<number, Map<number, number>>} counts @param {Map<number, number>} land @param {readonly number[]} [types]
  * @returns {Map<number, Array<[number, number]>>}
  */
-export function countryRates(counts, land) {
+export function countryRates(counts, land, types = COUNTRY_TYPES) {
   const out = new Map();
   for (const [c, row] of counts) {
     const n = land.get(c) ?? 0;
     if (!n) continue;
     let ceiling = 0;
     const steps = [];
-    for (const type of COUNTRY_TYPES) {
+    for (const type of types) {
       const k = row.get(type) ?? 0;
       if (!k) continue;
       ceiling += k / n;

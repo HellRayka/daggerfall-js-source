@@ -74,8 +74,8 @@
   {
     "name": "TESA7-is-id-lane-floor",
     "file": "src/world/tamrielCountry.js",
-    "old": "return lane >= COUNTRY_LANE && lane < COUNTRY_LANE + COUNTRY_LANES && (v & 0x80000) !== 0;",
-    "new": "return lane < COUNTRY_LANE + COUNTRY_LANES && (v & 0x80000) !== 0;",
+    "old": "return lane >= COUNTRY_LANE && lane <= LAIR_LANE && (v & 0x80000) !== 0;",
+    "new": "return lane <= LAIR_LANE && (v & 0x80000) !== 0;",
     "tests": [
       "test/tesa7_country.test.js"
     ]
@@ -83,7 +83,7 @@
   {
     "name": "TESA7-is-id-lane-ceiling",
     "file": "src/world/tamrielCountry.js",
-    "old": "return lane >= COUNTRY_LANE && lane < COUNTRY_LANE + COUNTRY_LANES && (v & 0x80000) !== 0;",
+    "old": "return lane >= COUNTRY_LANE && lane <= LAIR_LANE && (v & 0x80000) !== 0;",
     "new": "return lane >= COUNTRY_LANE && (v & 0x80000) !== 0;",
     "tests": [
       "test/tesa7_country.test.js"
@@ -92,8 +92,8 @@
   {
     "name": "TESA7-is-id-low-bit",
     "file": "src/world/tamrielCountry.js",
-    "old": "return lane >= COUNTRY_LANE && lane < COUNTRY_LANE + COUNTRY_LANES && (v & 0x80000) !== 0;",
-    "new": "return lane >= COUNTRY_LANE && lane < COUNTRY_LANE + COUNTRY_LANES;",
+    "old": "return lane >= COUNTRY_LANE && lane <= LAIR_LANE && (v & 0x80000) !== 0;",
+    "new": "return lane >= COUNTRY_LANE && lane <= LAIR_LANE;",
     "tests": [
       "test/tesa7_country.test.js"
     ]
@@ -470,8 +470,8 @@
   {
     "name": "TESA7-host-arena-last",
     "file": "src/scenes/world.js",
-    "old": "return (_arenaTemplates && arenaLocationAt(px, py)) || countryLocationAt(px, py);   // TESA2: Arena's; TESA7: else the country's",
-    "new": "return countryLocationAt(px, py) || (_arenaTemplates && arenaLocationAt(px, py));   // TESA2: Arena's; TESA7: else the country's",
+    "old": "return (_arenaTemplates && arenaLocationAt(px, py)) || countryLocationAt(px, py) || lairLocationAt(px, py);",
+    "new": "return countryLocationAt(px, py) || (_arenaTemplates && arenaLocationAt(px, py)) || lairLocationAt(px, py);",
     "tests": [
       "test/tesa7_country.test.js"
     ]
@@ -479,8 +479,8 @@
   {
     "name": "TESA7-host-no-country",
     "file": "src/scenes/world.js",
-    "old": "return (_arenaTemplates && arenaLocationAt(px, py)) || countryLocationAt(px, py);   // TESA2: Arena's; TESA7: else the country's",
-    "new": "return _arenaTemplates && arenaLocationAt(px, py);   // TESA2: Arena's; TESA7: else the country's",
+    "old": "return (_arenaTemplates && arenaLocationAt(px, py)) || countryLocationAt(px, py) || lairLocationAt(px, py);",
+    "new": "return (_arenaTemplates && arenaLocationAt(px, py)) || lairLocationAt(px, py);",
     "tests": [
       "test/tesa7_country.test.js"
     ]
@@ -497,8 +497,8 @@
   {
     "name": "TESA7-host-road",
     "file": "src/scenes/world.js",
-    "old": "> WATER_BYTE && !arenaPathsAt(px, py) && _countryGround(px, py);",
-    "new": "> WATER_BYTE && _countryGround(px, py);",
+    "old": "    const stands = !!pick && woods.getHeightMapValue(px, py) > WATER_BYTE && !arenaPathsAt(px, py) && _countryGround(px, py);",
+    "new": "    const stands = !!pick && woods.getHeightMapValue(px, py) > WATER_BYTE && _countryGround(px, py);",
     "tests": [
       "test/tesa7_country.test.js"
     ]
@@ -506,8 +506,8 @@
   {
     "name": "TESA7-host-shore",
     "file": "src/scenes/world.js",
-    "old": "&& !arenaPathsAt(px, py) && _countryGround(px, py);",
-    "new": "&& !arenaPathsAt(px, py);",
+    "old": "    const stands = !!pick && woods.getHeightMapValue(px, py) > WATER_BYTE && !arenaPathsAt(px, py) && _countryGround(px, py);",
+    "new": "    const stands = !!pick && woods.getHeightMapValue(px, py) > WATER_BYTE && !arenaPathsAt(px, py);",
     "tests": [
       "test/tesa7_country.test.js"
     ]
@@ -569,8 +569,8 @@
   {
     "name": "TESA7-host-rates-dry",
     "file": "src/scenes/world.js",
-    "old": "(x, y, c) => isWaterPixel(c, woods.getHeightMapValue(x, y)))));",
-    "new": "() => false)));",
+    "old": "(x, y, c) => isWaterPixel(c, woods.getHeightMapValue(x, y))));",
+    "new": "() => false));",
     "tests": [
       "test/tesa7_country.test.js"
     ]

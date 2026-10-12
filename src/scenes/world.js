@@ -287,6 +287,7 @@ import { arenaTemplates, arenaTemplateOf, synthesizeArenaLocation, ARENA_LOAD_WA
 import { fitBayToPicture } from '../world/tamrielLand.js';   // TAMRIEL3: where the Bay stands on it
 import { countryTemplates, countryCounts, bayLand, countryRates, countryPick, countryName, countryNameSeed, createCountryGround, synthesizeCountryLocation } from '../world/tamrielCountry.js';   // TESA7: the countryside past the Bay
 import { countrysideOn } from './shared.js';   // TESA7: its kill door
+import { lairTemplates, lairPools, lairPick, lairCellOf, lairSite, lairLayout, lairName, lairNameSeed, synthesizeLairLocation, lairPlaceId, LAIR_TYPES } from '../world/tamrielDungeons.js';   // TESA8: the lairs past the Bay
 import { arenaPathsAt } from '../world/arenaRoads.js';   // TESA7: no country place on an Arena road
 import { provinceKeyBeyondBay } from '../world/tamrielLand.js';   // TESA3: the province a pixel past the Bay stands on
 import { provinceByKey } from '../world/tamrielGeography.js';   // TESA3: its name and race
@@ -1742,6 +1743,12 @@ export async function bootWorld(canvas, renderer, params, status) {
   // the rows go. The land past the Bay streamed (TAMRIEL2), `?country` open; online too.
   const _countryTemplates = tamrielLand && countrysideOn() ? countryTemplates(_classicRows ?? _hubRows.map(classicRow).filter(Boolean), isMainStoryDungeon) : null;
   const _countryCounts = _countryTemplates ? countryCounts(_countryTemplates, (x, y) => maps.getClimateIndex(x, y)) : null;
+  // TESA8 (world/tamrielDungeons.js): THE LAIRS' TEMPLATES, THEIR COUNT AND THEIR BLOCKS - the labyrinths, keeps, ruins and
+  // graveyards a cell past the Bay may stand, how many of each the Bay's climates stand, and every dungeon type's blocks a
+  // lair's own plan is laid of - off the same rows, under the countryside's door
+  const _lairTemplates = _countryTemplates ? lairTemplates(_classicRows ?? _hubRows.map(classicRow).filter(Boolean), isMainStoryDungeon) : null;
+  const _lairCounts = _lairTemplates ? countryCounts(_lairTemplates, (x, y) => maps.getClimateIndex(x, y)) : null;
+  const _lairPools = _lairTemplates ? lairPools(_lairTemplates) : null;
   // TESA2 (world/arenaLocations.js): THE ARENA PLACES' TEMPLATES - the cities, hamlets, villages, labyrinths and keeps an
   // Arena place may clone, off the same rows (the game's own, as MAPS.BSA holds them), kept before the rows go
   const _arenaTemplates = arenaStands ? arenaTemplates(_classicRows ?? _hubRows.map(classicRow).filter(Boolean), isMainStoryDungeon) : null;
@@ -2481,7 +2488,7 @@ export async function bootWorld(canvas, renderer, params, status) {
    *  the Overworld (tvSpawnGone) had it gone. */
   function _locationToBuild(px, py) {
     if (etherSea && inEther(px, py)) return etherPlaceAt(px, py);   // ETHER-PLACES: an isle's place, or the open sea's none
-    if ((_arenaTemplates || _countryTemplates) && !onTheBay(px, py)) return (_arenaTemplates && arenaLocationAt(px, py)) || countryLocationAt(px, py);   // TESA2: Arena's; TESA7: else the country's
+    if ((_arenaTemplates || _countryTemplates) && !onTheBay(px, py)) return (_arenaTemplates && arenaLocationAt(px, py)) || countryLocationAt(px, py) || lairLocationAt(px, py);   // TESA2: Arena's; TESA7-8: the land's
     const key = `${px},${py}`;
     const loc = locationIndex.get(key);
     if (loc?.spawned && _spawnLedger.expired(key, _spawnClock()) && !_insideSpawn(key)) {
@@ -2534,8 +2541,10 @@ export async function bootWorld(canvas, renderer, params, status) {
   /** TESA7 (world/tamrielCountry.js): THE COUNTRYSIDE'S RATES - each climate's chances, the Bay's count over the Bay's land
    *  (CLIMATE.PAK and WOODS.WLD's water law, ui/overworldModel.js isWaterPixel), worked out at the first pixel past the Bay
    *  that asks (the Bay's half a million pixels read once). */
-  let _countryRates = null;
-  const countryRatesNow = () => (_countryRates ??= countryRates(_countryCounts, bayLand((x, y) => maps.getClimateIndex(x, y), (x, y, c) => isWaterPixel(c, woods.getHeightMapValue(x, y)))));
+  let _countryRates = null, _lairRates = null, _bayLand = null;
+  const bayLandNow = () => (_bayLand ??= bayLand((x, y) => maps.getClimateIndex(x, y), (x, y, c) => isWaterPixel(c, woods.getHeightMapValue(x, y))));
+  const countryRatesNow = () => (_countryRates ??= countryRates(_countryCounts, bayLandNow()));
+  const lairRatesNow = () => (_lairRates ??= countryRates(_lairCounts, bayLandNow(), LAIR_TYPES));   // TESA8: the lairs' over the same land
   const _countryGround = _countryTemplates ? createCountryGround(woods) : null;
   /** TESA7: THE PLACE THE COUNTRYSIDE STANDS ON A PIXEL PAST THE BAY that no Arena place takes - its roll's kind and template
    *  (countryPick: the climate's rates, the pixel's hash), never on water, on an Arena road or track (SPAWN-ROADS' law: a
@@ -2551,7 +2560,7 @@ export async function bootWorld(canvas, renderer, params, status) {
     const stands = !!pick && woods.getHeightMapValue(px, py) > WATER_BYTE && !arenaPathsAt(px, py) && _countryGround(px, py);
     const regionIndex = maps.getRegionIndexAt(px, py);
     const name = stands ? countryName(pick.type, provinceNameBank(provinceKeyBeyondBay(px, py)) ?? getNameBankOfRegion(regionIndex), countryNameSeed(px, py)) : null;
-    if (had?.country) {
+    if (had?.country && !had.country.dungeon) {   // TESA8: a lair is lairLocationAt's
       if (stands && had.country.type === pick.type && had.country.template === pick.template.mapTableData?.mapId && had.name === name) return had;
       _locIndexGen += 1;
       locationIndex.delete(key);
@@ -2559,6 +2568,29 @@ export async function bootWorld(canvas, renderer, params, status) {
     if (!stands) return null;
     const loc = synthesizeCountryLocation(pick.template, { px, py, type: pick.type, name }, { regionIndex, regionName: REGION_NAMES[regionIndex], politic: 128 + regionIndex, climate: getWorldClimateSettings(maps.getClimateIndex(px, py)) });
     if (!loc) return null;
+    _locIndexGen += 1;
+    locationIndex.set(key, loc);
+    return loc;
+  }
+  /** TESA8 (world/tamrielDungeons.js): THE LAIR A PIXEL PAST THE BAY STANDS that neither Arena nor the countryside takes -
+   *  where it is its cell's one site and the cell's roll stands one (lairPick: the site's climate's rates, the cell's
+   *  hash), on the countryside's ground law (no water, no Arena road or track, no sea's edge); named off its province's
+   *  people or its dungeon type's monster bank, laid out to a plan of its own off its dungeon type's blocks (lairLayout),
+   *  cloned under its own id, name and index - stood in the index once, and again when what the pixel stands moves. */
+  function lairLocationAt(px, py) {
+    const key = `${px},${py}`, had = locationIndex.get(key), c = _lairTemplates ? lairCellOf(px, py) : -1;
+    const site = c >= 0 ? lairSite(c) : null;
+    const pick = site && site.px === px && site.py === py ? lairPick(lairRatesNow(), _lairTemplates, maps.getClimateIndex(px, py), c) : null;
+    const dry = !!pick && woods.getHeightMapValue(px, py) > WATER_BYTE && !arenaPathsAt(px, py) && _countryGround(px, py);
+    const regionIndex = maps.getRegionIndexAt(px, py), dungeonType = pick?.template.mapTableData?.dungeonType;
+    const name = dry ? lairName(pick.type, dungeonType, provinceNameBank(provinceKeyBeyondBay(px, py)) ?? getNameBankOfRegion(regionIndex), lairNameSeed(c)) : null;
+    const same = !!had?.country?.dungeon && dry && had.country.cell === c && had.country.template === pick.template.mapTableData?.mapId && had.name === name;
+    if (same) return had;
+    if (had?.country?.dungeon) { _locIndexGen += 1; locationIndex.delete(key); }   // its cell's roll moved (the trace landing, a road): out
+    if (!dry) return null;
+    const blocks = lairLayout(_lairPools.get(dungeonType), pick.template.dungeon.blocks.filter((b) => !/^b/i.test(b.blockName)).length, lairPlaceId(c));
+    if (!blocks) return null;
+    const loc = synthesizeLairLocation(pick.template, { c, px, py, type: pick.type, name, blocks }, { regionIndex, regionName: REGION_NAMES[regionIndex], politic: 128 + regionIndex, climate: getWorldClimateSettings(maps.getClimateIndex(px, py)) });
     _locIndexGen += 1;
     locationIndex.set(key, loc);
     return loc;
