@@ -1283,7 +1283,8 @@ the law and every place this slice narrowed it (BUILT, CHAP1).
   `roll-busy`, a claim already taken is answered `repeat`. Every act names a realm character of the session's account,
   standing, under the playing tab's lease. A realm character's delete takes its head, rows and record. Behind
   `CHAPTERS_OPEN` (`server-account/wrangler.toml`), shipped `dev`: the developers' characters first, everyone else's
-  standing still the save's until the line says `on`. The service is `acct93`; deploy it before the site. No relay
+  standing still the save's until the line says `on` - which it does from CHAPTERS-ON (2026-10-12, Mac: "Turn them
+  on"; `01-Overview/Field-Bugs-2026-10-12.md`). The service is `acct93`; deploy it before the site. No relay
   change. AUDIT CHAP: a write's guard is a tag of its own, not the next `seq` (a claim's twin wrote its lines twice);
   the lease and the death are asked inside the write; a repeat is any id the record holds; a claim that changes nothing
   writes nothing; a character with no landed save has no Roll (`no-data`), and an undone customs takes its Roll.

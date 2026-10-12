@@ -15,7 +15,7 @@ import {
   GRIMOIRE_SPELLBOOKS, grimoireSpellbook, bookSound, BOOK_BEAT_MS, UNROLL_SEL, DIAL_WORD, ATTRIBUTE_WORD, VITAL_WORD,
 } from '../src/ui/grimoireDress.js';
 import { GRIMOIRE_CROPS, GRIMOIRE_SIZES, TEAR_LUMA, FRAME_ART, grimoireGrid, DIAL_ICONS, dialIconBox, dialIconSize, dialRows, dialArtName, NATIVE, VIAL_CUT } from '../src/ui/grimoireArt.js';
-import { applyPlusTheme } from '../src/ui/enhancedPlusStyle.js';
+import { applyPlusTheme, REFORGE_CSS } from '../src/ui/enhancedPlusStyle.js';
 import { FRAME_ROLES } from '../src/ui/enhancedFrame.js';
 
 const rd = (p) => readFileSync(new URL('../' + p, import.meta.url));
@@ -98,7 +98,7 @@ test('GRIM1: THE INK - a light word becomes the pack\'s brown ink, darker the br
   assert.deepEqual([brass.h, brass.l], [5, 0.29], 'Plus\'s brass is the pack\'s red');
   assert.deepEqual([snapSize(12), snapSize(20), snapSize(21), snapSize(26), snapSize(46)], [16, 16, 32, 32, 48], 'every size on the face\'s 16px grid');
   const green = hslOf(inkColour('#6fcf8a'));
-  assert.ok(green.h > 120 && green.h < 150 && green.l === 0.25, 'a gain stays green, in ink');
+  assert.ok(green.h > 120 && green.h < 150 && green.l <= 0.25 && green.l >= 0.15, 'a gain stays green, in ink - INK-READ: deepened only as far as it reads at 4.5:1');
   assert.equal(inkColour('#0e1013'), null, 'a dark word stands');
   assert.equal(inkColour('rgba(255,255,255,0)'), null, 'a clear one too');
   const half = hslOf(inkColour('rgba(233,228,217,0.5)'));
@@ -263,7 +263,8 @@ test('GRIM4: THE BARS - the foe\'s and the boss\'s are the player\'s own whole v
   assert.match(css, /\.px-mrow\[data-grim-meter="vital"\] \.px-fill\.blood \{ background: var\(--grim-vialHealthHead,/);
   assert.match(css, /\.px-mrow\[data-grim-meter="vital"\] \.px-fill\.verdigris \{ background: var\(--grim-vialMagickaHead,/);
   assert.match(css, /\.px-mrow\[data-grim-meter="attr"\] \.px-meter \{ height: calc\(3 \* var\(--gq/, 'an attribute: the skill bar\'s thin groove');
-  assert.match(css, /\.px-journal > \.px-qdetail \{[^}]*padding: calc\(2 \* var\(--gp, 3px\)\) calc\(2 \* var\(--gp, 3px\)\) calc\(1 \* var\(--gp, 3px\)\) calc\(2 \* var\(--gp, 3px\)\)/);
+  // PAGE-CENTRE (2026-10-12): the right-hand page's outer side takes the gutter's extra width, so its writing stands centred
+  assert.match(css, /\.px-journal > \.px-qdetail \{[^}]*padding: calc\(2 \* var\(--gp, 3px\)\) calc\(calc\(2 \* var\(--gp, 3px\)\) \+ calc\(18 \* var\(--gp, 3px\)\)\) calc\(1 \* var\(--gp, 3px\)\) calc\(2 \* var\(--gp, 3px\)\)/);
   assert.match(css, /\.lv-ribbon:has\(\.lv-sk:nth-child\(15\)\) \{ grid-template-columns: 1fr; grid-auto-rows: minmax\(min-content, 1fr\); align-content: stretch; \}/);
   for (const w of ['Strength', 'intelligence', 'Luck']) assert.ok(ATTRIBUTE_WORD.test(w), w);
   for (const w of ['Health', 'Fatigue', 'Magicka']) { assert.ok(VITAL_WORD.test(w), w); assert.ok(!ATTRIBUTE_WORD.test(w), w); }
@@ -305,7 +306,8 @@ test('GRIM6: the front door\'s desk is the pack\'s painting at its own resolutio
   assert.match(readFileSync(new URL('../src/ui/heldMap.js', import.meta.url), 'utf8'), /root\.dataset\.hmSheet = this\._slot\?\.live \?\? '';/, 'the map\'s root says which sheet is up');
   assert.match(css, /\.pack-shell \.equipped \.wornrow \{ padding: calc\(5 \* var\(--gq[^}]*overflow: hidden; \}/);
   assert.match(css, /body \.dfchat-input \{ color: #2b1a0c !important; -webkit-text-fill-color: #2b1a0c !important;/);
-  assert.match(css, /\.dfchat-box :is\(\.dfchat-name, \.dfchat-who-name\)\[style\*="color"\] \{ filter: brightness\(0\.3\) saturate\(1\.6\); \}/);
+  // NAME-INK (2026-10-11, Mac: "the color was the problem not the font"): a name in a colour of its own on the page, never the words' ink
+  assert.match(css, /\.dfchat-box :is\(\.dfchat-name, \.dfchat-who-name\) \{ color: #7a170c !important; filter: none !important; \}/);
   assert.match(css, /\.dfchat-peek, [^{]*\.dfchat-peek \* \{\n  text-shadow: -1px 0 0 #120804/);
   assert.match(css, /\.lv-count \{ font-size: 32px !important; line-height: 32px;/);
   assert.match(css, /\.lv-plate > \.lv-count \{ grid-column: 2; grid-row: 1; justify-self: end; margin-right: -12px !important; \}/);
@@ -454,4 +456,14 @@ test('GRIM-FIELD (2026-10-11, the DFO Grimoire bug thread): the Controls head st
   assert.match(css, /\.px-setwrap \.detail\.open \{[^}]*border-image: var\(--grim-sideScroll, none\)/, 'the picker\'s scroll, as the item scrolls are');
   assert.match(css, /\.shell \.detail > :is\(\.dcard, \.card\) \{[^}]*border-image: var\(--grim-sideScroll, none\)/, 'the front door\'s column holds the same scroll');
   assert.ok(UNROLL_SEL.includes('.px-setwrap .detail.open'), 'it unrolls and rolls shut');
+});
+
+test('PAGE-CENTRE + SCRY-FIT + NO-BAR (2026-10-12): the right-hand page centred; a Reforge row sizes its price and press to their words and reads at 4.5:1 on the page; no red bar down a chosen row', () => {
+  const css = kitCss() + rosterCss();
+  assert.match(css, /\.reforge-shell \.broker-offer \.broker-price \{ color: #2b1a0c !important;/, 'a price in ink');
+  assert.match(css, /\.reforge-shell \.broker-offer\.scry-row \.broker-name \{ color: #7a170c !important;/, 'a family in the deep red');
+  assert.match(css, /\.reforge-shell \.broker-buy\[data-grim-on="page"\]:is\(:disabled, \[disabled\]\) \{ color: #4f3218 !important; font-style: italic; \}/, 'a press that cannot, its reason in the soft ink, never faded');
+  assert.doesNotMatch(css, /inset 3px 0 0 #8e1a10/, 'no red bar down a chosen row');
+  assert.match(REFORGE_CSS, /\.reforge-shell \.broker-offer\.scry-row \{ grid-template-columns: minmax\(0, 1fr\) max-content minmax\(112px, max-content\); \}/);
+  assert.match(REFORGE_CSS, /\.reforge-shell \.broker-offer\.scry-row > \.broker-offer-body \{ grid-column: 1; \}/);
 });

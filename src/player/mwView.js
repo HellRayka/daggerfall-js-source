@@ -590,6 +590,12 @@ export function mwViewHides() {
   // TV1: under the travel view the camera is hundreds of metres up - no first-person hand, horse or weapon belongs on it
   if (heldThird) return { weapon: true, horse: true, spellHands: true };
   const hides = eotbLane() ? eotbBody.hides() : { weapon: false, horse: false, spellHands: false };
+  // HORSE-POV (2026-10-12, the owner: "when using the morrowind models for the horse, the 2d sprite is still painted on
+  // the screen, especially in third person"): the riding sprite is the view from the saddle. The Morrowind body in third
+  // person is seen from behind - its horse, when it sits one, stands in the world in 3D (fpArm.js drawThird's `horse`) -
+  // so no first-person horse is on the screen. mwViewDrawSaddle answers false out of first person, and the sprite read
+  // that as its turn.
+  if (!eotbLane() && mwCamera.thirdPerson()) return { ...hides, horse: true };
   return benchSeated ? { ...hides, horse: true } : hides;   // WAGONS3: on the bench the team is in the world, not on the screen
 }
 

@@ -203,8 +203,8 @@ test('NAME1: the sight test is the ENGINE\'S OWN and says what it cannot see - t
   assert.match(src, /TERRAIN is not one of them/, 'the limit is written down where the law is');
   assert.match(src, /pickActivatableHit|pickFoeAlong/, 'and it cites the two picks that already ask this question');
   const w = rd('src/scenes/world.js');
-  assert.match(w, /const blocked = \(head, id\) => nameSight\.blocked\(player\.collider, eye, id, head\);/,
-    'the host casts against player.collider - the LIVE one worldModes re-points at every door - through the session\'s own cache (AUDIT NAME1 F2/F5)');
+  assert.match(w, /const blocked = \(head, id\) => glassCuts\(projectToScreen\(head, 1, 1, proj, view\)\) \|\| nameSight\.blocked\(player\.collider, eye, id, head\);/,
+    'the host casts against player.collider - the LIVE one worldModes re-points at every door - through the session\'s own cache (AUDIT NAME1 F2/F5)');   // PIN MOVED (GLASS-CLEAR, 2026-10-11): a head the glass's focus cut from its view is nameless first
   assert.match(rd('src/scenes/worldModes.js'), /player\.collider = ctx\.collider;/, 'and worldModes really does re-point it (the interior and the dungeon)');
 });
 
@@ -427,7 +427,7 @@ test('NAME1 + BUBBLE1: the wiring in scenes/world.js - the layer is made ONCE be
   assert.equal((w.match(/createSightCache\(/g) ?? []).length, 4, 'never per frame either - a cache rebuilt every frame is no cache: the names\', (AUDIT NAV1) the ships\' tags\', (SHIPMATES) the crew\'s bars\' and (AUDIT CAPTAIN\'S SEA S6) the glass\'s, each made once');
   assert.match(bare, /\n  const shipSight = createSightCache\(\);/, 'the ships\' tags\' own made with the host, at its top level - offline too, where the names\' is never made');
   assert.match(bare, /\n  const crewSight = createSightCache\(\);/, 'SHIPMATES: the crew\'s bars\' own, the same');
-  assert.match(bare, /const blocked = \(head, id\) => nameSight\.blocked\(player\.collider, eye, id, head\);/);
+  assert.match(bare, /const blocked = \(head, id\) => glassCuts\(projectToScreen\(head, 1, 1, proj, view\)\) \|\| nameSight\.blocked\(player\.collider, eye, id, head\);/);   // PIN MOVED (GLASS-CLEAR, 2026-10-11): a head the glass's focus cut from its view is nameless first
   // AUDIT NAME1 F1/F14: ONE call, into the pass the test below drives end to end.
   assert.match(bare, /remotePlayers\.nameFrame\(\{/, 'the whole pass in one call');
   assert.match(bare, /w: nameLayer \? canvas\.clientWidth : canvas\.width,/, 'CSS pixels for a style attribute, the buffer\'s for the bitmap pass');

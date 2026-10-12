@@ -62,8 +62,9 @@ once in the console (`[port] <town>: no room for its ...`); a town with room for
 
 The port's own geometry in the port's own art, made at boot under the pseudo-archive 38231 (`world/portArt.js`
 `PORT_ARCHIVE`): the yards' timber, planks, shingles, straw, earth, gravel, water and iron at the yards' own records, and
-stone, whitewash, a red band, slate, glass, a lit window, rope, canvas, tar, copper, sawdust, a hull's planking,
-cobbles, a door, notices and brass besides, and the two boards. Nothing of Daggerfall's is read for either.
+stone, whitewash, slate, glass, a leaded window, rope, canvas, tar, sawdust, a hull's planking, cobbles, a door, notices
+and brass besides, the two boards, and the beacon's flame and embers (BEACON-TOWER, below: the red band and the copper
+went with the tower that wore them). Nothing of Daggerfall's is read for either.
 
 **The shipyard** (`world/shipyardModel.js` `buildShipyardModel`, `SHIPYARD` its layout). A board fence round the yard; a
 gate arch at its front, two tall posts and a beam with the SHIPS board hung from it on iron rods - an anchor and the word
@@ -80,19 +81,24 @@ scaffold's posts, the capstan's bars clear the sea wall and the posts, the secon
 front, the gables stop under their roofs, the hall's eaves beam butts its far side, the scaffold's inner posts stop under
 its walk.
 
-**The lighthouse** (`world/lighthouseModel.js`). A round stone plinth, a whitewashed tower narrowing up to its gallery
-(`towerR`), two red bands; its door to the town under a lintel, slit windows up its faces; the gallery at `GALLERY_Y`
-(17.6 m) round the lantern room, an iron railing; the lantern room's glass between its mullions, its lamp, a copper dome
-and vane; the keeper's cottage beside it, its water butt and the oil casks by the tower clear of each other and of the
-plinth; the door and the slit windows lean with the tower's taper. The lantern's glass and the lamp's lens are a mesh of
-their own (`buildLighthouseGlass`), drawn casting no shadow - the lamp stands inside them, and as casters they shadowed
-its own light on every side (AUDIT SHIPYARDS L5-2) - and stand in the collider with the rest.
+**The lighthouse** (`world/lighthouseModel.js`) - a BEACON TOWER since BEACON-TOWER (below). A round stone plinth, the tower
+in grey ashlar narrowing up to its gallery (`towerR`), two string courses round it; its door to the town under a lintel,
+slit windows of leaded panes up its faces; a corbel table, three stepped stones under each face, carrying the gallery at
+`GALLERY_Y` (17.6 m), and round it a battlemented parapet (`parapetR` its inner face) - a crenel to the town and one to
+the sea, a merlon between each two; on the gallery the open stone lantern, eight round arches on their sills (`ARCH_CROWN`
+their crown), a cornice with the lantern's ceiling under it, a steep slate cone (`roofH`) and an iron rod and vane at its
+point (`LANTERN_H` the lantern's height to that point); in it the beacon, an iron brazier on a stone pedestal, its coals
+smouldering; the keeper's cottage beside it, its water butt and the oil casks by the tower clear of each other and of
+the plinth; the door and the slit windows lean with the tower's taper. The beacon's flames are a mesh of their own
+(`buildLighthouseFire`), drawn casting no shadow - the lamp's light stands in them, as it stood inside the lantern room's
+glass the first tower had, which as a caster shadowed its own light on every side (AUDIT SHIPYARDS L5-2) - only in the
+lanterns' hours, and never a solid.
 
-**The gallery's guard** (`guardBand`), the collider's alone: a corridor just inside the railing from the gallery's floor
-to `guardH` (2.2 m) over it, lidded in to the lantern's glass, standing in a bucket of its own while the feet are on the
+**The gallery's guard** (`guardBand`), the collider's alone: a corridor just inside the parapet from the gallery's floor
+to `guardH` (2.2 m) over it, lidded in to the lantern's faces, standing in a bucket of its own while the feet are on the
 gallery under its lid (`scenes/portHost.js` `guardFor`: it stands once they are inside its band `GUARD_HEADROOM` under
-the lid and stays while they are within its height and the railing's reach). AUDIT SHIPYARDS L4-1: a ring over the
-railing, open over its top, let the classic climb (Climbing 10 in 1.63 s), a boosted jump and the enhanced climb with a
+the lid and stays while they are within its height and the parapet's reach). AUDIT SHIPYARDS L4-1: a ring over the
+iron railing the first tower had, open over its top, let the classic climb (Climbing 10 in 1.63 s), a boosted jump and the enhanced climb with a
 vault go over it - a 19.68 m fall - and the lid, standing always, was a floor to a body coming down onto the gallery from
 over it.
 
@@ -201,7 +207,8 @@ for the player's ship, and two players may sign the same named sailor (L2-10, L7
 ## The lighthouse
 
 **The lamp** (`scenes/portHost.js` `lights`, `glows`). In the lanterns' hours (the town's: `lightsOnAt`, 17:00 to 08:00)
-the lamp is a scene light at its glass (`LAMP_RANGE`, 28 m) and the shipyard's office lantern another
+the lamp - the beacon's fire - is a scene light at the fire's middle (`LAMP_RANGE`, 28 m), its flames are drawn over
+the coals, and the shipyard's office lantern is another light
 (`OFFICE_LAMP_RANGE`); its glow and two beams sweeping a full circle one round every `BEAM_PERIOD_S` (14 s) - over the
 town too - each `BEAM_PUFFS` added puffs out to `BEAM_LEN_M`, wider and fainter as they go, are drawn as added light in
 the sea fight's particle pass (`render/navalRender.js`) from as far as `BEAM_SEEN_M` (2.6 km) - a light a captain sees
@@ -220,9 +227,64 @@ AUDIT SHIPYARDS L4-4: it stood the player in the step), facing the town. Up on f
 foe about (each refusal the host's own words - `stairRefusal`, `stairFeetY`); down always, so a gallery is never a trap
 - onto the drawn ground at the door where it stands higher than the tower's middle. The pool holds a place's collider
 back while the player's feet stand on its ground as it first rises - up the lighthouse's hollow tower to half a metre
-under its gallery and inside its lantern room to its dome's top (L4-5: it stopped at 2.5 m, and a body levitating inside
-was sealed in, then shut in the glass), never feet up on the gallery - and a load stands the pool again at once, after the
+under its gallery and inside its lantern to its roof's point (L4-5: it stopped at 2.5 m, and a body levitating inside
+was sealed in, then shut in the lantern room's glass the first tower had), never feet up on the gallery - and a load stands the pool again at once, after the
 loaded player stands and before the frame's first step: a save made on the gallery loads onto its floor.
+
+## The beacon tower (BEACON-TOWER, 2026-10-11, Mac: "The lighthouse model is insanely good but way too modern for daggerfall's lore")
+
+**What was modern.** The first tower was a lighthouse of the age of steam: whitewash and two red bands (a daymark,
+painted so a ship tells one light from another by day), a lantern room glazed in iron mullions, a copper dome with its
+vent ball, an iron railing round the gallery. The Iliac Bay of 3E 405 lights its coasts as a medieval coast was lit - a
+tower of bare stone with a fire on its head, and High Rock's towers wear steep slate cones.
+
+**What it is now** (`world/lighthouseModel.js`). The tower in the port's grey ashlar from its plinth to its head, two
+string courses round it (`courses`); its slit windows in leaded panes (`world/portArt.js` `portWindowArt` - they were a
+sheet of plate glass with a streak of sky across it, and the shipyard office's windows wear the same panes now); a CORBEL
+TABLE, three stepped stones under each of the tower's sixteen faces, carrying the gallery's slab - out to 3.3 m now, to
+carry the parapet; a battlemented PARAPET round the walk (`parapetR` its inner face, the line the guard stands just inside;
+1 m high, a merlon half a metre over it on every other face - the crenels on the town's and the sea's bearings, where the
+hatch is and where the climb comes out facing the sea); on the gallery the open LANTERN - eight faces of stone 0.3 m thick,
+each opened by a round arch over a sill 0.75 m high (`ARCH_CROWN`, 2.51 m over the floor), a cornice with the lantern's
+ceiling under it, and a slate cone 2.6 m high over eaves 0.26 m out (`LANTERN_H`, 5.6 m to its point) with an iron rod,
+a collar and a pennant vane at its point; in the lantern the BEACON - a stone pedestal and an iron brazier on it, its
+coals (`embers`) their own light, smouldering by day. The gallery's floor and the slab's underside wear the stone flat off
+the world's axes (`section`'s top and foot): each slice wore the whole picture from the middle out, a star of seams.
+
+**The fire** (`buildLighthouseFire`; `scenes/portHost.js` `draw`, `paintArt`). Three crossed sheets of flame over the
+coals, each both ways, wearing the port's flame (`portFlameArt`: three tongues on nothing, white-hot at their roots, red
+at their tips) - a cutout (`PORT_HOW`: `uploadTexture`'s `cutout`, a texel under half alpha a hole), and the flame and
+the coals each their own light (`uploadEmissionTexture`, `white`: lit as the gate's fires and the realm's lights are, at
+any hour, by nothing else's light). The flames are drawn only in the lanterns' hours, casting no shadow - the lamp's
+light stands in them, AUDIT SHIPYARDS L5-2's law - and are no solid: the collider holds the model and the keeper's box.
+The lamp (`LIGHTHOUSE_POINTS.lamp`) is the fire's middle, where it stood; its scene light, its glow and the two sweeping
+beams Mac chose for the lighthouse are as they were.
+
+**What did not move.** The plinth, the door with its lintel and step, the slit windows' places, the hatch, the keeper's
+cottage with its butt and the oil casks (the beacon's oil now), the footprint, `GALLERY_Y`, the guard's band and lid (on
+the parapet's line, lidded in to the lantern's faces), and every point the climb, the guard and the keeper stand on. The
+arches' crown stands 0.31 m over the guard's lid - less than a crouching body (`CROUCH_HEIGHT`, 0.9) - so nobody passes
+over the lid through an arch, and the walk from the lantern's faces out to the guard's band stands clear of every stone,
+all round, up to the lid. The eye names the fire the beacon, and the keeper's words speak of it - its hours, its stair, its
+oil under lock (`PORT_TEXT`).
+
+**Seen** in a software render of its own geometry (perspective, depth, the port's own art with its cutout, its own light by
+night) from the town, from the sea, from under the corbels and from the gallery into the lantern, by day and by night -
+never yet in a port town of the player's.
+
+**Tests.** `test/beacontower.test.js` (8): the tower is stone, the battlements, the walk is clear, the lantern is open, the
+roof's point is the lantern's top, the fire, the art and the words - on the producer's own model and the real collider's
+rays. PIN MOVED: `test/shipyards1_place.test.js` (the gallery's spot between the lantern and the parapet; the art's list;
+the third mesh the flames), `test/shipyards1_audit_port.test.js` (the gallery holds inside the parapet; the guard's line;
+the hollow tower to the roof's point; L5-2's pin the flames' - drawn with noShadow in the lanterns' hours, never by day,
+never in the collider). Mutants: `tools/mutants/beacontower.json` (21), every one dead - BEACON-the-tower-whitewashed
+survived the first cut of its pin, which read only faces wholly over the cottage's chimney while the shaft is one face
+from the plinth to the corbels; it reads every face that rises over the chimney now. `shipyards1.json`'s
+SHIPYARDS-the-gallery-to-the-town and `shipyards1_audit.json`'s the-guard-unheld and the-guard-outside-the-rail are
+re-aimed at the parapet's name and the-glass-casts at the flames' draw; the-glass-out-of-the-collider is retired with the
+glass - its law turned (the flames are no solid: BEACON-the-flames-a-solid) - so `shipyards1_audit.json` holds 72. The
+three lists, run again whole: 169 judged, 168 dead and the one survivor above; `beacontower.json` again with its pin
+mended, 21 of 21 dead.
 
 ## The piers
 
@@ -309,8 +371,9 @@ sea, the bearing, the town's own sea, no room, the models, the art, the pool, th
 page, the plaques, the lamp, the Overworld's marks. `test/shipyards1_found.test.js` - the Where-is page, the answer, the town map,
 the docks on the Overworld, the glyphs, the four hosts, the lamp reaching the renderer (`test/yardLightRig.mjs`, the host's
 own light composition), the tutorial's pages. `test/piers1.test.js` - the pier's dress. `test/shipyards1_audit.test.js` and
-`test/shipyards1_audit_port.test.js` - AUDIT SHIPYARDS's pins (below). Mutants: `tools/mutants/shipyards1.json` (76) and
-`tools/mutants/shipyards1_audit.json`, every one dead.
+`test/shipyards1_audit_port.test.js` - AUDIT SHIPYARDS's pins (below). `test/beacontower.test.js` - BEACON-TOWER's (above).
+Mutants: `tools/mutants/shipyards1.json` (76), `tools/mutants/shipyards1_audit.json` (72) and
+`tools/mutants/beacontower.json` (21), every one dead.
 
 ## AUDIT SHIPYARDS (2026-10-11, Mac: "Audit everything")
 
@@ -363,10 +426,10 @@ are.
 | L4-2 MEDIUM: ~16 KB a frame a lit lighthouse, 2.2 KB the frame | CONFIRMED | records in place, arrays cut to their count (`length = 0` trimmed and regrew them), no Set a frame, no `Math.hypot` (three arguments allocate in V8), keys and sizes read as an idle frame turns (A NIGHT FRAME ALLOCATES NOTHING HERE: 16, 13 and 0.1 bytes a call, a control at 96) |
 | L4-3 LOW: the window over a re-anchor | PARTIAL (a load was main's DUPE-LOAD's) | `closeShipyard()` in `navalClear` |
 | L4-4 LOW: the way down stood the player in the door's step | CONFIRMED | `STEP_CLEAR` (THE WAY DOWN CLEAR OF THE STEP) |
-| L4-5 LOW: a body levitating in the hollow tower sealed in | CONFIRMED - ADAPTED | held back to half a metre under the gallery, and in the lantern room to its dome's top - the lane's line alone popped the body into the glass (THE HOLLOW TOWER HOLDS NOBODY) |
+| L4-5 LOW: a body levitating in the hollow tower sealed in | CONFIRMED - ADAPTED | held back to half a metre under the gallery, and in the lantern room to its dome's top - the lane's line alone popped the body into the glass (THE HOLLOW TOWER HOLDS NOBODY; BEACON-TOWER: in the open lantern to its roof's point) |
 | L4-6 LOW: a dead `eye`; each client its own sweep | CONFIRMED | dropped; the wall clock (THE BEAMS TURN ON ONE CLOCK) |
 | L5-1 MEDIUM: the gables in their roofs' planes | CONFIRMED | under the roofs - and the hall's eaves beam, the scaffold's inner posts, the hatch's lid, found by the pin (NO Z-FIGHT) |
-| L5-2 MEDIUM: the lamp's glass and lens shadowed its own light | CONFIRMED | a mesh of their own, drawn `noShadow`, still collided (THE LAMP'S GLASS CASTS NOTHING) |
+| L5-2 MEDIUM: the lamp's glass and lens shadowed its own light | CONFIRMED | a mesh of their own, drawn `noShadow`, still collided (BEACON-TOWER: the beacon's flames are that mesh now - drawn `noShadow` in the lanterns' hours alone, never collided; THE BEACON'S FLAMES CAST NOTHING) |
 | L5-3 LOW: props through props | CONFIRMED | each - and the capstan's bars through the scaffold's posts, found by the pin (PROPS CLEAR OF PROPS, THE LIGHTHOUSE'S PROPS) |
 | L5-4 LOW: PIER_SALT's claim unpinned | CONFIRMED (true over 18 berths) | a berth's cargo is main's, number for number |
 | L5-5 LOW: the art at once; the whole dressed quay collided; the lanterns made every night frame | CONFIRMED | a few pictures a frame; the collider the solid part; the lights a berth's, made as it moves - and off its live place, since the plan's was stale after a recentre (THE ART A FEW PICTURES A FRAME; THE PIER'S COLLIDER IS ITS SOLID PART) |

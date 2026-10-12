@@ -365,8 +365,11 @@ the Veil", "Legends ended"; its trades count 'ether' and 'legend' ships.
   fifty" was not).
 - **The light, not the sky.** The dome, the clouds and the fog are the world's own past the Veil; a grade of the sky's
   four passes (as the brass's) is a later slice's.
-- **No Deep Waters bathymetry of its own.** The sea's floor is the kernel's water; Deep Waters' promotions are the Bay's
-  (held there by TAMRIEL2).
+- **No Deep Waters bathymetry of its own.** The sea's floor is the kernel's water; Deep Waters' promotions are the Bay's.
+  TAMRIEL2 held the near promote alone, and the pump's deferred builds still carved the sea's floor: a player went over
+  the side, stood on a seabed under the drawn surface and could neither swim nor float back to the ship (ETHER-HOLD,
+  from play, 2026-10-11). The host's one `promote` now answers nothing for a pixel past the Bay's 1000 x 500, so every
+  arm is held (`deepWatersHost.js:"function promote(pixel) {"`; test/ethersea_dwhold.test.js).
 - **Online**, the crossing is each player's own; a party is not carried across together, and a player aboard another's
   ship holds the crossing back.
 

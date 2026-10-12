@@ -63,7 +63,7 @@
 
 import { QuestMachine, TICKS_PER_SECOND } from '../systems/quest/machine.js';
 import { clockCounts } from '../systems/quest/clock.js';   // DEAD-CLOCK: a clock whose end changes nothing is no deadline
-import { repairActiveQuests, relayOnlineDungeons, relayMovedLayouts } from '../systems/quest/questRepair.js';   // QREPAIR: the Settings' repair (AUDIT DELVE E1: and a frozen size, crossing online)
+import { repairActiveQuests, relayOnlineDungeons, relayMovedLayouts, relayBuiltDungeon } from '../systems/quest/questRepair.js';   // QREPAIR: the Settings' repair (AUDIT DELVE E1: and a frozen size, crossing online)
 import { isOnlinePage } from '../systems/onlineLane.js';   // AUDIT DELVE E1: online, every dungeon is whole
 import { isShelved } from '../systems/quest/quest.js';   // QUEST-SHELF: a quest set aside
 import { WA_RAID_QUESTS } from '../systems/warmAshesShips.js';   // QUEST-SHELF: a raid the world runs is never set aside
@@ -712,6 +712,13 @@ export function createQuestBridge(ctx, { label = 'host' } = {}) {
     /** The scene mount (Q4-iii's walk) over the host's adapter. */
     mountScene(adapter, siteType, buildingKey = 0) {
       addQuestResourceObjects(machine, adapter, siteType, buildingKey);
+    },
+
+    /** QUEST-VOID (systems/quest/questRepair.js relayBuiltDungeon): before the dungeon's mount, a quest target on a
+     *  marker the dungeon as built has not is laid again on this build. `location` the built (sized) dungeon, `mapId` the mount's key for it. Answers
+     *  the count of Places re-laid. */
+    relayBuiltDungeon(location, mapId) {
+      return relayBuiltDungeon(machine, location, { carriesQuestItem: (item) => ctx.carriesQuestItem?.(item) ?? false }, mapId);
     },
 
     /** QREPAIR (Mac: "Add a quest refresh option to settings" - "Repair active quests"): the one pass

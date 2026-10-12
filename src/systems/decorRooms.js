@@ -78,9 +78,11 @@ export function createDecorRooms({ raycastHit, box, cell = DECOR_ROOM_CELL }) {
   const z0 = ok ? box.min[2] + (spanZ - (nz - 1) * size) / 2 + DECOR_ROOM_OFFSET : 0;
   const top = ok ? box.max[1] + 0.5 : 0;
   const bottom = ok ? box.min[1] - 0.5 : 0;
-  const cast = (o, d, max) => {
+  /** `out.back`: whether the ray struck a face's BACK (player/collider.js raycastHit, AUDIT REST II F4). */
+  const cast = (o, d, max, out = null) => {
     let h = null;
     try { h = raycastHit(o, d, max); } catch { h = null; }
+    if (out) out.back = h?.back === true;
     const dist = h?.dist;
     return typeof dist === 'number' && dist >= 0 ? dist : Infinity;
   };
@@ -102,6 +104,7 @@ export function createDecorRooms({ raycastHit, box, cell = DECOR_ROOM_CELL }) {
    *  doorways among them (systems/decorDoorways.js) */
   const linked = [];
 
+  const below = { back: false }, above = { back: false };
   /** One column: every floor it passes through, top down. Answers the rays it cast. */
   function sample(c) {
     const x = x0 + (c % nx) * size;
@@ -109,12 +112,15 @@ export function createDecorRooms({ raycastHit, box, cell = DECOR_ROOM_CELL }) {
     let y = top;
     let rays = 0;
     for (let level = 0; level < DECOR_ROOM_LEVELS && y > bottom; level++) {
-      const d = cast([x, y, z], DOWN, y - bottom);
+      const d = cast([x, y, z], DOWN, y - bottom, below);
       rays++;
       if (!Number.isFinite(d)) break;
       const fy = y - d;
-      const head = cast([x, fy + 0.05, z], UP, DECOR_ROOM_CEILING);
+      const head = cast([x, fy + 0.05, z], UP, DECOR_ROOM_CEILING, above);
       rays++;
+      // VOID-ROOM: a face met from behind under the samples and another over them - a ceiling's top under the next
+      // storey's floor, the inside of a wall - is outside every room, however much room it has
+      if (below.back && above.back) { y = fy - 0.05; continue; }
       if (head >= DECOR_ROOM_HEADROOM && Number.isFinite(head)) {
         const i = nodes.length;
         nodes.push({ x, y: fy, z, col: c });

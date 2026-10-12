@@ -54,6 +54,10 @@ import { validRoll, rollText } from './dice.js';   // DICE1: a roll's line is th
 export const CHAT_TABS = Object.freeze([
   Object.freeze({ id: 'world', label: 'World', room: CHAT_WORLD_ROOM, link: true, hint: 'Everyone online' }),
   Object.freeze({ id: 'region', label: 'Region', room: null, link: true, hint: 'Everyone in the region you stand in' }),
+  // CHAT-LANG (2026-10-11, the players: "More chat channels per-language"): the Region tab's shape - a room of its own
+  // (net/wire.js chatLangRoom), its channel the language the player CHOSE (`chatLang`; /lang), and on the bar only while
+  // one is chosen
+  Object.freeze({ id: 'lang', label: 'Lang', room: null, link: true, hint: 'Everyone who chose your language channel - /lang picks it', hidden: true }),
   Object.freeze({ id: 'party', label: 'Party', room: null, link: false, hint: 'Your party alone', hidden: true, peekAll: true }),
   // GUILD1c (Mac: "Do guild1c" - the guild's chat): the Party tab's shape - its lines ride the hub's link with
   // `ch: 'guild'` and reach the guild's members online alone, and the tab is on the bar while the character is in one
@@ -81,6 +85,21 @@ export const CHAN_OLD_RELAY_TEXT = 'This channel needs the server\'s next update
 export const ROLL_OLD_RELAY_TEXT = 'Dice need the server\'s next update.';
 /** EMOTE1: an action said to a relay from before them (EMOTE_RELAY_MIN) - it would say the words bare. */
 export const EMOTE_OLD_RELAY_TEXT = 'Actions need the server\'s next update.';
+/** CHAT-LANG: the Language tab on a relay from before the language channels (LANG_RELAY_MIN). */
+export const LANG_OLD_RELAY_TEXT = 'Language channels need the server\'s next update.';
+/** CHAT-LANG: the Language tab's word while no language is chosen. */
+export const NO_LANG_TEXT = 'Choose a language channel: /lang de, /lang en ... (/lang lists them).';
+/** CHAT-LANG: the Language tab's line when it moves - which channel it is now. */
+export const langJoinedText = (name) => `Language channel: ${name}.`;
+/** PING1 (2026-10-11, the players: "A unique color or alert for @name pings"): does `text` name `name` with an @ - the
+ *  whole name, any case, not run on into more of a word ("@Bran" pings Bran, "@Brandon" does not). A name of one letter
+ *  or none pings nobody. */
+export function mentions(text, name) {
+  const n = String(name ?? '').trim();
+  if (n.length < 2) return false;
+  const esc = n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return new RegExp(`(^|[^\\p{L}\\p{N}_])@${esc}(?![\\p{L}\\p{N}_])`, 'iu').test(String(text ?? ''));
+}
 /** GUILD1c: the Guild tab on a relay from before the guild's channel - the World link's welcome said so. */
 export const GUILD_OLD_RELAY_TEXT = 'The guild channel needs the server\'s next update.';
 /** GUILD1c: the Guild tab's word while the character is in no guild. */
@@ -175,7 +194,11 @@ export function findLines(tabs, query) {
 
 export class ChatLog {
   constructor({ tabs = CHAT_TABS, keep = CHAT_KEEP, now = () => Date.now() } = {}) {
-    this.tabs = tabs.map((t) => ({ id: t.id, label: t.label, room: t.room, link: t.link !== false, hint: t.hint ?? '', place: null, messages: [], unread: 0, shown: t.hidden !== true, peekAll: t.peekAll === true }));
+    this.tabs = tabs.map((t) => ({ id: t.id, label: t.label, room: t.room, link: t.link !== false, hint: t.hint ?? '', place: null, messages: [], unread: 0, pings: 0, shown: t.hidden !== true, peekAll: t.peekAll === true }));
+    /** PING1: the player's own name, set by the host (a line naming it with an @ is a ping); '' pings nobody. */
+    this.self = '';
+    /** PING1: the newest pinging line's seq - the host's alert sounds when it moves (0: none yet). */
+    this.pingSeq = 0;
     this.active = this.tabs.find((t) => t.shown)?.id ?? null;
     this.open = false;        // the panel's state, as the log counts unread by it
     this.version = 0;         // bumps on every change the panel would show; the panel repaints on a new number, never per frame
@@ -218,6 +241,12 @@ export class ChatLog {
     if (!line) return null;
     this._keepOn(tab, line);
     if (!quiet && !(this.open && tab.id === this.active)) tab.unread++;
+    // PING1: a line someone else said naming me with an @ - marked on the line, counted on its tab until it is read
+    if (!line.mine && !line.system && mentions(line.text, this.self)) {
+      Object.assign(line, { ping: true });   // a field only a ping carries - every other line's shape stands as it was
+      this.pingSeq = line.seq;
+      if (!(this.open && tab.id === this.active)) tab.pings++;
+    }
     this.version++;
     return line;
   }
@@ -284,7 +313,7 @@ export class ChatLog {
     if (!tab || tab.shown === shown) return false;
     tab.shown = shown;
     if (!shown) {
-      tab.unread = 0;
+      tab.unread = 0; tab.pings = 0;
       if (this.active === id) {
         this.active = this.tabs.find((t) => t.shown)?.id ?? null;
         if (this.open && this.active) this.markRead(this.active);
@@ -314,10 +343,12 @@ export class ChatLog {
 
   markRead(id) {
     const tab = this.tab(id);
-    if (tab && tab.unread) { tab.unread = 0; this.version++; }
+    if (tab && (tab.unread || tab.pings)) { tab.unread = 0; tab.pings = 0; this.version++; }
   }
 
   unreadTotal() { return this.tabs.reduce((n, t) => n + (t.shown ? t.unread : 0), 0); }
+  /** PING1: the pings waiting on the tabs on the bar. */
+  pingTotal() { return this.tabs.reduce((n, t) => n + (t.shown ? t.pings : 0), 0); }
 
   /** The active tab's last `count` lines, newest last. */
   recent(count = this._keep) {
@@ -346,7 +377,9 @@ export class ChatLog {
     const out = [];
     const heard = new Set();
     for (const tab of this.tabs) {
-      if (!tab.shown || (tab.id !== this.active && !tab.peekAll)) continue;
+      if (!tab.shown) continue;
+      // PING1: a line that names me stands over the world from any tab - it is said TO me, as a party's line is
+      if (tab.id !== this.active && !tab.peekAll) { for (let i = Math.max(0, tab.messages.length - count); i < tab.messages.length; i++) if (tab.messages[i].ping) heard.add(tab.messages[i]); continue; }
       for (let i = Math.max(0, tab.messages.length - count); i < tab.messages.length; i++) heard.add(tab.messages[i]);
     }
     const lines = [...heard].sort((a, b) => a.seq - b.seq);

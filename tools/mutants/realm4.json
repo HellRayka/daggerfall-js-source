@@ -245,7 +245,7 @@
   {
     "name": "REALM4-host-hand-to-hand",
     "file": "src/scenes/world.js",
-    "old": "    escrow: realmSession ? realmTradeEscrow({ session: realmSession, checkpoint: () => onlineCheckpoint() }) : null,",
+    "old": "    escrow: realmSession ? realmTradeEscrow({ session: realmSession, checkpoint: () => onlineCheckpoint(), heldSaid: () => tradeHeldNotice(null, realmSession.tradeHeld, realmSession.tradeHeldWhy) }) : null,",
     "new": "    escrow: null,",
     "tests": [
       "test/realm4.test.js"
@@ -263,8 +263,8 @@
   {
     "name": "REALM4-hold-after-take",
     "file": "src/systems/realmSaves.js",
-    "old": "      const outcome = settleRealmTradeHalf({ session, half, wait, now });   // the session holds from this line\n      return {\n        settle: (/** @type {any} */ h) => { hand(h); return outcome; },",
-    "new": "      return {\n        settle: (/** @type {any} */ h) => { hand(h); return settleRealmTradeHalf({ session, half, wait, now }); },",
+    "old": "      const outcome = settleRealmTradeHalf({ session, half, wait, now, heldSaid });   // the session holds from this line\n      return {\n        settle: (/** @type {any} */ h) => { hand(h); return outcome; },",
+    "new": "      return {\n        settle: (/** @type {any} */ h) => { hand(h); return settleRealmTradeHalf({ session, half, wait, now, heldSaid }); },",
     "tests": [
       "test/realm4.test.js"
     ]

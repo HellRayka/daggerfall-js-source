@@ -38,8 +38,8 @@
   {
     "name": "HELD-SIDE-e-the-reason-unread",
     "file": "src/net/realmTradeLaw.js",
-    "old": "    const notice = typeof reason === 'string' ? /** @type {Record<string, string>} */ (TRADE_HELD_NOTICES)[reason] : undefined;",
-    "new": "    const notice = undefined;",
+    "old": "    const notice = typeof said === 'string' && said ? said : typeof reason === 'string' ? /** @type {Record<string, string>} */ (TRADE_HELD_NOTICES)[reason] : undefined;",
+    "new": "    const notice = typeof said === 'string' && said ? said : undefined;",
     "tests": [
       "test/fb1011g_heldside.test.js"
     ]
@@ -74,8 +74,8 @@
   {
     "name": "HELD-SIDE-i-the-sessions-hold-unread",
     "file": "src/systems/realmSaves.js",
-    "old": "realmTradeRefusalText(r.why ?? r.error ?? 'refused', r.held ?? null, session.tradeHeld)",
-    "new": "realmTradeRefusalText(r.why ?? r.error ?? 'refused', r.held ?? null)",
+    "old": "realmTradeRefusalText(r.why ?? r.error ?? 'refused', r.held ?? null, session.tradeHeld, heldSaid?.() ?? null)",
+    "new": "realmTradeRefusalText(r.why ?? r.error ?? 'refused', r.held ?? null, undefined, heldSaid?.() ?? null)",
     "tests": [
       "test/fb1011g_heldside.test.js"
     ]

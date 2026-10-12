@@ -103,7 +103,7 @@ import { createPortalSet } from './portalFx.js';   // COMPANION-PORTAL
 import { QUARRY_BLOW } from '../systems/livingWorld/quarry.js';
 import { createHostNpcBodies, npcBodiesOn } from '../characters/npcBodies.js';   // MWNPC5c: the pool's foes in their Morrowind bodies
 import { isBodyFoe, foeActor, foeFx, foeWireLook, applyWireLook } from '../characters/foeBodies.js';   // WATCH-PROTECTS: a townsperson's one blow
-import { elitesAllowed, promoteEliteFoe, rollOverworldElite, grantEliteLoot, eliteGlow, setBatchEliteGlow, eliteSize, isEliteCorpse, markEliteCorpseBatch, ELITE_FOE_SIZE } from '../systems/eliteFoes.js';   // ELITE FOES: 5% of the wilds' foes   // HITFLASH1
+import { elitesAllowed, promoteEliteFoe, rollOverworldElite, grantEliteLoot, eliteLoot, eliteGlow, setBatchEliteGlow, eliteSize, isEliteCorpse, markEliteCorpseBatch, ELITE_FOE_SIZE } from '../systems/eliteFoes.js';   // ELITE FOES: 5% of the wilds' foes   // HITFLASH1
 
 // The port's allocation-owner guards (classic self-limits through the
 // 144-minute cadence; these keep a long session bounded).
@@ -463,7 +463,10 @@ export function createExteriorFoes({ renderer, collider, fetchBytes, getTexture,
         spawnEnemyLoot(entity, mobileType, basics, playerEntity, wild ? wildLootOpts({ rolls }, wildRing()) : { rolls });   // RF2: SetEnemyCareer's whole loot chain, one seam - the trio and the port's roll off this pool's stream (WILD1: the zone's doubled odds)
         if (wild) wildLootAfter(entity);   // WILD1: and its gold twice
         if (entity.eliteFoe) grantEliteLoot(entity, builtLevel);   // ELITE FOES: better loot
-        if (entity.wildGiant) { grantEliteLoot(entity, builtLevel); grantEliteLoot(entity, builtLevel); }   // PVPGIANT: twice an elite's drop
+        // PVPGIANT: twice an elite's drop. GIANT-LOOT (2026-10-12, a player: "the greater giant now drops like 2 gold"): it was two
+        // grantEliteLoot calls, and that door gives an ELITE its drop, once - a Greater Giant is no elite, so both returned at
+        // once and the giant fell with an ordinary giant's purse. Its two drops are laid on it here, the elite's own table.
+        if (entity.wildGiant) { entity.items = entity.items ?? []; entity.items.push(...eliteLoot(builtLevel), ...eliteLoot(builtLevel)); }
         if (entity.revenant) grantRevenantLoot(entity, builtLevel);   // REVENANT: its own drop, by its rank
       }
       // NT2 (F210): GetTextureArchive's gender arm - a DFRandom draw off
@@ -2725,7 +2728,14 @@ export function createExteriorFoes({ renderer, collider, fetchBytes, getTexture,
     if (r.rt !== undefined && f.puppet) { const m = _pupIndex.get(pupKey(f.puppet, r.rt)); const name = m ? puppetBandName(m.entity?.revenant?.name, m.mobileType) : null; if (name) f.entity.bandName = name; }   // RVN13: a follower named for its master's band
     if (r.k !== undefined) f.entity.maxHealth = r.k;   // AUDIT SETS M1: the owner's maximum - "under half" is its word
     if (r.h !== undefined) { if (p.h != null && r.h < p.h) p.hurt = true; p.h = r.h; f.entity.health = r.h; }
-    if (Number.isInteger(r.gg) && f.entity.zoneGiant !== r.gg) { f.entity.wildGiant = true; f.entity.zoneGiant = r.gg; }   // GREATER-GIANT: its owner's word - its size and its name, the same for everyone   // AUDIT WORLD6b-iii(a) B6: a drop against the last STREAMED health - a self-heal cast here made every record after it a hurt
+    if (Number.isInteger(r.gg) && f.entity.zoneGiant !== r.gg) {
+      f.entity.wildGiant = true; f.entity.zoneGiant = r.gg;
+      // GIANT-BLOWS (2026-10-12, a player: the Greater Giant "does less damage than normal mobs in the zone"): its blows at me
+      // are judged here, on my copy (ai/puppetBlows.js - each client its own feet), and my copy is a puppet, which never
+      // took PVPGIANT's four times (that arm is its owner's stand alone) - so to everyone but the one who stood it, the
+      // Greater Giant struck as an ordinary giant of the zone. Its blows are its owner's: four times over, once.
+      if (!f.entity._ggBlows) { f.entity._ggBlows = true; f.entity.damageScale = (Number.isFinite(f.entity.damageScale) && f.entity.damageScale > 0 ? f.entity.damageScale : 1) * WILD_GIANT_DAMAGE_MULT; }
+    }   // GREATER-GIANT: its owner's word - its size and its name, the same for everyone   // AUDIT WORLD6b-iii(a) B6: a drop against the last STREAMED health - a self-heal cast here made every record after it a hurt
     // AUDIT WORLD6b-iii(a) A3: the blow's and the cast's RECIPIENT ride with their counts (b, u); an older record without
     // them falls back on the live hunt (g), the slice's law
     if (r.a !== undefined) { if (p.a != null && r.a !== p.a) p.strike = { kind: (r.a & 1) ? 'ranged' : 'melee', at: r.b ?? r.g ?? p.target }; p.a = r.a; }

@@ -169,3 +169,27 @@ test('DECOR-ROOMS one room is no choice: no tabs, and the flight begins at the e
   rig.tool.cameraOverride(cam);
   assert.deepEqual(cam.pos, [10, 1.6, 10], 'at the eye');
 });
+
+test('VOID-ROOM the void between two storeys is no room: a ceiling\'s top under the floor above, both met from behind, never a tab the flight starts in (mutant: the facing unread)', () => {
+  const c = new Collider();
+  // wound as a real room's shell is: a floor looks up into its room, a ceiling looks down into its
+  const floor = (k, y) => addQuad(c, k, [0, y, 0], [0, y, 10], [20, y, 10], [20, y, 0]);
+  const ceiling = (k, y) => addQuad(c, k, [0, y, 0], [20, y, 0], [20, y, 10], [0, y, 10]);
+  const walls = (k, y0, y1) => {
+    addQuad(c, `${k}a`, [0, y0, 0], [0, y1, 0], [0, y1, 10], [0, y0, 10]);
+    addQuad(c, `${k}b`, [20, y0, 0], [20, y1, 0], [20, y1, 10], [20, y0, 10]);
+    addQuad(c, `${k}c`, [0, y0, 0], [20, y0, 0], [20, y1, 0], [0, y1, 0]);
+    addQuad(c, `${k}d`, [0, y0, 10], [20, y0, 10], [20, y1, 10], [0, y1, 10]);
+  };
+  floor('floor0', 0); ceiling('ceiling0', 3); walls('walls0', 0, 3);
+  addQuad(c, 'inner', [10, 0, 0], [10, 3, 0], [10, 3, 10], [10, 0, 10]);   // two rooms downstairs
+  floor('floor1', 5); ceiling('ceiling1', 8); walls('walls1', 5, 8);        // upstairs, its floor 2 m over the ceiling below
+  assert.equal(c.raycastHit([5, 4, 5], [0, -1, 0], 5).back, true, 'the ceiling\'s top is its back');
+  assert.equal(c.raycastHit([5, 4, 5], [0, 1, 0], 5).back, true, 'and the floor\'s underside its back');
+  const finder = createDecorRooms({ raycastHit: (o, d, m) => c.raycastHit(o, d, m), box: { min: [0, 0, 0], max: [20, 8, 10] } });
+  run(finder);
+  const rooms = finder.rooms();
+  assert.deepEqual(rooms.map((r) => r.floor), [0, 0, 5], `two rooms downstairs and one up - no "Room 3" in the void at 3 m (${rooms.map((r) => `${r.name} ${r.floor}`)})`);
+  assert.ok(rooms.every((r) => r.eye[1] < 3 || r.eye[1] > 5), 'no flight begins between the storeys');
+  assert.equal(finder.roomOf([5, 4, 5]), null, 'a point in the void is in no room');
+});

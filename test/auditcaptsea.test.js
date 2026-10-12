@@ -51,7 +51,7 @@ test('AUDIT CAPTAIN\'S SEA S1/S15: the glass comes down at every door, load and 
   const w = rd('src/scenes/world.js');
   assert.match(w, /&& !townTalk\.overlayActive && !travelView\?\.active && !naval\?\.aiming && !\(townTalk\.overlay instanceof DeathScreen\)\n\s+&& !modes\?\.transitioning && !worldMoveBusy\(\);/, 'never while a door builds or the world is moved');
   assert.match(w, /const navalClear = \(\) => \{ [^\n]*drawCrewLines\(\[\]\); lowerGlass\(\); \};/, 'every door\'s and load\'s clear lowers it');
-  assert.match(w, /function lowerGlass\(\) \{\n\s+spyglass\.up = false;\n\s+spyglass\.lens = 1;\n\s+glassDoorPress = false;\n\s+mwViewHoldFirst\(false\);\n\s+naval\?\.glass\?\.\(0, \{ up: false, zoom: spyglass\.zoom \}\);\n\s+drawSpyglass\(null\);\n\s+spyglassTaps\(\);\n\s+\}/);
+  assert.match(w, /function lowerGlass\(\) \{\n\s+spyglass\.up = false;\n\s+spyglass\.lens = 1;\n\s+spyglass\.near = GLASS_NEAR_MIN;[^\n]*\n\s+glassDoorPress = false;\n\s+mwViewHoldFirst\(false\);\n\s+naval\?\.glass\?\.\(0, \{ up: false, zoom: spyglass\.zoom \}\);\n\s+drawSpyglass\(null\);\n\s+spyglassTaps\(\);\n\s+\}/);
   assert.match(w, /travelView\?\.exit\('video', true\); if \(spyglass\.up\) lowerGlass\(\); return; \}/, 'a video over the world');
   // and the glass's window, drawn down, keeps no press a finger made while it stood
   globalThis.document ??= undefined;
@@ -400,7 +400,7 @@ test('AUDIT CAPTAIN\'S SEA S21: the black flag said as she is known to me - the 
   assert.match(src, /if \(held > 0 \|\| dist <= Math\.max\(reach\.eye, reach\.lookout\)\) deps\.mid\?\.\(`False colours! \$\{s\.names\?\.name \?\? 'She'\} is a pirate\.`, 4\);/);
 });
 
-test('AUDIT CAPTAIN\'S SEA S24: an unknown hull\'s card carries no bars - her hurts no more read than her colours; made out, her bar as her tag\'s (mutants: the card\'s gate, the HUD\'s)', async () => {
+test('AUDIT CAPTAIN\'S SEA S24: an unknown hull\'s hurts are no more read than her colours - GLASS-SPOT (PIN MOVED): she gives no card at all, where her card carried no bars; made out, her bar as her tag\'s (mutants: the HUD\'s)', async () => {
   const s = await sea({ hull: 2 });
   const e = spawn(s, 'merchantCoaster', 300, Math.PI / 2);
   s.run(0.2);
@@ -409,7 +409,7 @@ test('AUDIT CAPTAIN\'S SEA S24: an unknown hull\'s card carries no bars - her hu
   s.view.look = { origin: look.origin, dir: [e.ship.pos[0] - look.origin[0], 0, e.ship.pos[2] - look.origin[2]] };
   e.known = KNOW.hull;
   let card = s.host.hudModel().target;
-  assert.deepEqual([card.hull, card.sail], [null, null]);
+  assert.equal(card, null, 'not made out: no card');
   e.known = KNOW.colours;
   card = s.host.hudModel().target;
   assert.ok(card.hull > 0 && card.hull < 1, `her bar: ${card.hull}`);

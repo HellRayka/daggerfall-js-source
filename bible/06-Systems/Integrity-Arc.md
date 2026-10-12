@@ -138,7 +138,9 @@ so a checkpoint that loses its race writes no verdict either:
 
 The answer says the hold (`tradeHeld`) and, when the law holds it, the first piece it found (`tradeHeldWhy`: its code
 and template); the client's session keeps it and tells the player as it moves, naming the piece (`systems/realmSaves.js`
-onTradeHeld, `systems/itemIds.js` tradeHeldNotice). The cutover (decision 3): the first judgement's baseline is the
+onTradeHeld, `systems/itemIds.js` tradeHeldNotice) - and a trade refused over its own hold says that notice, the piece
+named; a law hold standing past STRIKES_FOR_REVIEW with nothing found answers `tradeHeldWhy: { code: 'review' }`, said as
+staff's (RING-HOLD, `01-Overview/Field-Bugs-2026-10-12.md`: it read "something" once the Ring was gone). The cutover (decision 3): the first judgement's baseline is the
 record the realm ALREADY HELD for the character, read once from R2 - never the save the first judged checkpoint brings,
 which is charged for what it adds like any other (the audit: the first judged save could hold anything, and was the
 baseline); a new character's baseline is a newborn's purse, a customs character's its level's allowance. A wealth past
@@ -151,7 +153,8 @@ object lands, so a read that fails leaves nothing in R2.
 holdOf). Staff's and the copies' are staff's alone to lift - a breach of the law over a copies' hold is no way out (the
 audit: a 'law' checkpoint stepped it down, and the next clean one lifted it). The law's lifts at the next clean
 checkpoint until `STRIKES_FOR_REVIEW` (3) HOLDS have come - a strike a hold, never a checkpoint (the audit: one piece
-carried six minutes was staff's); its finding is written once a signature. Staff who judge the law's word wrong clear it
+carried six minutes was staff's), the same piece taken up again included - and every law hold's notice says the holds
+are counting (RING-WARN, `01-Overview/Field-Bugs-2026-10-12.md`); its finding is written once a signature. Staff who judge the law's word wrong clear it
 (`law_excused`): the same signature holds nothing again, a new one does. A verdict writes over the row only as it read
 it (`judge_rev`): a staff act, or a copy another's checkpoint charged, landing in between stands, and the next checkpoint
 judges again.

@@ -95,6 +95,11 @@ export const EL_WHITE = 4;
  *  ray in Better Ambience's dungeon fog (linear, 0..~40 units) reads as a
  *  soft halo, not a searchlight. */
 export const EL_SCATTER = 0.35;
+/** UW-GLOW: the densest medium the in-scatter integrates - EL_SCATTER's own tuning point (the linear 0..40 fog above,
+ *  1/40). The integral carries no extinction, so its glow grows with the density without bound: the dungeon's
+ *  underwater murk (UnderwaterFog, exp 0.25 - a visibility fog, ten times this) integrated at its own density put
+ *  the light in the hand as a near-white disc over the whole view. Thinner fogs are untouched. */
+export const EL_SCATTER_DENSITY_MAX = 1 / 40;
 // BOUNCE1 (2026-09-23), WITHDRAWN THE SAME DAY BY ITS AUDIT. A per-lantern bounce - a share of the light's attenuated
 // colour weighted by facing the ground - was tried two ways and neither is sound: unshadowed it leaks through walls
 // (a lantern in the next room bounced onto this room's wall, and every lantern past the eight casters has no map to
@@ -1174,6 +1179,7 @@ export const EL_LANE = Object.freeze({
   decodeN: elDecodeN,
   scatterDensity: elScatterDensity,
   scatter: EL_SCATTER,
+  scatterDensityMax: EL_SCATTER_DENSITY_MAX,   // UW-GLOW: the renderer's _scatterGain caps the glow's density here
   tonemapGlsl: EL_TONEMAP_GLSL, scatterGlsl: EL_SCATTER_GLSL,   // VOL1: the air pass's glow tonemaps and integrates as the lane does, without importing it (it is a leaf)
 });
 

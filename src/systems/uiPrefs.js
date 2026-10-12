@@ -76,6 +76,13 @@ export const PREF_DEFAULTS = Object.freeze({
   // full screens stand on ('desk' | 'map'), and the vitals' vials upright in the corner or lying in a row ('upright' |
   // 'row'). While the dress is worn `plusTheme` stays the player's, unworn.
   plusDress: 'none', grimoirePages: 'cream', grimoireBackdrop: 'desk', grimoireVitals: 'upright', grimoireSpellbook: 'book',
+  // TEXT-FONT (2026-10-11): the face the enhanced skin's words are written in ('game' | 'sans' | 'mono' | 'dyslexic' |
+  // 'system', ui/textFont.js) and the installed font 'system' names.
+  textFont: 'game', textFontSystem: '',
+  // CHAT-LANG (2026-10-11): the language channel this player chose ('' none, else a net/wire.js CHAT_LANGS code - /lang).
+  // CHAT-COLOURS: each channel's lines in its own colour (World white, Region green, Guild purple, Local grey ...). PING1:
+  // a line naming me with an @ chimes.
+  chatLang: '', chatChannelColours: true, chatPingSound: true,
   packPhoneDoll: false,   // PACK-PHONE (FIELD BUGS 2026-09-30): the pack's body on a phone - hidden until the header's Body shows it
   // PADPLUS1: the Plus controller - the crossbar ('auto' while a pad is connected, 'on', 'off'), run as a toggle on
   // the Run button, and the version of the one-time layout move already made (ui/plusPad.js)

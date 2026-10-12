@@ -211,7 +211,10 @@ SEATS_OPEN = "on"
 # "on" - shut, nobody's). CHAP2b: a receipt's standing; CHAP3a: a member's own writ and its Merit; CHAP3b: the sheet
 # (/v1/chapters/list) and the Turning - AUDIT CHAP3 S2: nothing settles and no hall writ posts while it is "off", and the
 # first week settled "on" after weeks at "dev" starts every chapter's Strength from 50 - all by the same switch.
-CHAPTERS_OPEN = "dev"
+# CHAPTERS-ON (2026-10-12, Mac: "Turn them on", of a player's report that the Chapters never reached a board - #734's
+# patch notes had told everyone; Field-Bugs-2026-10-12.md): "on" - the Chapters are everyone's. CHAPTER_TITLES below is
+# its own switch and stays off.
+CHAPTERS_OPEN = "on"
 # CHAP4c (Chapters-Arc 6): THE CHAPTERS' TITLES - a seat's Master, officer and Former Master signed on the token - by
 # this switch, "on" or anything else for off. Shipped OFF: the relay must carry the five ids first (RELAY_VERSION
 # world183, which relay-deploy.yml deploys on the merge to main - AUDIT CHAP4 R2; CHAP6e's High Master and Season

@@ -165,7 +165,7 @@ own id in its test's title) or in the suite its verdict names, and where it chan
 | H2 | MED | = D9 | |
 | H3 | DOC | = D2 (and the cache "beside the ship") | FIXED with D2; the cache's words in the record |
 | H4 | DOC | = D16 | |
-| H5 | LOW | An unknown hull's card showed her hull and sail bars (= S24) | FIXED: no bars till she is made out |
+| H5 | LOW | An unknown hull's card showed her hull and sail bars (= S24) | FIXED: no bars till she is made out - since GLASS-SPOT (`03-World/Captains-Sea.md`), no card at all |
 | H6 | DOC | = L15 | |
 | H7 | LOW | `test/ethership.test.js` held a tautology, and the nearest-haunt rule went unpinned (its mutant survived) | FIXED: both pinned |
 | H8 | LOW | `test/capttrade.test.js`: `assert.ok(priceOf)` always true; the 'wants' margin's check never ran (= B12) | FIXED |

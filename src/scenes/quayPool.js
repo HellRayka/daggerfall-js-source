@@ -89,7 +89,9 @@ export function createQuayPool(deps) {
 
   /** Lay one berth's quay: its plan off the ground, its model, its textures, its mesh and its collider. */
   async function lay(q, b) {
-    b.plan = planQuay({ berth: b.berth, hull: q.harbour.hull, key: q.key, index: b.index, seaY: deps.seaY(), groundAt: deps.groundAt });
+    // QUAY-CROSSING: planned after every earlier berth (frame's order), its jetty ending on their piers
+    const others = q.berths.slice(0, b.index).map((o) => ({ plan: o.plan, origin: o.berth.pos }));
+    b.plan = planQuay({ berth: b.berth, hull: q.harbour.hull, key: q.key, index: b.index, seaY: deps.seaY(), groundAt: deps.groundAt, others });
     if (!b.plan) { b.retryAt = now() + QUAY_RETRY_S; return; }   // the ground behind it is not up yet
     b.model = buildQuayModel(b.plan);
     b.laying = true;
@@ -123,9 +125,13 @@ export function createQuayPool(deps) {
         q = { key: h.key, name: h.name ?? null, harbour: h.harbour, berths: h.harbour.berths.map((berth, index) => ({ index, berth, plan: null, model: null, gpu: null, bucket: `${QUAY_BUCKET}${h.key}:${index}`, retryAt: 0, laying: false, dead: false })) };
         quays.set(h.key, q);
       }
+      // QUAY-CROSSING: in the berths' order, a berth laid only once every earlier one has its plan - its jetty meets
+      // theirs, so every client plans it against the same piers
       for (const b of q.berths) {
-        if (b.plan || b.laying || t < b.retryAt) continue;
+        if (b.plan) continue;
+        if (b.laying || t < b.retryAt) break;
         lay(q, b).catch(() => layFailed(b));
+        if (!b.plan) break;
       }
     }
   }

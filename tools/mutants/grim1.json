@@ -131,8 +131,8 @@
     "tests": [
       "test/grim1_dress.test.js"
     ],
-    "old": "  padding: ${px(2)} ${px(2)} ${px(1)} ${px(2)}; }",
-    "new": "  padding: ${px(2)} ${px(2)} ${px(1)} 0; }"
+    "old": "  padding: ${px(2)} calc(${px(2)} + ${px(BG - BO)}) ${px(1)} ${px(2)}; }",
+    "new": "  padding: ${px(2)} calc(${px(2)} + ${px(BG - BO)}) ${px(1)} 0; }"
   },
   {
     "name": "GRIM4-compass-pixelated",

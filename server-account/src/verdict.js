@@ -172,8 +172,10 @@ export async function verdictOn({ db, nowS }, { player, char, seq, key }, row, s
     arms_top: judged.arms[0],
     arms_bow: judged.arms[1],
   };
-  // the first thing the law found, for the tab to name the piece to its player (only when it holds)
-  const why = held === 'law' && lawHolds ? (({ code, t }) => ({ code, t: t ?? null }))(lawFindings[0]) : null;
+  // the first thing the law found, for the tab to name the piece to its player (only when it holds) - and a law hold
+  // that stands with nothing found (STRIKES_FOR_REVIEW come: staff's now) says so, `review`: the piece is gone, and
+  // "until it is gone" is no longer the way out (the Ring report: held still, and told only "something")
+  const why = held !== 'law' ? null : lawHolds ? (({ code, t }) => ({ code, t: t ?? null }))(lawFindings[0]) : { code: 'review', t: null };
   return { steps: [verdictWrite(db, char, row, set), ...after], set, clean, law, copies: ledger.copies, over: budget.over, why };
 }
 

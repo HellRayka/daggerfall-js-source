@@ -29,6 +29,7 @@
 //                      the dark wood as the pack's own gold-on-wood labels do.
 // The pictures are the pack's, cut at run time (ui/grimoireArt.js) - nothing new is committed.
 import { FRAME_ROLES, FRAME_CSS } from './enhancedFrame.js';
+import { CHANNEL_COLOURS, NAME_COLOURS, PING_COLOURS, channelRules, pipRules } from './chatColours.js';   // CHAT-COLOURS, NAME-INK, PING1: the chat's colours on the page
 import { buildGrimoireArt, grimoireFontUrl, grimoireImg, artVar, FRAME_ART, nativeSize, BOOK_SLICE, PLATE_SLICE,
   VIAL_CUT, DIAL_ICONS, dialIconSize, dialArtName, grimoireDeskUrl } from './grimoireArt.js';
 import { getPref, setPref } from '../systems/uiPrefs.js';
@@ -145,8 +146,23 @@ export function inkColour(c) {
   if (chroma(v) < 0.16) return hsla(26, 0.6, 0.21 - 0.13 * t, a);                       // bone and parchment: the pack's brown ink, dark enough to read on any of its pages
   if (h >= 50 && h <= 72 && chroma(v) > 0.5) return a >= 1 ? GRIM_YELLOW : `rgba(244, 224, 76, ${r3(a)})`;   // Daggerfall's yellow stays its yellow, as the pack writes a value on its page
   if (h >= 38 && h <= 72) return hsla(5, 0.8, 0.29, a);                        // gold and brass: the pack's red
-  if (h >= 18 && h < 38) return hsla(h, 0.72, 0.24, a);                         // brass and amber: a dark amber
-  return hsla(h, Math.max(0.55, Math.min(0.85, s)), 0.25, a);                  // a hue (a rarity, a gain, a loss): its ink
+  if (h >= 18 && h < 38) return hsla(h, 0.72, readableL(h, 0.72, 0.24), a);    // brass and amber: a dark amber
+  const sat = Math.max(0.55, Math.min(0.85, s));
+  return hsla(h, sat, readableL(h, sat, 0.25), a);                              // a hue (a rarity, a gain, a loss): its ink
+}
+/** INK-READ (2026-10-12, Mac: "make sure the fonts are readable the grey ones arent"): the lightness a hue's ink may have
+ *  and still read at 4.5:1 on the pages' darkest tan (relative luminance 0.43): `want` or darker, a hundredth at a time
+ *  - an amber at 24% stood at 3.96:1 (the credits' "by ...", the settings' heads), a teal at 25% at 3.3:1. */
+const INK_LUMA_MAX = 0.055;
+function readableL(h, s, want) {
+  let l = want;
+  for (; l > 0.08; l -= 0.01) {
+    const c = (1 - Math.abs(2 * l - 1)) * s, x = c * (1 - Math.abs(((h / 60) % 2) - 1)), m = l - c / 2;
+    const [r1, g1, b1] = h < 60 ? [c, x, 0] : h < 120 ? [x, c, 0] : h < 180 ? [0, c, x] : h < 240 ? [0, x, c] : h < 300 ? [x, 0, c] : [c, 0, x];
+    const lin = (v) => { const u = v + m; return u <= 0.03928 ? u / 12.92 : ((u + 0.055) / 1.055) ** 2.4; };
+    if (0.2126 * lin(r1) + 0.7152 * lin(g1) + 0.0722 * lin(b1) <= INK_LUMA_MAX) break;
+  }
+  return Math.round(l * 100) / 100;
 }
 /** A WORD's colour on the wood: Plus's grey words (its bone, its dim) warmed to the pack's tan and cream - the way it
  *  letters "Amulets" or "Rings" on its shelves - and never left darker than the tan. A hue (gold, a rarity) stands. */
@@ -923,9 +939,11 @@ ${at(R.tabs, ':hover:not(.on)')}, ${at(R.tabs, ':focus-visible:not(.on)')} { ${T
 ${at(R.rule)} { border-bottom-color: rgba(92,56,24,0.4); box-shadow: none; }
 ${at(R.ruleTop)} { border-top-color: rgba(92,56,24,0.4); box-shadow: none; }
 ${at(R.listRow)} { border-bottom-color: rgba(92,56,24,0.35); border-bottom-style: dotted; background-image: none; box-shadow: none; }
-${at(R.listRow, ':hover')}, ${at(R.listRow, ':focus-visible')} { box-shadow: inset 3px 0 0 rgba(142,26,16,0.55); background-color: rgba(142,26,16,0.06); }
-${at(R.listRow, '.on')} { box-shadow: inset 3px 0 0 ${T.red}; background-color: rgba(142,26,16,0.1); }
-${at(R.qrow, '.on')} { box-shadow: inset 3px 0 0 ${T.red}; background: rgba(142,26,16,0.1); }
+/* NO-BAR (2026-10-12, Mac: the Reforge's rows "have those lines"): a row under the pointer or chosen is not marked with a
+   red bar down its edge - the page is washed under it, a shade deeper when it is the chosen one, as a finger on a page */
+${at(R.listRow, ':hover')}, ${at(R.listRow, ':focus-visible')} { box-shadow: none; background-color: rgba(142,26,16,0.07); }
+${at(R.listRow, '.on')} { box-shadow: none; background-color: rgba(142,26,16,0.13); }
+${at(R.qrow, '.on')} { box-shadow: none; background: rgba(142,26,16,0.13); }
 ${at(R.wing)} { background: linear-gradient(180deg, rgba(60,34,14,0.75) 0 1px, transparent 1px); }
 ${G} .px-divider::before, ${G} .px-divider::after { background: rgba(60,34,14,0.6); }
 ${G} .px-sigil, ${G} .px-divider i { color: ${T.red}; }
@@ -936,6 +954,7 @@ ${at([...R.rule, ...R.listRow, ...R.headerRule])} { border-bottom-color: transpa
 ${at([...R.ruleTop, ...R.footerRule])} { border-top-color: transparent !important; box-shadow: none; }
 ${at(R.wing)} { background: none !important; }
 ${G} .px-divider::before, ${G} .px-divider::after { content: none !important; }
+${G} .empty { border-color: transparent !important; background: rgba(120,70,20,0.08); }   /* an empty state: a wash of the page, no dashed box */
 ${G} .px-divider > span, ${G} .px-divider { color: ${T.red}; letter-spacing: 0.08em; }
 /* the talk window: its two pages part by the scroll's own shading at the gutter, not a dotted line */
 ${G} .talk-topics { box-shadow: inset -10px 0 12px -10px rgba(60,34,14,0.55); }
@@ -945,7 +964,8 @@ ${G} .talk-list > *, ${G} .talk-row { border-color: transparent !important; }
    darker, its name underlined in the pack's red */
 ${G} .prof-row { background: none !important; border-color: transparent !important; color: ${T.ink} !important; }
 ${G} .prof-row:hover { background: rgba(142,26,16,0.06) !important; }
-${G} .prof-row.on { box-shadow: inset 3px 0 0 ${T.red} !important; background: rgba(142,26,16,0.1) !important; }
+${G} .prof-row.on { box-shadow: none !important; background: rgba(142,26,16,0.13) !important; }
+${G} .prof-row.on .prof-name { color: ${T.red} !important; }
 ${G} .prof-row .prof-rank { color: ${T.inkSoft} !important; }
 ${G} .prof-spec { background: rgba(120,70,20,0.1) !important; border-color: transparent !important; box-shadow: none !important; color: ${T.ink} !important; }
 ${G} .prof-spec b { color: ${T.red} !important; text-shadow: none !important; }
@@ -960,6 +980,17 @@ ${G} .px-mhead { border-bottom: 0; padding-bottom: 8px !important; margin-bottom
 ${G} .px-mname { color: ${T.red} !important; text-shadow: none !important; }
 ${G} .px-mcount { color: ${T.inkSoft} !important; }
 ${G} .px-pips, ${G} .px-pip.on { color: ${T.goldLeaf} !important; text-shadow: 0 1px 0 ${T.outline} !important; }
+/* THE REFORGE ON THE PAGE (2026-10-12, Mac: "make sure the fonts are readable the grey ones arent. plus make it look
+   better"): a row reads as the pack's own price lists do - what it is in the book's red when it is a family to scry
+   (an item keeps its rarity's ink), what it is for in ink beneath, its price in ink beside, and the press written in
+   red when it can be pressed; a press that cannot says why in the softer ink, leaning, never faded. */
+${G} .reforge-shell .broker-offer .broker-price { color: ${T.ink} !important; text-shadow: none !important; opacity: 1 !important; }
+${G} .reforge-shell .broker-offer.scry-row .broker-name { color: #7a170c !important; text-shadow: none !important; }   /* the page's red, a shade deep: 4.7:1 on its darkest */
+${G} .reforge-shell .broker-offer .broker-set { color: ${T.ink} !important; text-shadow: none !important; }
+${G} .reforge-shell .broker-buy[data-grim-on="page"]:not(:disabled):not([disabled]):not(:hover) { color: #7a170c !important; }
+${G} .reforge-shell .broker-buy[data-grim-on="page"]:is(:disabled, [disabled]) { color: #4f3218 !important; font-style: italic; }   /* 5:1 */
+${G} .reforge-shell .broker-offer { padding-top: 8px !important; padding-bottom: 8px !important; }
+${G} body .reforge-shell .reforge-tabs .act.reforge-tab.on[data-grim-on]:not(:hover):not(:focus-visible) { color: #7a170c !important; text-decoration: underline solid #7a170c !important; text-underline-offset: 0.22em; }   /* the open page's word, 4.7:1 and underlined */
 
 /* THE NOTICE - GRIM3 (Dudey: "the notification box is unreadable"): a note on the tan scroll is written in the pack's
    brown ink and nothing else - Plus's hard dark shadow under each word, re-said in ink, doubled every letter - at the
@@ -1218,17 +1249,52 @@ ${G} .pack-shell .equipped .wornpair > .wornrow :is(.wornslot, .wornname) { text
 ${G} body .dfchat-input { color: ${T.ink} !important; -webkit-text-fill-color: ${T.ink} !important; caret-color: ${T.red}; text-shadow: none !important; }
 ${G} body .dfchat-input::placeholder { color: ${T.inkFaint} !important; -webkit-text-fill-color: ${T.inkFaint} !important; }
 ${G} .dfchat-box :is(.dfchat-name, .dfchat-who-name) { text-shadow: none !important; }
-${G} .dfchat-box :is(.dfchat-name, .dfchat-who-name)[style*="color"] { filter: brightness(0.3) saturate(1.6); }
+/* NAME-INK (2026-10-11, Mac: "the color was the problem not the font"): a name deepened to three tenths was the ink its
+   words are written in, and a speaker read as part of the line. A name is in a colour of its own on the page (ui/
+   chatColours.js NAME_COLOURS, each 4.5:1 or better on the page): a stranger's the page's red, my own a brown gold, a
+   party member's green and a friend's blue - social's two colours (set on the element) each deepened by hand, not by a
+   filter, so they keep their hue. */
+${G} .dfchat-box :is(.dfchat-name, .dfchat-who-name) { color: ${NAME_COLOURS.other.dark} !important; filter: none !important; }
+${G} .dfchat-box .dfchat-line.mine .dfchat-name, ${G} .dfchat-box .dfchat-who-row.me .dfchat-who-name { color: ${NAME_COLOURS.mine.dark} !important; }
+${G} :is(.dfchat-box, .dfsocial) :is(.dfchat-name, .dfchat-who-name, .dfsocial-name)[style*="115, 255, 115"] { color: ${NAME_COLOURS.party.dark} !important; filter: none !important; }
+${G} :is(.dfchat-box, .dfsocial) :is(.dfchat-name, .dfchat-who-name, .dfsocial-name)[style*="143, 208, 255"] { color: ${NAME_COLOURS.friend.dark} !important; filter: none !important; }
+/* CHAT-COLOURS on the page: the chat is written on the CREAM page (the lighter of the pack's two), so a channel's
+   colour - ink-dark, each 4.5:1 or better - reads as a colour and not as the ink; a pip of it on each tab's plate */
+${G} body .dfchat-box { background: ${PAGE} !important; }
+${channelRules(`${G} body .dfchat[data-colours="on"] .dfchat-box`, 'dark', true)}
+${pipRules(`${G} body .dfchat[data-colours="on"] .dfchat-box`, 'dark', true)}
+${G} body .dfchat[data-colours="on"] .dfchat-box :is(.dfchat-tab, .dfchat-chan)[data-tab]::before { box-shadow: 0 0 0 1px rgba(255,240,205,0.7) !important; }
+${Object.entries(CHANNEL_COLOURS).map(([ch, c]) => `${G} body .dfchat[data-colours="on"] .dfchat-box .dfchat-chan[data-tab="${ch}"] { color: ${c.dark} !important; }`).join('\n')}
+/* ...and the lines standing over the world keep the light colours, under the HUD's outline (the box's ink is the box's) */
+${channelRules(`${G} body .dfchat[data-colours="on"] .dfchat-peek`, 'light', true)}
+${pipRules(`${G} body .dfchat[data-colours="on"] .dfchat-peek`, 'light', true)}
+/* PING1 on the page: the line on a gold wash with a bar at its edge, my @name the deep brown-gold, underlined */
+${G} .dfchat-box .dfchat-line.ping { background: ${PING_COLOURS.wash.dark} !important; box-shadow: inset 3px 0 0 ${PING_COLOURS.bar.dark} !important; }
+${G} .dfchat-box .dfchat-mention { color: ${PING_COLOURS.mention.dark} !important; text-decoration: underline solid ${PING_COLOURS.bar.dark}; text-underline-offset: 0.18em; }
+${G} .dfchat-peek .dfchat-mention { color: ${PING_COLOURS.mention.light} !important; }
+/* THE UNREAD COUNT ON A TAB'S PLATE (2026-10-11, Mac: "make the 5 shown in the channel not cover whatever it is the 5
+   is also not really well placed"): Plus's dot is a 7px disc with its number drawn at no size, and on the plate the
+   face's own size came back - the number stood over the dot, above the word's line and against the plate's edge. On the
+   page it is a wax seal: the book's red disc, the number in cream at the middle of it, beside the word on its line and
+   clear of it; a tab holding a line that names me, the mention's gold with the number in ink. */
+${G} body .dfchat-box .dfchat-tab .dfchat-badge:not(:empty) { display: inline-flex !important; align-items: center; justify-content: center;
+  box-sizing: border-box; min-width: 17px; height: 17px; padding: 0 4px !important; margin: 0 0 0 7px !important; border-radius: 9px !important;
+  font-size: 12px !important; line-height: 1 !important; letter-spacing: 0 !important; text-indent: 0 !important; vertical-align: middle;
+  position: relative; top: -1px; color: #fff0c8 !important; -webkit-text-fill-color: #fff0c8 !important; text-shadow: none !important;
+  text-decoration: none !important; background: ${T.red} !important; box-shadow: 0 0 0 1px rgba(40,14,4,0.65), inset 0 1px 0 rgba(255,190,150,0.35) !important; }
+${G} body .dfchat-box .dfchat-tab.pinged .dfchat-badge:not(:empty) { background: #e2ad42 !important; color: ${T.ink} !important; -webkit-text-fill-color: ${T.ink} !important;
+  box-shadow: 0 0 0 1px rgba(60,30,4,0.7), inset 0 1px 0 rgba(255,240,190,0.6) !important; }
+${G} .dfchat-badge.ping { background: ${PING_COLOURS.bar.dark} !important; }
 /* THE SOCIAL PANEL, on its scroll (2026-10-11: "those fonts need to be made readable"): a name keeps the colour its
    standing earns (a friend's blue, a party's green - set on the element, which no sheet's ink can re-say) deepened to
    read on the tan as the chat's names are - half as bright stood at 2.3:1 on the scroll, three tenths stands near 4:1 -
    and a plain name, a subject, a letter's own words are ink. INK-VARS reads the rest (its greys, its bone) as ink. */
-${G} .dfsocial :is(.dfsocial-name, .dfsocial-subject)[style*="color"] { filter: brightness(0.3) saturate(1.6); text-shadow: none !important; }
+${G} .dfsocial :is(.dfsocial-name, .dfsocial-subject)[style*="color"] { filter: brightness(0.3) saturate(1.6); text-shadow: none !important; }   /* (a party's and a friend's names: their own deepened colour, NAME-INK above) */
 ${G} .dfsocial :is(.dfsocial-name, .dfsocial-subject, .dfsocial-lettertext):not([style*="color"]) { color: ${T.ink} !important; text-shadow: none !important; }
 ${G} .dfsocial .dfsocial-letter.read .dfsocial-name { color: ${T.inkSoft} !important; }
-${G} .dfchat-box :is(.dfchat-name, .dfchat-who-name):not([style*="color"]) { color: ${T.ink} !important; }
 ${G} .dfchat-box :is(.dfchat-time, .dfchat-tag, .dfchat-whohead, .dfchat-who-more, .dfchat-who-tag) { color: ${T.inkSoft} !important; text-shadow: none !important; }
-${G} .dfchat-box .dfchat-line.system .dfchat-text { color: #1f4f8e !important; text-shadow: none !important; }
+${G} .dfchat-box .dfchat-line.system .dfchat-text { color: #163a6a !important; text-shadow: none !important; }   /* CHAT-COLOURS: 5:1 on the cream page's darkest (the herald's #1f4f8e stood at 3.6) */
+${G} .dfchat-box :is(.dfchat-time, .dfchat-tag) { color: #4f3218 !important; }   /* ...and a line's time and tag 5:1 too, on the mention's wash as well */
 /* ...and with the box shut (Dudey: "make sure the blue event text is readable when the chat box is not open"), the lines
    that stand over the world wear the HUD's hard outline, every one - a herald's blue among them */
 ${G} .dfchat-peek, ${G} .dfchat-peek * {
@@ -1418,7 +1484,7 @@ ${meterCss(['.lv-sky', '.lv-foot'])}
   ${G} .lv-sk .n { font-size: 32px !important; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   ${G} .lv-sk .v { font-size: 32px !important; }
   ${G} .lv-ribbon:has(.lv-sk:nth-child(15)) .lv-sk .n, ${G} .lv-ribbon:has(.lv-sk:nth-child(15)) .lv-sk .v { font-size: 16px !important; }
-  ${G} .lv-sk.on { background: rgba(142,26,16,0.1) !important; box-shadow: inset 3px 0 0 ${T.red} !important; }
+  ${G} .lv-sk.on { background: rgba(142,26,16,0.13) !important; box-shadow: none !important; }
   ${G} .lv-skrole { margin: 8px 0 0; text-align: center; font-size: 16px; }
   ${G} .lv-foot { grid-column: 1 / -1; grid-row: 7; }
 }
@@ -1578,6 +1644,12 @@ ${G} .px-home:not(.px-over):not(.lv-sky) .px-wordmark { background: radial-gradi
   ${G} .pack-shell .packlists { grid-area: list; min-height: 0; padding: 8px; background: rgba(14,8,3,0.55);
     border: 2px solid; border-color: ${T.outline} ${T.woodLit} ${T.woodLit} ${T.woodMid}; box-shadow: inset 2px 3px 8px rgba(0,0,0,0.55); }
   ${G} .pack-shell .charcol > :not(.equipped):not(.wornshelf), ${G} .pack-shell .pack-dock > :not(.packcats):not(.packlists) { grid-column: 2 / 4; }
+  /* SET-ROW (2026-10-11, Mac: "this shouldnt happen the inventory box next to the paperdoll shouldnt get smaller aswell"):
+     the worn sets' lines stood in a row of their own across the doll AND the goods, and the goods' box gave up their
+     height. They are the doll's: a row under the doll alone, the goods' box running down beside them to the band */
+  ${G} .pack-shell .pack:has(> .pack-main .setstrip, .setstrip) { grid-template-rows: auto minmax(0, 1fr) auto;
+    grid-template-areas: "tabs tabs tabs" "shelf doll list" "shelf sets list"; }
+  ${G} .pack-shell .charcol > .setstrip { grid-area: sets !important; margin: 0 !important; min-width: 0; }
 }
 /* THE BOOKS - a window that is a list beside a page (the character and system window, the spellbook, the chronicle)
    is the pack's open book laid on its desk: the list on the left-hand page, the page it opens on the right, the spine
@@ -1600,7 +1672,12 @@ ${G} .px-journal { gap: 0; position: relative; flex: 1 1 auto; min-height: 0 !im
 ${G} .px-journal > .px-qrail { ${bookPage('left')} flex: 0 0 auto; width: 31%; min-width: min(${px(84)}, 44%); max-width: 44%; min-height: 0; overflow-y: auto; overflow-x: hidden; box-shadow: none;
   padding: ${px(1)} 0 ${px(1)} ${px(1)}; border-right-width: ${px(BG - 7)}; }
 ${G} .px-journal > .px-qdetail { ${bookPage('right')} flex: 1 1 0; min-width: 0; min-height: 0; overflow-y: auto; overflow-x: hidden; box-shadow: none;
-  padding: ${px(2)} ${px(2)} ${px(1)} ${px(2)}; }
+  padding: ${px(2)} calc(${px(2)} + ${px(BG - BO)}) ${px(1)} ${px(2)}; }
+/* PAGE-CENTRE (2026-10-12, a player: "on the pause menu, the elements on the right-hand menu seem to be skewed very far to
+   the right instead of centered on the page"): the right-hand page's 9-slice gives its gutter edge BG of the pack's
+   pixels and its outer edge BO, so what was written on it stood the gutter's width in from the spine and a hair from the
+   page's edge. The outer side takes the difference as padding: the writing stands as far from the edge as from the
+   spine, in the middle of the page. */
 ${G} .px-journal .px-qrow { color: ${T.ink}; min-width: 0; }
 /* a page scrolls down, never across (Dudey: "the spellbook has 2 scrollbars"): a long name wraps, its cost keeps its place */
 ${G} .px-journal .px-qrail .px-qrow { overflow-wrap: anywhere; } ${G} .px-journal .px-qrail .sb-cost { flex: 0 0 auto; padding-left: ${px(2)}; }

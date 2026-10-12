@@ -303,7 +303,7 @@ test('WIND3 the flats\' sway in the renderer: BB_VS declares the wind and the sh
 });
 
 test('WIND3 the hosts: both exterior hosts read the one wind once a frame, feed the rain\'s rate and travel from it, draw the wisps after the rain as a foreign pass, tick the loop beside the ambience and stop it on the modal frame, hand the flats the wind before their draw, and tag the flora batches - and hold no copy of the mapping', () => {
-  for (const [host, eye] of [['src/scenes/world.js', 'wxEye'], ['src/scenes/exterior.js', 'eye']]) {   // PIN MOVED (OW-WEATHER, FIELD BUGS 2026-10-01 #9): the world host's eye is the view's (test/fb1001_overworld.test.js)
+  for (const [host, eye] of [['src/scenes/world.js', 'wxEye32'], ['src/scenes/exterior.js', 'eye32']]) {   // PIN MOVED (OW-WEATHER, FIELD BUGS 2026-10-01 #9): the world host's eye is the view's (test/fb1001_overworld.test.js)
     const s = rd(host);
     const one = (re, what) => assert.equal((s.match(re) || []).length, 1, `${host}: ${what}`);
     one(/const wd = windDrive\(sky, now \/ 1000, dt\);/g, 'the one read');
@@ -312,7 +312,7 @@ test('WIND3 the hosts: both exterior hosts read the one wind once a frame, feed 
     assert.ok(!/_lastNow|labWindSlider|Math\.sin\(tsec \* 0\.31\)/.test(s), `${host}: no copy of the mapping, no private rain clock`);
     const wisp = s.search(/if \(wisps && wd\.on && wispsOn\(\)(?: && !_dwAirOff)?\) \{/);   // DW-C: the world host's wisps are the distance fog's while it is on
     assert.ok(wisp > 0 && wisp > s.indexOf('precip.draw(precipShown, proj, view'), `${host}: the wisps after the rain`);
-    assert.ok(/^\s+renderer\.markForeignPass\(\);/m.test(s.slice(wisp, wisp + 300).split(`wisps.draw(wd, proj, view, new Float32Array(${eye}), now / 1000);\n`)[1] ?? ''), `${host}: their own program is a foreign pass`);   // RAIN-OVER-GRASS: the world host's falling weather is one closure, indented once more
+    assert.ok(/^\s+renderer\.markForeignPass\(\);/m.test(s.slice(wisp, wisp + 300).split(`wisps.draw(wd, proj, view, ${eye}, now / 1000);\n`)[1] ?? ''), `${host}: their own program is a foreign pass`);   // RAIN-OVER-GRASS: the world host's falling weather is one closure, indented once more
     one(/const wisps = sky\.enhanced \? new WindWispsRenderer\(renderer\.gl\) : null;/g, 'built on the enhanced lane at boot');
     one(/const windAudio = createWindAudio\(\);/g, 'the loop\'s driver');
     const amb = s.indexOf('ambience.update(dt, { playerPos:');

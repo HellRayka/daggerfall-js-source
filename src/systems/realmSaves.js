@@ -477,13 +477,19 @@ export function createRealmSession({
   // stays `{ ok, seq }`.
   /** @type {string | null | undefined} */
   let tradeHeld;
+  /** The law's word on the hold standing (`{ code, t }` - a piece's template, or `review`: staff's), kept for a trade's
+   *  refusal to say again (the Ring report: the refusal said "something"). @type {{ code: string, t: number | null } | null} */
+  let tradeHeldWhy = null;
   const heard = (/** @type {unknown} */ v, /** @type {unknown} */ why = null) => {
     if (v === undefined) return;
     const now = typeof v === 'string' ? v : null;
-    if (now === tradeHeld) return;
+    const w = /** @type {any} */ (why);
+    const what = w && typeof w === 'object' && (Number.isInteger(w.t) || w.code === 'review') ? { code: String(w.code ?? ''), t: Number.isInteger(w.t) ? w.t : null } : null;
+    const moved = now !== tradeHeld || (what?.code === 'review') !== (tradeHeldWhy?.code === 'review');
+    tradeHeldWhy = what;
+    if (!moved) return;
     const prev = tradeHeld;
     tradeHeld = now;
-    const what = why && typeof why === 'object' && Number.isInteger(/** @type {any} */ (why).t) ? { code: String(/** @type {any} */ (why).code ?? ''), t: /** @type {any} */ (why).t } : null;
     try { session.onTradeHeld?.(prev ?? null, now, what); } catch (e) { console.warn('[realm] the hold handler failed', e); }
   };
   /** AUDIT REALM2 C4: a save's callers told how the put that carried it went - once. */
@@ -545,7 +551,9 @@ export function createRealmSession({
     get seq() { return current; },
     /** INT3: the judge's hold the last landed checkpoint said - a reason, null for none, undefined before any said. */
     get tradeHeld() { return tradeHeld; },
-    /** INT3: told `(prev, now, why)` each time the hold moves - `why` the law's first piece (`{ code, t }`) or null; the host's to set. @type {((prev: string | null, now: string | null, why: { code: string, t: number } | null) => void) | null} */
+    /** The law's word on that hold (`{ code, t }`), or null. */
+    get tradeHeldWhy() { return tradeHeldWhy; },
+    /** INT3: told `(prev, now, why)` each time the hold moves - `why` the law's first piece (`{ code, t }`) or null; the host's to set. @type {((prev: string | null, now: string | null, why: { code: string, t: number | null } | null) => void) | null} */
     onTradeHeld: null,
     get lost() { return lost; },
     get waiting() { return !!pending; },
@@ -867,9 +875,11 @@ export const REALM_TRADE_POLL_MS = 1_500;
  * this call, and the half follows once the goods are reserved (a null half abandons it). Answers `{ ok, seq, items,
  * gold }` (what this side received), `{ ok: false, why, text }` (refused: nothing moved) or `{ ok: false, unknown: true }`
  * (no answer - the session ends).
- * @param {{ session: any, half: any, wait?: (ms: number) => Promise<void>, now?: () => number }} at
+ * `heldSaid`, the host's: the hold's notice as this session stands (systems/itemIds.js tradeHeldNotice), said again by a
+ * refusal over my own hold - the piece named, or staff's review (the Ring report: it said "something").
+ * @param {{ session: any, half: any, wait?: (ms: number) => Promise<void>, now?: () => number, heldSaid?: (() => string | null) | null }} at
  */
-export async function settleRealmTradeHalf({ session, half, wait = (ms) => new Promise((r) => { setTimeout(r, ms); }), now = () => Date.now() }) {
+export async function settleRealmTradeHalf({ session, half, wait = (ms) => new Promise((r) => { setTimeout(r, ms); }), now = () => Date.now(), heldSaid = null }) {
   const r = await session.transact(async (/** @type {any} */ at) => {
     const h = await half;
     if (!h) return { ok: false, why: 'abandoned' };
@@ -889,7 +899,7 @@ export async function settleRealmTradeHalf({ session, half, wait = (ms) => new P
       await wait(REALM_TRADE_POLL_MS);
     }
   });
-  return r.ok || r.unknown ? r : { ...r, text: realmTradeRefusalText(r.why ?? r.error ?? 'refused', r.held ?? null, session.tradeHeld) };   // HELD-SIDE: mine, said with my hold's reason
+  return r.ok || r.unknown ? r : { ...r, text: realmTradeRefusalText(r.why ?? r.error ?? 'refused', r.held ?? null, session.tradeHeld, heldSaid?.() ?? null) };   // HELD-SIDE: mine, said with my hold's reason
 }
 
 /**
@@ -899,9 +909,9 @@ export async function settleRealmTradeHalf({ session, half, wait = (ms) => new P
  * (onlineCheckpoint.js checkpointedTradePack), a timer's or a hidden page's never goes: a record with the goods out and
  * nothing received would be what the service read. `settle(half)` sends the half; `release()` abandons a hold whose
  * goods could not be reserved.
- * @param {{ session: any, checkpoint: () => any, wait?: (ms: number) => Promise<void>, now?: () => number }} at
+ * @param {{ session: any, checkpoint: () => any, wait?: (ms: number) => Promise<void>, now?: () => number, heldSaid?: (() => string | null) | null }} at
  */
-export function realmTradeEscrow({ session, checkpoint, wait, now }) {
+export function realmTradeEscrow({ session, checkpoint, wait, now, heldSaid = null }) {
   return {
     hold() {
       // AUDIT REALM L1-F1: the service settles against the save composed HERE (its records are what the half picks) - a
@@ -910,7 +920,7 @@ export function realmTradeEscrow({ session, checkpoint, wait, now }) {
       /** @type {(half: any) => void} */
       let hand = () => {};
       const half = new Promise((resolve) => { hand = resolve; });
-      const outcome = settleRealmTradeHalf({ session, half, wait, now });   // the session holds from this line
+      const outcome = settleRealmTradeHalf({ session, half, wait, now, heldSaid });   // the session holds from this line
       return {
         settle: (/** @type {any} */ h) => { hand(h); return outcome; },
         release: () => { hand(null); },

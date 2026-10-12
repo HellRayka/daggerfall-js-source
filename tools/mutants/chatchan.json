@@ -146,11 +146,12 @@
   {
     "name": "CC-peek-not-deduplicated",
     "file": "src/net/chat.js",
-    "old": "    const heard = new Set();\n    for (const tab of this.tabs) {\n      if (!tab.shown || (tab.id !== this.active && !tab.peekAll)) continue;\n      for (let i = Math.max(0, tab.messages.length - count); i < tab.messages.length; i++) heard.add(tab.messages[i]);",
-    "new": "    const heard = [];\n    for (const tab of this.tabs) {\n      if (!tab.shown || (tab.id !== this.active && !tab.peekAll)) continue;\n      for (let i = Math.max(0, tab.messages.length - count); i < tab.messages.length; i++) heard.push(tab.messages[i]);",
+    "old": "    const heard = new Set();\n    for (const tab of this.tabs) {\n      if (!tab.shown) continue;",
+    "new": "    const heard = { all: [], add(x) { this.all.push(x); }, [Symbol.iterator]() { return this.all[Symbol.iterator](); } };\n    for (const tab of this.tabs) {\n      if (!tab.shown) continue;",
     "tests": [
       "test/chatchan.test.js"
-    ]
+    ],
+    "note": "PING1 (re-aimed by content): the Set made a list that keeps every copy - the game's line on every tab drawn once a tab."
   },
   {
     "name": "CHAT-W-every-tab-peeked",
@@ -158,8 +159,8 @@
     "tests": [
       "test/chatchan.test.js"
     ],
-    "old": "      if (!tab.shown || (tab.id !== this.active && !tab.peekAll)) continue;",
-    "new": "      if (!tab.shown) continue;",
+    "old": "      if (tab.id !== this.active && !tab.peekAll) { for",
+    "new": "      if (false) { for",
     "note": "CHAT-CHAN's old peek: a World line stands over the screen of a player reading Region - Mac: \"Messages sent in world chat shouldnt carry over to region chat\"."
   },
   {
@@ -168,8 +169,8 @@
     "tests": [
       "test/chatchan.test.js"
     ],
-    "old": "      if (!tab.shown || (tab.id !== this.active && !tab.peekAll)) continue;",
-    "new": "      if (!tab.shown || tab.id !== this.active) continue;",
+    "old": "      if (tab.id !== this.active && !tab.peekAll) { for",
+    "new": "      if (tab.id !== this.active) { for",
     "note": "A party member's \"help\" said to this player waits on a badge while they read another tab."
   },
   {
@@ -178,8 +179,8 @@
     "tests": [
       "test/chatchan.test.js"
     ],
-    "old": "      if (!tab.shown || (tab.id !== this.active && !tab.peekAll)) continue;",
-    "new": "      if (tab.id !== this.active && !tab.peekAll) continue;",
+    "old": "      if (!tab.shown) continue;\n      // PING1",
+    "new": "      if (false) continue;\n      // PING1",
     "note": "A tab off the bar still stands its lines over the world."
   },
   {
@@ -521,7 +522,7 @@
   {
     "name": "CC-unread-not-spoken",
     "file": "src/ui/chatPanel.js",
-    "old": "      const name = tab.unread ? `${tab.label}, ${tab.unread} unread` : tab.label;",
+    "old": "      const name = tab.unread ? `${tab.label}, ${tab.unread} unread${tab.pings ? `, ${tab.pings} mentioning you` : ''}` : tab.label;",
     "new": "      const name = tab.label;",
     "tests": [
       "test/chatchan.test.js"

@@ -74,6 +74,10 @@ const PUBLIC_ALLOWLIST = new Map([
   ['public/art/grimoire-wood.jpg', "WOOD-HD (2026-10-10): the DFO Grimoire boards' wood, cut from the empty desk beside the book in Mac's own screenshot of the DFO Grimoire character sheet, its light flattened and made seamless; [Mac: record where that build's desk painting came from and its permission here]"],
   ['public/art/grimoire-desk.jpg', "DESK-HD (2026-10-10): the DFO Grimoire front door's desk as an earlier build drew it, lifted from Mac's own screenshot of that build (\"it looks way better use this one\"), its doors' words and the wordmark taken off; [Mac: record where that build's desk painting came from and its permission here]"],
   ['public/art/grimoire-dial-chest.png', "GRIM7 (2026-10-10): the treasure chest Dudey supplied for the DFO Grimoire dial's Items door (made with ChatGPT, handed over in the GRIM pass), cut from its dark ground along its outline; no ARENA2 pixel in it"],
+  // TEXT-FONT (2026-10-11): the Dyslexic choice of the enhanced skin's Text font (ui/textFont.js) - not art, a typeface
+  ['public/fonts/opendyslexic/opendyslexic-latin-400-normal.woff2', "TEXT-FONT: OpenDyslexic (Abbie Gonzalez), SIL Open Font License 1.1 - its latin regular, as @fontsource/opendyslexic 5.3.0 ships it; no ARENA2 pixel in it"],
+  ['public/fonts/opendyslexic/opendyslexic-latin-700-normal.woff2', "TEXT-FONT: OpenDyslexic's latin bold, the same package and licence"],
+  ['public/fonts/opendyslexic/OFL.txt', 'TEXT-FONT: the font\'s SIL Open Font License, which travels with it'],
   ['public/art/gun-idle.png', "OURS - Mac's own weapon art for the gun lab (2026-09-19); no ARENA2 pixel in it"],
   ['public/art/gun-fire-sheet.webp', "OURS - Mac's own six-frame fire sheet for the gun lab (2026-09-19); no ARENA2 pixel in it"],
   ['public/art/gun-paperdoll.png', "OURS - Mac's own weapon art for the gun lab (2026-09-19), baked down and cut for the doll's hand by tools/gunPaperdoll.mjs; no ARENA2 pixel in it"],

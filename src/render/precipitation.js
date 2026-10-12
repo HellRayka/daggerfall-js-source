@@ -207,6 +207,27 @@ export const LAB_BOX = 42;
 export const LAB_COUNTS = Object.freeze({ rain: 26000, storm: 26000, snow: 20000 });
 export const LAB_FALL = Object.freeze({ rain: 22.0, storm: 22.0, snow: 1.6 });
 
+// RAIN-CLOCK: THE FALL'S OWN CLOCK. Every program here moves its drops by
+// uTime x a per-drop rate and by the host's integrated wind travel
+// (windOff), both float32 on the GPU. Both were handed over unbounded -
+// uTime the page's whole uptime, windOff every metre the wind had blown
+// since boot - so a page left open for a day was asking the shader for
+// uTime x fall ~ 2.5e6 m, where a float32's step is a quarter metre: the
+// rain moved in visible jumps, and only got worse. The wisps wrap theirs
+// on commensurate periods (windWisps.js, AUDIT 68 S17-wisp-wrap-gust),
+// but the lab's stage is pinned byte for byte to grass-proto.html and its
+// fall and gust are continuous per drop, so no wrap of either is unseen.
+// So the clock is RE-ORIGINED instead - uTime counts from it and windOff
+// goes back to 0 - and only where no one can see the field move: on the
+// first draw after the fall has been off the screen PRECIP_REST_S (a clear
+// sky, an interior, the eye under water), which is how a spell of weather
+// begins. A spell that never pauses is re-origined at PRECIP_CLOCK_MAX_S,
+// where uTime x the fastest fall is ~1e5 m and a float32's step is under a
+// centimetre against ~0.4 m a frame of travel: one frame's reshuffle of
+// a statistically identical field, once an hour of unbroken weather.
+export const PRECIP_REST_S = 10;
+export const PRECIP_CLOCK_MAX_S = 3600;
+
 // ═══════════════════════════════════════════════════════════════════
 // DS1: DYNAMIC SKIES' PIXEL SNOW (BLBSkybox.InitSnow, :1183-1228). The
 // mod hands DFU's Snow_Particles renderer a new material - Legacy
@@ -385,6 +406,10 @@ export class PrecipitationRenderer {
      *  walk it on the front under the enhanced environments; the classic
      *  draw never reads it and never sets it. */
     this.intensity = 1;
+    /** RAIN-CLOCK: the host time (s) the fall's clock counts from, and of
+     *  the last frame it drew - null until the first draw */
+    this._t0 = null;
+    this._lastDrawn = null;
     this.vao = gl.createVertexArray();
     gl.bindVertexArray(this.vao);
     const vb = gl.createBuffer();
@@ -430,6 +455,21 @@ export class PrecipitationRenderer {
     gl.enableVertexAttribArray(1); gl.vertexAttribPointer(1, 4, gl.FLOAT, false, 16, 0); gl.vertexAttribDivisor(1, 1);
     gl.bindVertexArray(null);
     this.labVao = vao;
+  }
+
+  /** RAIN-CLOCK: the seconds the drawing frame hands its program - the
+   *  host's `seconds` counted from the fall's own origin, which is moved
+   *  (and the wind's travel zeroed) on the first draw, after a rest of
+   *  PRECIP_REST_S off the screen, on a clock that ran backwards, and at
+   *  PRECIP_CLOCK_MAX_S. Called by each draw that reaches the GPU. */
+  clock(seconds) {
+    const t0 = this._t0, last = this._lastDrawn;
+    if (t0 === null || seconds < last || seconds - last > PRECIP_REST_S || seconds - t0 >= PRECIP_CLOCK_MAX_S) {
+      this._t0 = seconds;
+      this.windOff[0] = 0; this.windOff[1] = 0;
+    }
+    this._lastDrawn = seconds;
+    return seconds - this._t0;
   }
 
   /** DS1: InitSnow - the pixel snow replacement. The texture decodes
@@ -480,7 +520,7 @@ export class PrecipitationRenderer {
     const P = this.pixel;
     gl.uniformMatrix4fv(P.uVP, false, this._vp);
     gl.uniform3fv(P.uEye, camPos);
-    gl.uniform1f(P.uTime, timeSeconds);
+    gl.uniform1f(P.uTime, this.clock(timeSeconds));   // RAIN-CLOCK
     gl.uniform1f(P.uBox, LAB_BOX);
     gl.uniform1f(P.uFall, LAB_FALL.snow);
     gl.uniform2fv(P.uWindV, this.windV);
@@ -528,7 +568,7 @@ export class PrecipitationRenderer {
     gl.uniform3fv(L.uEye, camPos);
     gl.uniform3fv(L.uRight, camRight);
     gl.uniform3f(L.uUp, 0, 1, 0);
-    gl.uniform1f(L.uTime, timeSeconds);
+    gl.uniform1f(L.uTime, this.clock(timeSeconds));   // RAIN-CLOCK
     gl.uniform1f(L.uKind, kind);
     gl.uniform1f(L.uBox, LAB_BOX);
     gl.uniform1f(L.uFall, LAB_FALL[mode] ?? LAB_FALL.rain);
@@ -560,7 +600,7 @@ export class PrecipitationRenderer {
     gl.uniformMatrix4fv(this.uView, false, view);
     gl.uniform3fv(this.uCamPos, camPos);
     gl.uniform3fv(this.uCamRight, camRight);
-    gl.uniform1f(this.uTime, timeSeconds);
+    gl.uniform1f(this.uTime, this.clock(timeSeconds));   // RAIN-CLOCK
     // EV2: the config vectors upload from arrays built ONCE - four
     // fresh Float32Arrays per frame sat in a pass whose header claims
     // zero per-frame CPU, and now it is true again.

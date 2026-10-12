@@ -77,6 +77,9 @@ What a fragment sees, in order:
    the density itself for exp and exp2, zero with the fog off), times
    `EL_SCATTER`. Clear air glows nowhere; Better Ambience's foggy dungeon
    shows every torch as a halo. Pinned against a numeric integration.
+   The glow's density is capped at `EL_SCATTER_DENSITY_MAX` (UW-GLOW,
+   below) - the integral carries no extinction, so past its tuning point
+   it grows without bound.
 6. **sRGB encode.** The fog COLOUR is blended in decoded form and
    re-encoded, so a fully fogged fragment is bit-for-bit the fog colour,
    which is the sky's colour at the horizon, drawn by a program this lane
@@ -200,7 +203,10 @@ own (`_uploadEl`), the maps bound on units 13 and 14 (the cloud shadow's
 **Known limits, recorded:** a caster the frame did not draw casts nothing
 - the hosts' frustum culling (EV3) means a tower behind the camera throws
 no shadow into the view; the character rigs (the Morrowind body, the
-peers, the first-person arm) cast none; the water surface receives none;
+peers, the first-person arm) cast none (AMENDED BY MWNPC16, 2026-10-11 -
+`04-Characters/Morrowind-NPCs.md` section 24: an NPC's Morrowind body casts
+its own shape; the player's and the peers' bodies and the arm still cast
+none, as shadowPass.js's header says); the water surface receives none;
 the moon casts none (the map is the sun's, and at night the lanterns are
 the light). EL3 or a later pass owns those.
 
@@ -2196,3 +2202,27 @@ is Mac's.
 `setSceneGrade` in worldModes.js ("the Hour alone asks a grade"); it counts two now and holds the Hour as the dungeon
 arm's only grade. perlightcolors (LT1) and audit18_hosts_outer read both hosts' colour x intensity as the literal
 product; they read the `interiorLightColor` call now, and LT1 holds its off-the-lane answer to the product.
+
+## UW-GLOW - THE LIGHT IN THE HAND UNDER WATER (2026-10-11, a player on Discord: "having a candle spell or other light source on while underwater results in almost total blindness")
+
+The disc was the lane's fog in-scatter (step 5 above), not the underwater
+tint. Its gain is `EL_SCATTER` times the fog's density, and `EL_SCATTER`
+was tuned in Better Ambience's linear 0..40 fog - a density of 1/40. The
+dungeon's underwater murk (`UnderwaterFog`, exp up to 0.25) is a visibility
+fog ten times that, and the integral has no extinction: a light within a
+stride of the eye integrated at 0.25, lifted by the eye's adaptation and
+per-channel tonemap, read 221 grey at the screen's centre (the candle) and
+an orange haze over the whole view (the torch). The rings were that smooth
+ramp through the 8-bit and retro passes.
+
+`EL_SCATTER_DENSITY_MAX = 1 / 40` (`enhancedLighting.js`) caps the density
+the GLOW integrates - `Renderer._scatterGain` takes the lesser of the fog's
+and the lane's `scatterDensityMax`, for both the lane's `uELScatter` and the
+air pass's volumetric glow. The candle's centre under water now reads ~111,
+the tuned halo; the light still lights the walls through `elPointLit`. The
+air pass's haze EXTINCTION is not capped (vc7b's pin holds it to the raw
+law). Every fog at or under 1/40 is bit-identical - DFU's dungeon, Better
+Ambience, rain, snow, the interiors; the outdoor weather's `heavy` (0.05)
+and `sandstorm` (0.09) glow lower by the same cap, the same unbounded
+growth. test/uw_glow.test.js pins the gain under the murk and the centre
+pixel it makes.

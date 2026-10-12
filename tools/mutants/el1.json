@@ -292,10 +292,19 @@
   {
     "name": "renderer-scatter-unfolded",
     "file": "src/render/renderer.js",
-    "old": "  _scatterGain() { const lane = this._lane; return lane ? lane.scatter * lane.scatterDensity(this._fogMode, this._fogDensity, this._fogRange[0], this._fogRange[1]) : 0; }",
+    "old": "  _scatterGain() { const lane = this._lane; return lane ? lane.scatter * Math.min(lane.scatterDensity(this._fogMode, this._fogDensity, this._fogRange[0], this._fogRange[1]), lane.scatterDensityMax ?? Infinity) : 0; }",
     "new": "  _scatterGain() { const lane = this._lane; return lane ? lane.scatter : 0; }",
     "tests": [
       "test/el1_enhancedlighting.test.js"
+    ]
+  },
+  {
+    "name": "renderer-scatter-uncapped",
+    "file": "src/render/renderer.js",
+    "old": "  _scatterGain() { const lane = this._lane; return lane ? lane.scatter * Math.min(lane.scatterDensity(this._fogMode, this._fogDensity, this._fogRange[0], this._fogRange[1]), lane.scatterDensityMax ?? Infinity) : 0; }",
+    "new": "  _scatterGain() { const lane = this._lane; return lane ? lane.scatter * Math.min(lane.scatterDensity(this._fogMode, this._fogDensity, this._fogRange[0], this._fogRange[1]), Infinity) : 0; }",
+    "tests": [
+      "test/uw_glow.test.js"
     ]
   },
   {

@@ -8,6 +8,7 @@
 //   /world /g <text>        the World channel          /region /r <text>     the region you stand in
 //   /party /p <text>        your party                 /local /l /say /s     those near enough to hear you
 //   /guild /gu <text>       your guild (GUILD1c)
+//   /lc <text>              your language channel (CHAT-LANG)   /lang [code|off]  choose it; alone, the list
 //   /ooc <text>             a Local aside out of character - the line wrapped in (( ))
 //   /roll /dice [NdM+K]     dice the RELAY rolls, on the active tab (DICE1, net/dice.js) - a d20 when nothing is said
 //   /me <action>            an ACTION on the active tab - "Bran looks around" (EMOTE1)
@@ -25,13 +26,14 @@
 // Not a DFU member: Daggerfall Unity has no chat. Ledger A row (ONLINE).
 
 import { parseRollSpec, ROLL_DICE_MAX, ROLL_SIDES_MAX } from './dice.js';   // DICE1: the dice's grammar
-import { LIVE_EVENTS } from './wire.js';   // EVENT1: the live events a dev may stage
+import { LIVE_EVENTS, CHAT_LANGS } from './wire.js';   // EVENT1: the live events a dev may stage; CHAT-LANG: the language channels
 import { HUB_FIND_MAX } from './hubShards.js';   // SCALE5c: a search's bound
 
 /** The channel commands: each names the tab its text is said on. `wrap` is what the text becomes first. */
 export const CHANNEL_COMMANDS = Object.freeze([
   Object.freeze({ names: Object.freeze(['world', 'g']), tab: 'world', wrap: null, help: '/world or /g <text> - to everyone online' }),
   Object.freeze({ names: Object.freeze(['region', 'r']), tab: 'region', wrap: null, help: '/region or /r <text> - to everyone in the region you stand in' }),
+  Object.freeze({ names: Object.freeze(['lc']), tab: 'lang', wrap: null, help: '/lc <text> - to your language channel' }),   // CHAT-LANG: /l is Local's
   Object.freeze({ names: Object.freeze(['party', 'p']), tab: 'party', wrap: null, help: '/party or /p <text> - to your party' }),
   Object.freeze({ names: Object.freeze(['guild', 'gu']), tab: 'guild', wrap: null, help: '/guild or /gu <text> - to your guild' }),   // GUILD1c: /g is the World's
   Object.freeze({ names: Object.freeze(['local', 'l', 'say', 's']), tab: 'local', wrap: null, help: '/local, /l, /say or /s <text> - to those near enough to hear you, in character' }),
@@ -172,6 +174,7 @@ export const CHAT_GREETING_TEXT = 'Welcome! Type /help for chat commands.';
 export const HELP_LINES = Object.freeze([
   'Chat commands:',
   ...CHANNEL_COMMANDS.map((c) => c.help),
+  '/lang de, /lang en ... - join a language channel; /lang off leaves it, /lang alone lists them',
   '/roll or /dice [NdM+K] - dice the server rolls, on this tab: /roll 2d6+3, /roll d20, /roll 100',
   '/me <action> - an action on this tab: /me looks around',
   '/wave, /bow, /nod ... [name] - a gesture to those near you - /emotes lists them all',
@@ -198,6 +201,7 @@ export const HELP_LINES = Object.freeze([
  *   { kind: 'roll', spec }                  - DICE1: dice the relay rolls, on the active tab
  *   { kind: 'me', text }                    - EMOTE1: an action, on the active tab
  *   { kind: 'emote', text }                 - EMOTE1: a gesture's line, said as an action on the Local tab
+ *   { kind: 'lang', code }                  - CHAT-LANG: choose the language channel ('off' none, '' the list)
  *   { kind: 'emotes' }                      - EMOTE1: the gestures' list
  *   { kind: 'badroll', name }               - a roll the dice's grammar or bounds refuse
  *   { kind: 'find', q }                     - SCALE5c: a search of everyone online by name (the World tab's link asks)
@@ -215,6 +219,7 @@ export function parseChatLine(text, extra = []) {
   const rest = (m[2] ?? '').trim();
   if (name === 'help' || name === '?') return { kind: 'help' };
   if (HOST_COMMANDS.includes(name)) return { kind: 'host', name };
+  if (name === 'lang') return { kind: 'lang', code: rest.toLowerCase() };   // CHAT-LANG: '' the list, 'off' none, else a code
   if (name === 'roll' || name === 'dice') { const spec = parseRollSpec(rest); return spec ? { kind: 'roll', spec } : { kind: 'badroll', name }; }
   if (name === 'me') return rest ? { kind: 'me', text: rest } : { kind: 'empty', name };
   if (name === 'emotes') return { kind: 'emotes' };
@@ -264,5 +269,10 @@ export const FIND_OFFLINE_TEXT = 'Searching needs the World channel online.';
  *  never sent, since that relay closes the hub link on it. */
 export const FIND_RELAY_TEXT = 'Searching needs a newer relay than the one online now.';
 
+/** CHAT-LANG: what `/lang` says - the channels, code and name, and how to choose one. */
+export const LANG_LINES = Object.freeze(['Language channels - /lang <code> joins one, /lang off leaves it:',
+  Object.entries(CHAT_LANGS).map(([code, name]) => `${code} ${name}`).join(' \u00b7 ')]);
+/** CHAT-LANG: a code the table does not have. */
+export const unknownLangText = (code) => `There is no "${String(code).slice(0, 12)}" language channel. /lang lists them.`;
 /** EMOTE1: the gestures, as the lines `/emotes` shows. */
 export const EMOTE_LINES = Object.freeze(['Gestures, to those near you - add a name to make one AT someone:', Object.keys(EMOTES).map((n) => `/${n}`).join(' ')]);

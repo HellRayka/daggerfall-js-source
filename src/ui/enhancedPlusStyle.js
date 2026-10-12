@@ -19,6 +19,7 @@ import { SIGIL_RUNE_TILE_URL } from './sigilRune.js';   // SIGIL-UI: the rune in
 import { PROF_ACT_CSS } from './profActStyle.js';   // PROF-RETICLE: the acts on the crosshair, dressed
 import { PROF_STATION_CSS } from './profStationStyle.js';   // PROF-STATIONS: the stations' acts, dressed
 import { plusDress, GRIMOIRE_DRESS, mountGrimoireDress } from './grimoireDress.js';   // GRIM1: the DFO Grimoire dress over the kit
+import { mountTextFont } from './textFont.js';   // TEXT-FONT: the words' face and the names'
 
 export const PLUS_STYLE_ID = 'enhanced-plus-style';
 
@@ -30,6 +31,7 @@ export const plusTheme = () => (Object.hasOwn(PLUS_THEMES, getPref('plusTheme'))
 export function applyPlusTheme(doc = globalThis.document) {
   const root = doc?.documentElement;
   if (!root?.dataset) return;
+  mountTextFont(doc);   // TEXT-FONT: under either look
   if (plusDress() === GRIMOIRE_DRESS) { root.dataset.plusTheme = DEFAULT_PLUS_THEME; mountGrimoireDress(doc); return; }
   root.dataset.plusTheme = plusTheme();
 }
@@ -191,6 +193,10 @@ body .dfchat-form .dfchat-close { min-width: 32px; padding: 4px 8px; }
   background: rgba(12,14,18,0.6); border: 2px solid rgba(125,116,96,0.45); }
 .look-colour[aria-pressed="true"] { border-color: #c08a3e; color: rgb(243,239,44); }
 .look-colour:hover, .look-colour:focus-visible { border-color: #c08a3e; outline: none; }
+/* TEXT-FONT: the installed font's name, typed in a field written in that font */
+.look-fontname { flex: 1 1 180px; min-width: 0; min-height: 32px; padding: 4px 8px; font-size: 15px; color: #1d150b;
+  background: rgba(255,250,236,0.9); border: 2px solid rgba(125,116,96,0.6); }
+.look-fontname:focus { outline: none; border-color: #c08a3e; }
 .look-colour-chip { display: inline-block; width: 16px; height: 16px; box-shadow: 0 0 0 1px #050608, inset 0 0 0 1px rgba(255,255,255,0.15); }
 /* (PLUS1b's one status row under the vitals is gone - UI3: its effects and needs are the status widget's tiles,
    ui/hudStatus.js, on the quickslot block at the left edge.) */
@@ -1000,6 +1006,21 @@ export const REFORGE_CSS = `/* ── LOOT9/LOOT10: THE REFORGE'S WINDOW (ui/ref
 .broker-offer.codex-gilded.found .broker-name { color: #ffcf4d; }
 .broker-offer.scry-row > .broker-offer-body { grid-column: 1 / span 2; }   /* AUDIT LOOT II B2: a family's row has no picture - its words take the frame's column too (a phone's as well), its price and press where his stand */
 .broker-offer.scry-row .broker-set { white-space: normal; }   /* the haunts read whole */
+/* SCRY-FIT (2026-10-12, a player: "the text is all scrunched - so you cannot purchase any of the actual scry readings"):
+   the price of a reading - "3 Welkynd Shards and 500 gold" - is twice the Broker's 124px price column, and it ran on
+   over the press beside it: the Scry word (or its "Need 378 more gold") drawn on top of the price, neither readable.
+   A row of the Reforge's sizes its price and its press to their words, and the row's own words give way. A family's row
+   has no picture, so its words take the first column alone. */
+.reforge-shell .broker-offer:not(.codex-row):not(.codex-set):not(.codex-gilded):not(.scry-row) { grid-template-columns: 48px minmax(0, 1fr) max-content minmax(112px, max-content); }
+.reforge-shell .broker-offer.scry-row { grid-template-columns: minmax(0, 1fr) max-content minmax(112px, max-content); }
+.reforge-shell .broker-offer.scry-row > .broker-offer-body { grid-column: 1; }
+.reforge-shell .broker-offer .broker-price { text-align: right; }
+@media (max-width: 720px) {
+  .reforge-shell .broker-offer:not(.codex-row):not(.codex-set):not(.codex-gilded):not(.scry-row) { grid-template-columns: 44px minmax(0, 1fr) minmax(112px, max-content); }
+  .reforge-shell .broker-offer.scry-row { grid-template-columns: minmax(0, 1fr) minmax(112px, max-content); }
+  .reforge-shell .broker-offer.scry-row .broker-price { grid-column: 1; grid-row: 2; text-align: left; }
+  .reforge-shell .broker-offer.scry-row .broker-buy { grid-column: 2; grid-row: 1 / span 2; }
+}
 .broker-offer > .reforge-keep { grid-column: 4; }
 .reforge-card .reforge-line, .imprint-card .imprint-choice { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 4px 8px; margin: 2px 0; }
 .reforge-card .reforge-press, .imprint-card .imprint-press { width: auto; flex: 0 0 auto; }

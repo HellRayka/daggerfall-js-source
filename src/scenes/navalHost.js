@@ -221,6 +221,19 @@ export const BLAST_SHAKE = 3.2;
  *  the CPU, their rigging stepped as a near one's). */
 export const NEAR_LIFE_M = 600;
 export const FAR_LIFE_EVERY = 4;
+/** PEER-HULL-RANGE: ANOTHER'S SHIP FAR OFF STANDS NO HULL HERE. Every peer in the room says their sea in their word
+ *  (applyWord), so a client held every player's ships wherever they sailed - 30-40 of them, most 80-700 km off - and
+ *  Come Sail Away's pool walked and baked each one every frame (scenes/comeSailAwayPool.js frame: her objects' walk and
+ *  her sails' FixDeformations), a third of the main thread on a desktop (38-45 FPS against 103-150 with them gone).
+ *  Her record sails on as ever (her stander's word, her fires, the claims); only her hull waits: built within
+ *  PEER_HULL_NEAR_M of the eye, back to the pool past PEER_HULL_FAR_M (the gap keeps one on the edge from being built
+ *  and torn down frame by frame). Both past where a peer's own sea reaches me (NAVAL_SHARE_RADIUS + LINER_DROP_M).
+ *  AUDIT PEER-HULL-RANGE: AND PAST THE FOG ON EVERY LANE - the first cut's 3,000 / 3,500 m stood inside it (the enhanced
+ *  lane's linear fog ends at 2400 x Land View / 3, world/weather.js scaleFogForDistance: 4,000 m at its default 5,
+ *  4,800 m at 6), so a ship came into being 63-75% fogged. At 5,000 m every row DFU, the port and Dynamic Skies draw
+ *  has closed (test/peerhullrange.test.js); the ships this is for were 80-700 km off, so the frame's saving is the same. */
+export const PEER_HULL_NEAR_M = 5000;
+export const PEER_HULL_FAR_M = 5500;
 /**
  * AUDIT NAV1 (the presentation, #14) - THE SEA AT A GLANCE (one card for the ship within 6 degrees of the look was all
  * the sea said, and a pirate turning on me said nothing). A TAG over each ship within NAVAL_TAG_RANGE of the eye and
@@ -236,6 +249,9 @@ export const NAVAL_TAG_MAX = 8;
 export const TAG_LIFT = 2.5;
 /** SPYGLASS: the glass is held on a ship this far over her waterline (m) - her hull's middle, not the sea at her foot. */
 export const GLASS_AIM_LIFT = 3;
+/** GLASS-CLEAR: how long (s, the sea's clock) the box of the ship I stand aboard keeps her spars before they are taken
+ *  again (ownExtent) - her canvas, which its booms swing, is taken each frame. */
+export const OWN_SPARS_S = 0.5;
 /** CAPT-BOARD - THE SITES: a held contract's waters asked after this often (s); a wreck's casks float this long (s) and
  *  lie scattered this far about her (m); a quarry's point is this far ahead of the captain where the world names none. */
 export const SITE_CHECK_S = 1;
@@ -1230,12 +1246,38 @@ export function createNavalHost(deps) {
       }
     }
   }
+  /** GLASS-CLEAR: the ship I stand aboard as one box in her own frame, heeling and pitching with her - every rigid
+   *  mesh of her hull and rig (sparsOf) and her set canvas where its booms swing it (rigBoxesOf) - the box the glass's
+   *  focus stands past (ui/spyglassView.js glassClearDepth). My deck (boatInPlay), a sea ship's my feet are on, or another
+   *  player's I ride; null aboard none, or before her meshes are known. Her spars' box is kept OWN_SPARS_S (sparsOf walks
+   *  every mesh of hers - most of a millisecond on the galley's 136, each frame the glass is up) and taken again after
+   *  it, or at once for another ship; her canvas each frame. */
+  let ownSpars = null;   // { boat, at, lo, hi } - her spars' box in her mesh object's frame, and when it was taken
+  function ownExtent() {
+    const boat = boatInPlay() ?? seaDeckUnderMe()?.boat ?? deps.aboardPeer?.() ?? null;
+    const mo = boat?.MeshObject;
+    if (!mo) return null;
+    if (ownSpars?.boat !== boat || clock - ownSpars.at >= OWN_SPARS_S) {
+      const spars = sparsOf(boat, deps.pool.models);
+      if (!spars) return null;
+      const lo = [Infinity, Infinity, Infinity], hi = [-Infinity, -Infinity, -Infinity];
+      for (const p of spars.points) for (let d = 0; d < 3; d++) { if (p[d] < lo[d]) lo[d] = p[d]; if (p[d] > hi[d]) hi[d] = p[d]; }
+      ownSpars = { boat, at: clock, lo, hi };
+    }
+    const lo = [...ownSpars.lo], hi = [...ownSpars.hi];
+    const take = (p) => { for (let d = 0; d < 3; d++) { if (p[d] < lo[d]) lo[d] = p[d]; if (p[d] > hi[d]) hi[d] = p[d]; } };
+    for (const b of rigBoxesOf(boat)) {
+      for (let i = 0; i < 8; i++) take(mo.inverseTransformPoint([0, 1, 2].map((d) => b.c[d] + (i & 1 ? 1 : -1) * b.ax[d] * b.h[0] + (i & 2 ? 1 : -1) * b.ay[d] * b.h[1] + (i & 4 ? 1 : -1) * b.az[d] * b.h[2])));
+    }
+    return orientedBox(mo.worldMatrix(), [0, 1, 2].map((d) => (lo[d] + hi[d]) / 2), [0, 1, 2].map((d) => (hi[d] - lo[d]) / 2));
+  }
   /**
    * SPYGLASS: the glass's frame - raised (`up`), its magnification (`zoom`, the wheel's), the look it is held along. The
    * ship it holds (glassHolds: her hull's length or the reticle's width, the nearest to its centre) is studied while held
-   * - a ship the glass leaves is begun afresh. Answers the glass card (shipKnowledge.js glassCard) or null.
+   * - a ship the glass leaves is begun afresh. Answers the glass card (shipKnowledge.js glassCard) or null. GLASS-CLEAR:
+   * `near` the glass's focus (ui/spyglassView.js glassNear) - a ship nearer is not drawn in it, and is not held.
    */
-  function glass(dt, { up = false, zoom = GLASS_ZOOM, field = Math.PI } = {}) {
+  function glass(dt, { up = false, zoom = GLASS_ZOOM, field = Math.PI, near = 0 } = {}) {
     glassUp = !!up && enabled;
     glassZoom = clamp(Number(zoom) || GLASS_ZOOM, GLASS_ZOOM_MIN, GLASS_ZOOM_MAX);
     if (!glassUp) { glassOn = null; glassHeld = 0; return null; }
@@ -1253,7 +1295,7 @@ export function createNavalHost(deps) {
       const p = e.ship.pos;
       const to = [p[0] - look.origin[0], p[1] + GLASS_AIM_LIFT - look.origin[1], p[2] - look.origin[2]];
       const dist = Math.hypot(to[0], to[1], to[2]);
-      if (dist < 1) continue;
+      if (dist < Math.max(1, near)) continue;   // GLASS-CLEAR: nearer than the glass is focused she is not drawn in it - nor held
       if (night && dist > reachOf(e, glassReach({ night, lit: showsLight(e), sight: Infinity })).far) continue;
       const a = Math.acos(clamp((to[0] * d[0] + to[1] * d[1] + to[2] * d[2]) / dist, -1, 1));
       // AUDIT CAPTAIN'S SEA S19: her extent as she lies to the look - her length abeam, her beam bow-on - and never past
@@ -1922,11 +1964,33 @@ export function createNavalHost(deps) {
     seenVolleys.delete(owner);
   }
 
+  /** PEER-HULL-RANGE: a ship whose hull stands - mine always, another's within PEER_HULL_NEAR_M of the eye. */
+  const peerHullNear = (e, eye) => !e.owner || !eye || dist2d(e.ship.pos, eye) <= PEER_HULL_NEAR_M;
+  /** PEER-HULL-RANGE: another's ship past PEER_HULL_FAR_M of the eye gives her hull back to the pool - never one I
+   *  board, nor one with bodies on her deck - and buildOne stands it again as she comes within PEER_HULL_NEAR_M. */
+  function shedFarHulls(eye) {
+    if (!eye) return;
+    for (const e of sea.values()) {
+      if (!e.owner || !e.boat || e.deck?.length || boarding?.shipId === e.id) continue;
+      if (dist2d(e.ship.pos, eye) <= PEER_HULL_FAR_M) continue;
+      deps.pool.remove(e.boat);
+      e.boat = null;
+      // AUDIT PEER-HULL-RANGE: what her record remembered of that hull goes with it (poseShip's canvas by height, the
+      // colours and wake it last set), so the next one wears her record; her fires out of sight and their loops still
+      // until poseShip stands them on her again; and she fades in when she is built again (SHIP-FADE), as a new ship does
+      e.sailsByHeight = null; e.colours = null; e.wake = false;
+      for (const f of e.fires ?? []) f.handle?.show?.(false);
+      e.fireLoop?.stop?.(); e.fireLoop = null;
+      e.sinkLoop?.stop?.(); e.sinkLoop = null;
+      e.shed = true;
+    }
+  }
   /** One build a frame: the first sea ship with no hull yet (SpawnBoat is the frame's heaviest single act). */
   function buildOne() {
     if (!deps.pool?.ready?.()) return;
+    const eye = deps.look?.()?.origin ?? deps.feet();
     for (const e of sea.values()) {
-      if (e.boat) continue;
+      if (e.boat || !peerHullNear(e, eye)) continue;   // PEER-HULL-RANGE
       try {
         e.boat = deps.pool.spawnSeaNow(new Boat(e.ship.hull, e.ship.variant));
         if (e.boat) {
@@ -1934,6 +1998,7 @@ export function createNavalHost(deps) {
           e.boat.IdleObject?.setActive?.(false);
           e.boat.ActiveObject?.setActive?.(true);
           e.boat.flagColor = NAVAL_FACTIONS[e.ship.cls?.faction]?.flag ?? null;   // her colours: the faction's own pennant
+          if (e.shed) { e.shed = false; e.fade = 0; }   // AUDIT PEER-HULL-RANGE: a hull given back and built again fades in
         }
       } catch (err) {
         console.warn('[naval] a ship would not build', err);
@@ -3935,6 +4000,7 @@ export function createNavalHost(deps) {
     // an owner gone from the room takes their ships with them (checked every OWNER_SWEEP_S)
     if (deps.online && clock - lastSweep >= OWNER_SWEEP_S) { lastSweep = clock; sweepOwners(new Set((deps.online.peers?.() ?? []).map((p) => p.id))); }
     tendClaims();
+    shedFarHulls(deps.look?.()?.origin ?? deps.feet());   // PEER-HULL-RANGE
     buildOne();
     const eye = deps.look?.()?.origin ?? deps.feet();   // AUDIT NAV1 (#17): her rigging's life by her range from it
     for (const e of [...sea.values()]) fadeStep(e, total);   // SHIP-FADE
@@ -4927,15 +4993,20 @@ export function createNavalHost(deps) {
   }
   /** The ship the target card reads: while a broadside is laid, the one its guns strike (AUDIT NAV1: a broadside's
    *  zone lies forward of the look - the galley's helm laid square on a sloop 14.7 degrees off the crosshair showed no
-   *  card); else the one the look is on (within 900 m, within 6 degrees of its bearing or its box). */
+   *  card); else the one the look is on (within 900 m, within 6 degrees of its bearing or its box).
+   *  GLASS-SPOT (2026-10-11, the owner: "You can spot ships before you even decide to use the spyglass"): ONLY A SHIP
+   *  MADE OUT. The look's card named every hull within 900 m it passed over - "Unknown two-master", her range - so a ship
+   *  was spotted, and ranged, at a glance, at night and in the fog as well; a hull not yet made out (shipKnowledge.js
+   *  KNOW.hull) gives no card, under the look or the laid guns: she is a sail on the sea till the eye, a Lookout, the
+   *  glass or her own acts make her out. */
   function targetCard(boat) {
-    if (aimHit?.ship?.boat && sea.has(aimHit.ship.id)) return targetCardOf(aimHit.ship, boatPose(boat).position);
+    if (aimHit?.ship?.boat && sea.has(aimHit.ship.id)) return knownOf(aimHit.ship) >= KNOW.colours ? targetCardOf(aimHit.ship, boatPose(boat).position) : null;   // GLASS-SPOT: the guns laid on a hull not made out - no card, and never another's
     const look = deps.look?.();
     if (!look) return null;
     const lf = flatUnit(look.dir) ?? [0, 0, 1];
     let best = null, bestA = Infinity;
     for (const e of sea.values()) {
-      if (!e.boat || e.ship.damage.state === SHIP_STATES.sunk) continue;
+      if (!e.boat || e.ship.damage.state === SHIP_STATES.sunk || knownOf(e) < KNOW.colours) continue;   // GLASS-SPOT: a hull not made out gives no card
       const p = e.ship.pos;
       const to = [p[0] - look.origin[0], 0, p[2] - look.origin[2]];
       const dist = Math.hypot(to[0], to[2]);
@@ -5154,6 +5225,8 @@ export function createNavalHost(deps) {
     notorietyOf: (crown) => notoriety.get(crown),
     /** SPYGLASS: the glass's frame (raised or not, its magnification) - the card of the ship it holds, or null. */
     glass,
+    /** GLASS-CLEAR: the ship I stand aboard as one box (ownExtent's) - the glass's focus stands past her. */
+    ownExtent,
     /** SPYGLASS: whether the glass is up (the world's view narrows to it). */
     get glassUp() { return glassUp; },
     /** GALLEON: a galleon's gun deck as this frame stood it (her sides laid, her guns' places, her shutters) - a probe's reading. */

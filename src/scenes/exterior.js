@@ -527,6 +527,7 @@ export async function bootExterior(canvas, renderer, params, status) {
   const precipOpts = { enhanced: sky.enhanced, countCap: Number(params.get('rain')) || null };
   if (sky.pixelSnow) precipOpts.pixelSnow = sky.pixelSnow;   // DS1: Dynamic Skies' InitSnow - the pixel snow replacement, when its switch is on
   let precip = precipMode ? new PrecipitationRenderer(renderer.gl, precipOpts) : null;
+  const eye32 = new Float32Array(3);   // RAIN-LEAK: the falling weather's eye, filled each frame (world.js's twin)
   // PERF-WARM: the renderer's on-demand programs, and the rain's whole
   // renderer, paid for at idle rather than on the frame that first needs
   // them. The rain is the expensive one: a weather change builds a
@@ -6152,12 +6153,13 @@ export async function bootExterior(canvas, renderer, params, status) {
       if (hz.visible && hazeGl.draw(hz, proj, view, renderer.worldViewportPx ?? [0, 0, renderer.gl.drawingBufferWidth, renderer.gl.drawingBufferHeight], hz.seconds)) renderer.markForeignPass();
     }
     // WX2: what falls is what the front SHOWS (world.js's twin note)
+    eye32[0] = eye[0]; eye32[1] = eye[1]; eye32[2] = eye[2];
     const precipShown = enhancedFront ? fx.shown : precipMode;
     if (precipShown === 'sand') {
       // WEATHER2d: THE SANDSTORM'S SAND - the wisps' program in the sand's look, the front's intensity its
       // strength, on the one wind's rate and travel; the rain program never draws it
       if (sand) {
-        sand.draw({ on: true, strength01: fx.intensity, windV: wd.windV, step: wd.step, gust: wd.gust }, proj, view, new Float32Array(eye), now / 1000);
+        sand.draw({ on: true, strength01: fx.intensity, windV: wd.windV, step: wd.step, gust: wd.gust }, proj, view, eye32, now / 1000);
         renderer.markForeignPass();
       }
     } else if (precipShown && precip) {   // W1 review: the gate is the MODE, never the object - the renderer outlives a clear-up
@@ -6178,7 +6180,7 @@ export async function bootExterior(canvas, renderer, params, status) {
         precip.windV[0] = wd.windV[0]; precip.windV[1] = wd.windV[1];
         precip.windOff[0] += wd.step[0]; precip.windOff[1] += wd.step[1];
       }
-      precip.draw(precipShown, proj, view, new Float32Array(eye), camRight, now / 1000);
+      precip.draw(precipShown, proj, view, eye32, camRight, now / 1000);
       renderer.markForeignPass();   // EV6: so did the rain
     }
     // WIND3: THE WISPS - the wind, seen (render/windWisps.js). After the
@@ -6189,7 +6191,7 @@ export async function bootExterior(canvas, renderer, params, status) {
       renderer.markForeignPass();
     }
     if (wisps && wd.on && wispsOn()) {
-      wisps.draw(wd, proj, view, new Float32Array(eye), now / 1000);
+      wisps.draw(wd, proj, view, eye32, now / 1000);
       renderer.markForeignPass();
     }
     // C9: the exterior FP weapon (first-person walk only - the V

@@ -1,0 +1,74 @@
+[
+  {
+    "name": "RING-HOLD-the-review-unsaid",
+    "file": "server-account/src/verdict.js",
+    "old": "  const why = held !== 'law' ? null : lawHolds ? (({ code, t }) => ({ code, t: t ?? null }))(lawFindings[0]) : { code: 'review', t: null };",
+    "new": "  const why = held !== 'law' ? null : lawHolds ? (({ code, t }) => ({ code, t: t ?? null }))(lawFindings[0]) : null;",
+    "tests": [
+      "test/ringhold.test.js"
+    ]
+  },
+  {
+    "name": "RING-HOLD-the-said-unread",
+    "file": "src/net/realmTradeLaw.js",
+    "old": "    const notice = typeof said === 'string' && said ? said : typeof reason === 'string' ? /** @type {Record<string, string>} */ (TRADE_HELD_NOTICES)[reason] : undefined;",
+    "new": "    const notice = typeof reason === 'string' ? /** @type {Record<string, string>} */ (TRADE_HELD_NOTICES)[reason] : undefined;",
+    "tests": [
+      "test/ringhold.test.js"
+    ]
+  },
+  {
+    "name": "RING-HOLD-the-review-unnoticed",
+    "file": "src/systems/itemIds.js",
+    "old": "  if (now === 'law' && why?.code === 'review') return TRADE_HELD_NOTICES.review;",
+    "new": "",
+    "tests": [
+      "test/ringhold.test.js"
+    ]
+  },
+  {
+    "name": "RING-WARN-the-strikes-unsaid",
+    "file": "src/net/realmTradeLaw.js",
+    "old": "export const TRADE_HELD_STRIKES = ' Each time the law holds it counts: the third time, trading stays frozen until staff have looked.';",
+    "new": "export const TRADE_HELD_STRIKES = '';",
+    "tests": [
+      "test/ringhold.test.js"
+    ]
+  },
+  {
+    "name": "VOID-ROOM-the-facing-unread",
+    "file": "src/systems/decorRooms.js",
+    "old": "      if (below.back && above.back) { y = fy - 0.05; continue; }",
+    "new": "",
+    "tests": [
+      "test/decorrooms.test.js"
+    ]
+  },
+  {
+    "name": "QUAY-CROSSING-the-pier-unmet",
+    "file": "src/systems/naval/quays.js",
+    "old": "    if (onPier(x1 + t)) {",
+    "new": "    if (false) {",
+    "tests": [
+      "test/quaycrossing.test.js"
+    ]
+  },
+  {
+    "name": "QUAY-CROSSING-the-boxes-unweighed",
+    "file": "src/systems/naval/shipLife.js",
+    "old": "      if (boxes.some((o) => boxesMeet(o, box))) continue;",
+    "new": "",
+    "tests": [
+      "test/quaycrossing.test.js"
+    ]
+  },
+  {
+    "name": "QUAY-CROSSING-out-of-order",
+    "file": "src/scenes/quayPool.js",
+    "old": "        if (b.laying || t < b.retryAt) break;",
+    "new": "        if (b.laying || t < b.retryAt) continue;",
+    "tests": [
+      "test/quaycrossing.test.js"
+    ]
+  }
+]

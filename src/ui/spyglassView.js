@@ -65,6 +65,81 @@ export const glassFov = (fov, lens) => (lens > 1 ? 2 * Math.atan(Math.tan(fov / 
 export const glassLookScale = (lens) => 1 / Math.max(1, lens);
 
 /**
+ * GLASS-CLEAR (2026-10-11, the owner: "the ship blocks your view most of the time when using your spyglass"): THE GLASS
+ * FOCUSES PAST HER. Raised at a helm the view is the head's (mwViewHoldFirst), behind the ship's own masts, sails, wheel
+ * and hands, and through a glass at x4 the nearest of them fill it. A glass shows nothing nearer than it is focused: as
+ * the lens comes to its magnification the world's near plane stands out from the eye's own GLASS_NEAR_MIN to just past
+ * the ship I stand aboard (`own`: how deep she reaches into the glass's view along the look, glassClearDepth's, and
+ * GLASS_CLEAR_PAD more) - so another ship beyond her is drawn, and held, however close. Never past GLASS_NEAR_MAX, and
+ * never so far that the sea at the foot of the view is cut, which would open a hole in it: where the view's lower edge
+ * meets the sea (GLASS_SEA_MARGIN over its level, for the swell), its depth along the look, and GLASS_SEA_SHARE of that
+ * - a long hull's bow far ahead of her helm stays in view. Aboard nothing (`own` 0), the eye's own. `fovY` the glass's
+ * vertical field (glassFov's), `pitch` the look's (up positive), `eyeOverSea` the eye over the sea or whatever ground
+ * stands higher under the view's foot (m). Pure.
+ */
+export const GLASS_NEAR_MIN = 0.2;
+export const GLASS_NEAR_MAX = 120;
+export const GLASS_CLEAR_PAD = 0.5;
+export const GLASS_SEA_MARGIN = 0.6;
+export const GLASS_SEA_SHARE = 0.85;
+export function glassNear({ lens = 1, zoom = 1, fovY = 1, pitch = 0, eyeOverSea = 0, own = 0 } = {}) {
+  if (!(lens > 1) || !(zoom > 1) || !(own > 0)) return GLASS_NEAR_MIN;
+  const t = Math.min(1, (lens - 1) / (zoom - 1)), half = fovY / 2, dip = half - pitch, h = eyeOverSea - GLASS_SEA_MARGIN;
+  let reach = Math.min(GLASS_NEAR_MAX, own + GLASS_CLEAR_PAD);
+  if (dip > 1e-3) reach = h > 0 ? Math.min(reach, (GLASS_SEA_SHARE * h * Math.cos(half)) / Math.sin(dip)) : GLASS_NEAR_MIN;
+  return GLASS_NEAR_MIN + (Math.max(GLASS_NEAR_MIN, reach) - GLASS_NEAR_MIN) * t;
+}
+/** A box's faces, its corners numbered by their sides (bit 0 its x, 1 its y, 2 its z), each taken round. */
+const BOX_FACES = [[0, 1, 3, 2], [4, 5, 7, 6], [0, 1, 5, 4], [2, 3, 7, 6], [0, 2, 6, 4], [1, 3, 7, 5]];
+/**
+ * GLASS-CLEAR: how deep along the look (m) a box reaches into the glass's view - the square about its circle, `field`
+ * its half-angle (the reticle's world.js field) - the deepest point of the box within it; 0 where none of it is. `box`
+ * an oriented box ({ c, ax, ay, az, h }, navalBallistics.js orientedBox's - the ship I stand aboard, navalHost.js
+ * ownExtent), `eye` the look's origin, `yaw`/`pitch` its (forward [sin(yaw)cos(pitch), sin(pitch), cos(yaw)cos(pitch)]).
+ * Each face cut to the view (its four sides) and its deepest corner taken. Pure.
+ */
+export function glassClearDepth({ box = null, eye = [0, 0, 0], yaw = 0, pitch = 0, field = 0 } = {}) {
+  if (!box || !(field > 0)) return 0;
+  const cy = Math.cos(yaw), sy = Math.sin(yaw), cp = Math.cos(pitch), sp = Math.sin(pitch);
+  const f = [sy * cp, sp, cy * cp], r = [cy, 0, -sy], u = [-sy * sp, cp, -cy * sp];
+  const k = Math.tan(Math.min(field, 1.5));
+  // her corners in the look's own frame: across, up, along
+  const P = [];
+  for (let i = 0; i < 8; i++) {
+    const w = [0, 1, 2].map((d) => box.c[d] - eye[d] + (i & 1 ? 1 : -1) * box.ax[d] * box.h[0] + (i & 2 ? 1 : -1) * box.ay[d] * box.h[1] + (i & 4 ? 1 : -1) * box.az[d] * box.h[2]);
+    P.push([w[0] * r[0] + w[1] * r[1] + w[2] * r[2], w[0] * u[0] + w[1] * u[1] + w[2] * u[2], w[0] * f[0] + w[1] * f[1] + w[2] * f[2]]);
+  }
+  // the view's four sides, each a plane through the eye: n . p <= 0 within
+  const sides = [[1, 0, -k], [-1, 0, -k], [0, 1, -k], [0, -1, -k]];
+  let deepest = 0;
+  for (const face of BOX_FACES) {
+    let poly = face.map((i) => P[i]);
+    for (const n of sides) {
+      const kept = [];
+      for (let i = 0; i < poly.length; i++) {
+        const a = poly[i], b = poly[(i + 1) % poly.length];
+        const da = n[0] * a[0] + n[1] * a[1] + n[2] * a[2], db = n[0] * b[0] + n[1] * b[1] + n[2] * b[2];
+        if (da <= 0) kept.push(a);
+        if ((da < 0 && db > 0) || (da > 0 && db < 0)) { const t = da / (da - db); kept.push([a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t]); }
+      }
+      poly = kept;
+      if (!poly.length) break;
+    }
+    for (const p of poly) if (p[2] > deepest) deepest = p[2];
+  }
+  return deepest;
+}
+/** GLASS-CLEAR: the eye's height over where the view's lower edge meets the sea - over the sea, or over the ground there
+ *  where it stands higher (a shore, a shoal: one look along the look's bearing, `groundAt(x, z)`; none, the sea alone).
+ *  `eyeX`, `eyeZ`, `eyeY` the eye, `yaw` the look's (forward [sin, 0, cos]), `seaY` the sea's level. Pure. */
+export function glassEyeOverSea({ eyeX = 0, eyeZ = 0, yaw = 0, eyeY = 0, seaY = 0, fovY = 1, pitch = 0, groundAt = null } = {}) {
+  const h = eyeY - seaY, dip = fovY / 2 - pitch;
+  if (!groundAt || !(h > 0) || !(dip > 1e-3)) return h;
+  const run = h / Math.tan(dip), g = groundAt(eyeX + Math.sin(yaw) * run, eyeZ + Math.cos(yaw) * run);
+  return eyeY - (Number.isFinite(g) ? Math.max(seaY, g) : seaY);
+}
+
+/**
  * The words the glass's foot says: its magnification and the presses that turn it and lower it.
  * @param {{ zoom?: number, keys?: { glass?: string|null, zoom?: string|null }, touch?: boolean, pad?: boolean }} [o]
  */

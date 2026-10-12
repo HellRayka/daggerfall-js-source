@@ -955,3 +955,33 @@ INT8 retired the six of the mutual draw, the duel's heal and its fatigue floor -
 **The limits that stand.** Still no server authority over a blow: a modified client can refuse to fall. A quick yield
 is still a free full heal (Mac's rule). A pair can still count `DUEL_PAIR_DAY_MAX` a day between two registered
 accounts, and a winner 20. Mounted duels, a reflected duel spell, and onlookers walking through a ring are as above.
+
+## CHAT-LANG, CHAT-COLOURS, PING1, NAME-INK (2026-10-11)
+
+The players asked for "more chat channels per-language", "chat color-coding per channel (i.e. White for Global, Green
+for Regional, Purple for Guild, Grey for Local)" and "a unique color or alert for @name pings". Mac added "the color was
+the problem not the font" (a player's name read as part of their line) and "make sure the colors are all good readable".
+
+**Language channels.** A language is a channel of its own: one room per language (`chat:lang.<code>`,
+`net/wire.js` `CHAT_LANGS`, fifteen of them, each named in its own tongue), whitelisted in `CHAT_ROOMS` as the World and
+region rooms are. The Language tab (`net/chat.js` `CHAT_TABS`, `lang`) rides a link of its own, stands on the bar only
+while the player has chosen one (`chatLang`), and joins only once the World link's welcome names a relay that opens
+them (`LANG_RELAY_MIN`, world192). `/lang de` chooses, `/lang off` leaves, `/lang` lists, `/lc <text>` says a line on it;
+Settings > Other players > Chat has the same choice. The relay change is the whitelist alone: **deploy world192 before
+the Language tab can join** (an older relay refuses the room key, and the tab says so).
+
+**Channel colours.** A plain line's words are drawn in its channel's colour (`ui/chatColours.js` `CHANNEL_COLOURS`):
+World white, Region green, Guild purple, Local grey, Party teal, Language rose; a pip of the colour stands before each
+tab's name. System, server, DM, aside, action and roll lines keep their own colours. Every colour comes as a pair - light
+for Plus's box and for the lines over the world, dark for DFO Grimoire's page, where the chat is now written on the
+cream page - and `test/chatcolours1.test.js` holds each at 4.5:1 or better on the darkest ground it is drawn on.
+The switch is the player's (`chatChannelColours`).
+
+**Names.** A name is never its words' colour (`NAME_COLOURS`): a stranger's brass (the page's red on Grimoire), my own a
+pale gold (a brown gold), a party member's green and a friend's blue. On Grimoire the old filter that deepened a
+coloured name to the ink is gone; each is deepened by hand to keep its hue.
+
+**Pings.** A line someone else says with `@MyName` (the whole name, any case - `mentions`) is marked: laid on a gold wash
+with a bar at its edge, the mention itself in gold, its tab's dot and the Chat button's count gold until read, and it
+stands over the world from whichever tab it was said on. The enchanter's chime sounds once for a burst
+(`chatPingSound`).

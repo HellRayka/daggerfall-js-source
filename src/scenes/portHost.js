@@ -8,11 +8,11 @@
 // WHERE: the host says (`sites`: each port place of every town built, its middle in the scene's x, z - world/portSites.js
 // placed it, carried by the host's own frame - its turn, its name, its keepers), and the ground there is the host's
 // (`groundAt`), read when a place moves (a floating-origin recentre, across or up) and every PORT_GROUND_EVERY frames.
-// A place's collider bucket - its model, its people's boxes, the lighthouse's lantern glass - is stood again when it moves,
-// and held back while the player's feet stand on its ground as it first rises (AUDIT SET W1's law, the yards'): up the
-// lighthouse's hollow tower and inside its lantern room too (AUDIT SHIPYARDS L4-5: a body risen inside was sealed in),
-// never for feet up on its gallery, which it must stand under. THE GALLERY'S GUARD (guardBand: a corridor from its floor
-// lidded to the lantern's glass - L4-1: a climb, a boosted jump or a vault went over the railing, a twenty-metre fall)
+// A place's collider bucket - its model and its people's boxes - is stood again when it moves, and held back while the
+// player's feet stand on its ground as it first rises (AUDIT SET W1's law, the yards'): up the lighthouse's hollow tower
+// and inside its lantern too (AUDIT SHIPYARDS L4-5: a body risen inside was sealed in), never for feet up on its gallery,
+// which it must stand under. THE GALLERY'S GUARD (guardBand: a corridor from its floor lidded to the lantern's faces -
+// L4-1: a climb, a boosted jump or a vault went over the railing the tower had then, a twenty-metre fall)
 // stands in a bucket of its own only while the feet are on the gallery under its lid: always standing, its lid was a
 // floor to a body coming down onto the gallery from over it.
 //
@@ -31,11 +31,13 @@
 //    gallery (`climb`); the hatch on the gallery: Climb down;
 //  - a shipwright: Info names him at his work; Steal takes nothing anywhere ("never takes an eye off his yard").
 //
-// THE LIGHT (`lights`, `glows`): in the lanterns' hours (the host's `lit`) the lamp is a scene light, and its glow and two
+// THE LIGHT (`lights`, `glows`): in the lanterns' hours (the host's `lit`) the lamp - the beacon's fire (BEACON-TOWER:
+// world/lighthouseModel.js) - is a scene light, its flames are drawn over its coals, and its glow and two
 // beams turning BEAM_PERIOD_S a round are drawn as added light from as far as BEAM_SEEN_M - a light a captain sees from the
 // sea - each lighthouse's beams on its own phase (off its key) of one clock every client reads alike, the wall clock's
 // (AUDIT SHIPYARDS L4-6: each client's own frame clock turned each its own sweep); a puff the eye stands in fades (L7-12:
-// from the gallery each sweep was a flash). The lamp's glass and lens cast no shadow (L5-2: they shadowed its own light).
+// from the gallery each sweep was a flash). The flames cast no shadow (L5-2's law: the glass that stood there shadowed
+// its own light) and are no solid; the art's flame is a cutout, and the fire's two pictures their own light (PORT_HOW).
 //
 // A FRAME ALLOCATES NOTHING HERE (AUDIT SHIPYARDS L4-2, PERF-LIGHTS' law): the glows' records and the lights' are each
 // place's own, written in place into one array each; a person's idle record turns its key only as its frame turns; the
@@ -57,8 +59,8 @@ import { PORT_PLACES } from '../systems/portPlaces.js';
 import { SHIPYARD_TEXT } from '../systems/shipyards.js';
 import { PORT_FOOT } from '../world/portSites.js';
 import { buildShipyardModel, SHIPYARD, shipsSignBox, hullBox, noticesBox, crewSignBox } from '../world/shipyardModel.js';
-import { buildLighthouseModel, buildLighthouseGlass, guardBand, LIGHTHOUSE, LIGHTHOUSE_POINTS, doorBox, hatchBox, lanternBox, GALLERY_Y } from '../world/lighthouseModel.js';
-import { PORT_PAINTERS, PORT_ARCHIVE } from '../world/portArt.js';
+import { buildLighthouseModel, buildLighthouseFire, guardBand, LIGHTHOUSE, LIGHTHOUSE_POINTS, doorBox, hatchBox, lanternBox, GALLERY_Y, LANTERN_H } from '../world/lighthouseModel.js';
+import { PORT_PAINTERS, PORT_ARCHIVE, PORT_HOW } from '../world/portArt.js';
 import { PERSON_TEXTURES, PERSON_IDLE_RECORD, PERSON_IDLE_FPS } from '../characters/mobilePerson.js';
 import { mobileBillboardSize } from '../world/rmbFlats.js';
 import { folkLookOf } from '../characters/folkBodies.js';
@@ -77,7 +79,7 @@ import { noteFirstUse } from '../systems/tutorials.js';   // TUT1: the lighthous
 export const PORT_GROUND_EVERY = 30;
 /** The press reaches the port's people and boards as it reaches a static NPC (StaticNPCActivationDistance, 6.4). */
 export const PORT_REACH = STATIC_NPC_ACTIVATION_DISTANCE;
-/** How far over each place's ground its Overworld mark stands - over the sheerlegs' head, over the lantern's vane. */
+/** How far over each place's ground its Overworld mark stands - over the sheerlegs' head, over the roof's vane. */
 export const PORT_MARK_LIFT = Object.freeze({ shipyard: 8.5, lighthouse: 24.5 });
 /** A place's collider held back while the feet stand on its ground below this height over it (m): the shipyard's scaffold,
  *  and the lighthouse's whole hollow tower up to half a metre under its gallery (AUDIT SHIPYARDS L4-5: it stopped at 2.5 m,
@@ -85,7 +87,7 @@ export const PORT_MARK_LIFT = Object.freeze({ shipyard: 8.5, lighthouse: 24.5 })
 export const HOLD_BACK_UP = Object.freeze({ shipyard: 4.5, lighthouse: GALLERY_Y - 0.5 });
 /** THE GALLERY'S GUARD stands once the feet are on the gallery inside its band, low enough that a body (player/motor.js
  *  CAPSULE_HEIGHT 1.8) stands under its lid - GUARD_HEADROOM under it - and stays while they are within its height over
- *  the gallery's floor and its railing's reach. */
+ *  the gallery's floor and the parapet's reach. */
 export const GUARD_HEADROOM = 1.95;
 /** The lamp: its scene light's reach (m), and the office lantern's. */
 export const LAMP_RANGE = 28;
@@ -109,6 +111,9 @@ export const GLOW_ANGLE = 0.012;
 export const BEAM_NEAR_FADE = 1.5;
 /** The art's painting: pictures a frame while this many ms of it are unspent (one at least). */
 export const ART_BUDGET_MS = 4;
+/** BEACON-TOWER: a picture's upload as a cutout and as its own light (world/portArt.js PORT_HOW), and the flames' draw -
+ *  each one record, never a literal a call. */
+const CUTOUT = Object.freeze({ cutout: true }), OWN_LIGHT = Object.freeze({ white: true }), NO_SHADOW = Object.freeze({ noShadow: true });
 /** The lamp's light, in added light and in the scene's. */
 export const LIGHTHOUSE_LAMP_COLOR = Object.freeze([1, 0.85, 0.55]);
 
@@ -125,15 +130,15 @@ export const DOWN_ROWS = Object.freeze([Object.freeze({ id: 'down', label: 'Clim
 /** What the port's places say. */
 export const PORT_TEXT = Object.freeze({
   steal: SHIPYARD_TEXT.steal,
-  lightSteal: 'The lightkeeper keeps the lamp and its oil under lock.',
+  lightSteal: 'The lightkeeper keeps the beacon\'s oil under lock.',
   shut: 'The shipmaster\'s window will not open here.',
   noSail: SHIPYARD_TEXT.noSail,
   sailor: 'Looking for a berth - ask the crewmaster to sign hands on.',
   worker: 'At work on the hull on the stocks.',
-  lampLit: 'The lamp burns from dusk to dawn - it is lit.',
-  lampDark: 'The lamp burns from dusk to dawn.',
+  lampLit: 'The beacon burns from dusk to dawn - it is lit.',
+  lampDark: 'The beacon burns from dusk to dawn.',
   hatch: 'Down the tower\'s stair.',
-  stair: 'The stair up to the lamp.',
+  stair: 'The stair up to the beacon.',
   shutStair: 'The lightkeeper keeps the stair shut just now.',
   riding: 'No horse climbs a lighthouse stair - go up on foot.',
   foes: 'The lightkeeper bars the door - not with enemies about.',
@@ -175,8 +180,8 @@ export function peopleOf(site) {
   ];
 }
 const T_ = LIGHTHOUSE.tower, G_ = LIGHTHOUSE.gallery, L_ = LIGHTHOUSE.lantern;
-/** The lantern room's top over the lighthouse's ground: its dome's. */
-const LANTERN_TOP = GALLERY_Y + L_.wallH + L_.glassH + L_.cornice + L_.domeH;
+/** The lantern's top over the lighthouse's ground: its roof's point. */
+const LANTERN_TOP = GALLERY_Y + LANTERN_H;
 /** Feet `f` (the scene's) in a place's own frame, over its ground - [x, y, z] into `out`. */
 function feetInFrame(site, at, f, out) {
   const a = (-(site.yaw ?? 0) * Math.PI) / 180, c = Math.cos(a), s = Math.sin(a), dx = f[0] - at[0], dz = f[2] - at[2];
@@ -187,8 +192,8 @@ const _ff = [0, 0, 0];
 /** How far a point of the lighthouse's frame stands off its tower's axis. */
 const axisR = (q) => { const x = q[0] - T_.x, z = q[2] - T_.z; return Math.sqrt(x * x + z * z); };
 /** Whether feet `f` (the scene's) stand on a place's ground at its foot - its footprint, below HOLD_BACK_UP over it; or in
- *  a lighthouse's lantern room, closed in its glass, below its dome's top (a body risen up the hollow tower: AUDIT
- *  SHIPYARDS L4-5). Pure. */
+ *  a lighthouse's lantern, inside its arches, below its roof's point (a body risen up the hollow tower: AUDIT SHIPYARDS
+ *  L4-5). Pure. */
 export function feetInPort(site, at, f) {
   if (!site || !at || !f) return false;
   const q = feetInFrame(site, at, f, _ff), F = PORT_FOOT[site.kind];
@@ -198,12 +203,12 @@ export function feetInPort(site, at, f) {
 }
 /** Whether a lighthouse's gallery guard stands for feet `f` (the scene's) - `on` whether it stands now: it stands once they
  *  are on the gallery inside its band and under its lid by GUARD_HEADROOM, and stays while they are within its height and
- *  the railing's reach (AUDIT SHIPYARDS L4-1). Pure. */
+ *  the parapet's reach (AUDIT SHIPYARDS L4-1). Pure. */
 export function guardFor(site, at, f, on) {
   if (!site || !at || !f) return false;
   const q = feetInFrame(site, at, f, _ff), r = axisR(q), y = q[1];
-  return on ? y > GALLERY_Y - 0.5 && y < GALLERY_Y + G_.guardH && r < G_.railR + 0.5
-    : y > GALLERY_Y - 0.1 && y < GALLERY_Y + G_.guardH - GUARD_HEADROOM && r > L_.r && r < G_.railR - 0.08;
+  return on ? y > GALLERY_Y - 0.5 && y < GALLERY_Y + G_.guardH && r < G_.parapetR + 0.5
+    : y > GALLERY_Y - 0.1 && y < GALLERY_Y + G_.guardH - GUARD_HEADROOM && r > L_.r && r < G_.parapetR - 0.08;
 }
 /** A beam's k-th puff (1..BEAM_PUFFS) from `lamp` along [dx, dz] written into `rec` (its `pos` and `size`) - answers its
  *  alpha. The beam's one law: beamPuffs's and the pool's glows'. */
@@ -264,8 +269,8 @@ export function createPortHost({
   // one's store and grew it again, every frame)
   const _batches = [], _targets = [], _lights = [], _glows = [];
 
-  const MODELS = { shipyard: buildShipyardModel, lighthouse: buildLighthouseModel, glass: buildLighthouseGlass };
-  /** A kind's model (the lighthouse's glass and lens its own, `glass`), built once. */
+  const MODELS = { shipyard: buildShipyardModel, lighthouse: buildLighthouseModel, fire: buildLighthouseFire };
+  /** A kind's model (the beacon's flames their own, `fire`), built once. */
   const modelOf = (kind) => { let m = models.get(kind); if (!m) { m = MODELS[kind](); models.set(kind, m); } return m; };
   /** The art up, a few pictures a frame - once a frame, whichever place asks (AUDIT SHIPYARDS L5-5) - answers whether it
    *  is all up. */
@@ -274,7 +279,11 @@ export function createPortHost({
     if (artFrame === frameN) return false;
     artFrame = frameN;
     const t0 = now();
-    do { const [rec, paint] = PORT_PAINTERS[artAt++]; renderer.uploadTexture?.(PORT_ARCHIVE, rec, paint()); } while (artAt < PORT_PAINTERS.length && now() - t0 < ART_BUDGET_MS);
+    do {
+      const [rec, paint] = PORT_PAINTERS[artAt++], pic = paint(), how = PORT_HOW[rec];
+      renderer.uploadTexture?.(PORT_ARCHIVE, rec, pic, how?.cutout ? CUTOUT : undefined);   // BEACON-TOWER: the flame a cutout
+      if (how?.glows) renderer.uploadEmissionTexture?.(PORT_ARCHIVE, rec, pic, OWN_LIGHT);   // ...and the fire its own light
+    } while (artAt < PORT_PAINTERS.length && now() - t0 < ART_BUDGET_MS);
     return artAt >= PORT_PAINTERS.length;
   }
   function meshOf(kind) {
@@ -283,7 +292,7 @@ export function createPortHost({
     try {
       if (!paintArt()) return null;
       meshes.set(kind, renderer.createMesh(modelOf(kind)));
-      if (kind === 'lighthouse') meshes.set('glass', renderer.createMesh(modelOf('glass')));
+      if (kind === 'lighthouse') meshes.set('fire', renderer.createMesh(modelOf('fire')));
     } catch (e) { meshes.set(kind, null); console.warn('[port] a place would not build', e?.message ?? e); }
     return meshes.get(kind);
   }
@@ -308,11 +317,10 @@ export function createPortHost({
     if (!b) { b = localAabb(modelOf(pl.site.kind).positions); boxes.set(pl.site.kind, b); }
     return transformedAabb(b, pl.matrix);
   }
-  /** The collider's geometry: the model, each person's box, the lighthouse's glass - in the place's frame. */
+  /** The collider's geometry: the model and each person's box - in the place's frame. The beacon's flames are no solid. */
   function colliderGeometry(pl) {
     const parts = [modelOf(pl.site.kind)];
     for (const p of peopleOf(pl.site)) parts.push(boxTriangles([p.at[0] - KEEPER_HALF, p.at[1], p.at[2] - KEEPER_HALF], [p.at[0] + KEEPER_HALF, p.at[1] + KEEPER_HEIGHT, p.at[2] + KEEPER_HALF]));
-    if (pl.site.kind === 'lighthouse') parts.push(modelOf('glass'));
     const count = parts.reduce((n, p) => n + p.positions.length, 0), icount = parts.reduce((n, p) => n + p.indices.length, 0);
     const positions = new Float32Array(count), indices = new Uint32Array(icount);
     let v = 0, i = 0;
@@ -442,8 +450,8 @@ export function createPortHost({
         if (!mesh) continue;
         (v === DECOR_SHADOW ? castOnly(r) : r).drawMesh(mesh, pl.matrix, null);
         if (v !== DECOR_DRAW) continue;
-        const glass = pl.site.kind === 'lighthouse' ? meshes.get('glass') : null;
-        if (glass) r.drawMesh(glass, pl.matrix, null, { noShadow: true });   // the lamp's light stands inside it (AUDIT SHIPYARDS L5-2)
+        const fire = pl.site.kind === 'lighthouse' && lit() ? meshes.get('fire') : null;   // BEACON-TOWER: the flames in the lanterns' hours
+        if (fire) r.drawMesh(fire, pl.matrix, null, NO_SHADOW);   // the lamp's light stands in them (AUDIT SHIPYARDS L5-2)
         n++;
       }
       return n;
@@ -499,7 +507,7 @@ export function createPortHost({
       const s = p.pl.site;
       if (s.kind === 'lighthouse') {
         if (p.what === 'hatch') return { title: 'The hatch', subs: [PORT_TEXT.hatch], actions: DOWN_ROWS.map((r) => ({ ...r })) };
-        if (p.what === 'lamp') return { title: 'The lamp', subs: [nameOf(p.pl), lit() ? PORT_TEXT.lampLit : PORT_TEXT.lampDark], actions: [] };
+        if (p.what === 'lamp') return { title: 'The beacon', subs: [nameOf(p.pl), lit() ? PORT_TEXT.lampLit : PORT_TEXT.lampDark], actions: [] };
         return { title: nameOf(p.pl), subs: [`${PORT_PLACES.lighthouse.keeper}: ${s.keeper?.name ?? ''}`, p.what === 'door' ? PORT_TEXT.stair : (lit() ? PORT_TEXT.lampLit : PORT_TEXT.lampDark)], actions: CLIMB_ROWS.map((r) => ({ ...r })) };
       }
       if (p.what === 'crewmaster' || p.what === 'crewsign' || p.what === 'notices') {

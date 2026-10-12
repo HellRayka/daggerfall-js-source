@@ -234,8 +234,14 @@ export function settleRealmTrade(saveA, saveB, halfA, halfB) {
 /** INT3: the hold, as its player hears it (server-account/src/verdict.js holdOf's reasons) - systems/itemIds.js
  *  tradeHeldNotice says it when a checkpoint moves it, and a trade it refused says it again (FIELD BUGS 2026-10-11g
  *  HELD-SIDE). Here, a leaf both read: systems/itemIds.js re-exports it. */
+/** RING-WARN: a law hold's notice says the strikes are counting. Each hold counts (INT3: a strike a hold, never a
+ *  checkpoint), and the third stands for staff even once the piece is gone - so dropping it and taking it up again is
+ *  no way out, and the player who did exactly that (the Ring report) was told only "until it is gone". The rule is
+ *  kept: a piece parked on the ground while its carrier trades, then taken up again, is what the strikes are for. */
+export const TRADE_HELD_STRIKES = ' Each time the law holds it counts: the third time, trading stays frozen until staff have looked.';
 export const TRADE_HELD_NOTICES = Object.freeze({
-  law: 'The realm is reviewing this character: something it carries is not as the game makes it. Trading is frozen until it is gone.',
+  law: `The realm is reviewing this character: something it carries is not as the game makes it. Trading is frozen until it is gone.${TRADE_HELD_STRIKES}`,
+  review: 'The realm is reviewing this character: the law has held it three times, and its trading stays frozen until staff have looked.',
   dupe: 'The realm is reviewing this character: copies of an item were found. Trading is frozen until staff have looked.',
   budget: 'The realm is reviewing this character: its wealth rose faster than play could earn it. Trading is frozen until play catches up.',
   staff: 'The realm\'s staff have frozen this character\'s trading.',
@@ -246,9 +252,11 @@ export const TRADE_HELD_NOTICES = Object.freeze({
  *  of: 'character under review'"): a hold's refusal says WHOSE it was - `held`, the service's word ('mine' or 'theirs';
  *  null from a service before it) - and, when it is mine, why (`reason`, the hold my last checkpoint was answered:
  *  TRADE_HELD_NOTICES' key; null when that checkpoint held nothing). */
-export function realmTradeRefusalText(/** @type {string} */ why, /** @type {string | null} */ held = null, /** @type {string | null | undefined} */ reason = undefined) {
+export function realmTradeRefusalText(/** @type {string} */ why, /** @type {string | null} */ held = null, /** @type {string | null | undefined} */ reason = undefined, /** @type {string | null} */ said = null) {
   if (why === 'trade-held' && held === 'mine') {
-    const notice = typeof reason === 'string' ? /** @type {Record<string, string>} */ (TRADE_HELD_NOTICES)[reason] : undefined;
+    // `said`: the hold's notice as the session last said it (systems/itemIds.js tradeHeldNotice - the piece named, or
+    // staff's review) - the reason's generic words only without one
+    const notice = typeof said === 'string' && said ? said : typeof reason === 'string' ? /** @type {Record<string, string>} */ (TRADE_HELD_NOTICES)[reason] : undefined;
     return `${notice ?? 'The realm is reviewing your character, and its trading is frozen.'} Nothing was traded.`;
   }
   if (why === 'trade-held' && held === 'theirs') return `The realm is reviewing the other character in this trade, and its trading is frozen - nothing was traded.${reason === null ? ' Your own trading is open.' : ''}`;

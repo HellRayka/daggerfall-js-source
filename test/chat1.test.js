@@ -54,7 +54,8 @@ test('CHAT1 / AUDIT CHAT: the wire - the constants once and literally, one home 
   assert.equal(CHAT_HELLO_HZ_MAX, 50); assert.equal(CHAT_ROOM_HZ_MAX, 20);
   assert.equal(CHAT_WORLD_ROOM, 'chat:world');
   // CHAT-CHAN: the World channel and the 62 region channels, ENUMERATED - the whitelist stays a list (AUDIT CHAT A1)
-  assert.deepEqual([...CHAT_ROOMS], ['chat:world', ...Array.from({ length: 62 }, (_, i) => `chat:region.${i}`), ...Array.from({ length: 16 }, (_, k) => `chat:world.${k}`), ...Array.from({ length: 62 * 4 }, (_, i) => `chat:region.${Math.floor(i / 4)}.${i % 4}`)], 'the whitelist: the World channel and one per politic region (PIN MOVED, SCALE5c: and the hub\'s sixteen shards; part two: and each region\'s four)');
+  assert.deepEqual([...CHAT_ROOMS], ['chat:world', ...Array.from({ length: 62 }, (_, i) => `chat:region.${i}`), ...Array.from({ length: 16 }, (_, k) => `chat:world.${k}`), ...Array.from({ length: 62 * 4 }, (_, i) => `chat:region.${Math.floor(i / 4)}.${i % 4}`),
+    ...['en', 'de', 'fr', 'es', 'pt', 'it', 'nl', 'pl', 'ru', 'fi', 'sv', 'tr', 'ja', 'zh', 'ko'].map((c) => `chat:lang.${c}`)], 'the whitelist: the World channel and one per politic region (PIN MOVED, SCALE5c: and the hub\'s sixteen shards; part two: and each region\'s four; CHAT-LANG: and one per language)');
   for (const k of ['sanitizeChat', 'isChatRoom', 'chatGate']) assert.equal(relay[k], { sanitizeChat, isChatRoom, chatGate }[k], `${k}: the same function object at both ends`);
   assert.equal(relay.CHAT_MAX, CHAT_MAX); assert.equal(relay.CHAT_ROOMS, CHAT_ROOMS);
   // the sanitizer
@@ -354,7 +355,7 @@ test('CHAT1 / AUDIT CHAT: the session as a CHANNEL (presence: false) - the hello
 test('CHAT1 / AUDIT CHAT: the log - the World tab from CHAT_TABS (one today, each a room the relay whitelists); a line kept on its tab under the cap; unread unless the panel is open ON that tab; select and open read it; the version bumps on what the panel would show; the peek holds then fades on the log\'s own clock; the tag from the id', () => {
   // CHAT-CHAN: four tabs - two ride rooms of their own (`link`), the World's fixed and the Region's set as the player moves
   // GUILD1c: and a fifth, the Guild's, riding the hub's link as the Party's does
-  assert.deepEqual(CHAT_TABS.map((t) => [t.id, t.label, t.room, t.link]), [['world', 'World', 'chat:world', true], ['region', 'Region', null, true], ['party', 'Party', null, false], ['guild', 'Guild', null, false], ['local', 'Local', null, false]]);
+  assert.deepEqual(CHAT_TABS.map((t) => [t.id, t.label, t.room, t.link]), [['world', 'World', 'chat:world', true], ['region', 'Region', null, true], ['lang', 'Lang', null, true], ['party', 'Party', null, false], ['guild', 'Guild', null, false], ['local', 'Local', null, false]]);
   assert.ok(CHAT_TABS.every((t) => t.room === null || CHAT_ROOMS.has(t.room)), 'every room a tab starts on is a channel the relay runs (AUDIT CHAT A1)');
   assert.ok(CHAT_TABS.every((t) => typeof t.hint === 'string' && t.hint.length > 0), 'and each says who it reaches');
   assert.equal(CHAT_KEEP, 200); assert.equal(CHAT_FADE_MS, 20000); assert.equal(CHAT_PEEK, 5); assert.equal(CHAT_REJOIN_MS, 30000);
@@ -364,7 +365,7 @@ test('CHAT1 / AUDIT CHAT: the log - the World tab from CHAT_TABS (one today, eac
   assert.equal(tagOf(''), tagOf(null));
   let clock = 10_000;
   const log = new ChatLog({ keep: 3, now: () => clock });
-  assert.deepEqual(log.tabs.map((t) => [t.id, t.label, t.room, t.messages.length, t.unread]), [['world', 'World', 'chat:world', 0, 0], ['region', 'Region', null, 0, 0], ['party', 'Party', null, 0, 0], ['guild', 'Guild', null, 0, 0], ['local', 'Local', null, 0, 0]]);
+  assert.deepEqual(log.tabs.map((t) => [t.id, t.label, t.room, t.messages.length, t.unread]), [['world', 'World', 'chat:world', 0, 0], ['region', 'Region', null, 0, 0], ['lang', 'Lang', null, 0, 0], ['party', 'Party', null, 0, 0], ['guild', 'Guild', null, 0, 0], ['local', 'Local', null, 0, 0]]);
   assert.equal(log.active, 'world'); assert.equal(log.open, false);
   const v0 = log.version;
   assert.equal(log.push('nowhere', { id: 'a', name: 'A', text: 'x' }), null, 'no such tab: nothing kept');
@@ -391,7 +392,7 @@ test('CHAT1 / AUDIT CHAT: the log - the World tab from CHAT_TABS (one today, eac
   assert.equal(log.select('nowhere'), false);
   log.markRead('world'); assert.equal(log.unreadTotal(), 0);
   // two tabs: unread by tab, select reads only when open
-  const two = new ChatLog({ tabs: [CHAT_TABS[0], CHAT_TABS[2]], now: () => clock });   // CHAT-CHAN: the World and Party rows, the pair this block has always driven
+  const two = new ChatLog({ tabs: [CHAT_TABS[0], CHAT_TABS.find((t) => t.id === 'party')], now: () => clock });   // CHAT-CHAN: the World and Party rows, the pair this block has always driven (CHAT-LANG: found by id - the Language row stands between them now)
   two.push('party', { id: 'a', name: 'A', text: 'psst' });
   assert.deepEqual(two.tabs.map((t) => t.unread), [0, 1]);
   // CHAT-P: the Party row starts OFF the bar - the host puts it on while a party is (ChatLog.setShown)
@@ -489,7 +490,7 @@ test('CHAT1 / AUDIT CHAT: the panel - built once over the document with the shee
   assert.equal(doc.getElementById(CHAT_STYLE_ID)?.tagName, 'STYLE', 'the sheet');
   createChatPanel({ log: new ChatLog(), onSend() {}, action: defaultAction, doc, win, touch: false }).destroy();
   assert.equal(find(doc.head, '').filter((n) => n.id === CHAT_STYLE_ID).length, 1, 'injected once');
-  assert.deepEqual(find(root, 'dfchat-tab').map((b) => [b.textContent, b.dataset.tab]), [['World', 'world'], ['Region', 'region'], ['Party', 'party'], ['Guild', 'guild'], ['Local', 'local']], 'one tab per row of the log');
+  assert.deepEqual(find(root, 'dfchat-tab').map((b) => [b.textContent, b.dataset.tab]), [['World', 'world'], ['Region', 'region'], ['Lang', 'lang'], ['Party', 'party'], ['Guild', 'guild'], ['Local', 'local']], 'one tab per row of the log');   // CHAT-LANG: the Language tab
   assert.equal(win.listeners.filter((l) => l !== win.listeners[0]).length, 1, 'ONE listener on the window (AUDIT CHAT D5: of any type)');
   assert.equal(win.listeners[1].t, 'keydown'); assert.equal(win.listeners[1].capture, true);
   const input = panel.input;

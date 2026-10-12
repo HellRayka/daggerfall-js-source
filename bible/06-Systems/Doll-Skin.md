@@ -201,7 +201,7 @@ generation's frames whole, as a set chosen is. The look it draws with carries th
 once it is composed here. Until then they stand as they stood before (the class sprite, the flat doll). They jump when
 their pose says, and a blow flinches them by the flash alone, as the mod's sets are.
 
-## The wire (world196)
+## The wire (world197)
 
 - A look's `eo` may name the paperdoll: `FOOT_SKINS` is 37, the set after every on-foot skin.
 - A pose in the air carries `jp`: 1 rising, 2 falling (`airPoseOf`, sent by the world host). It is omitted on the
@@ -217,7 +217,7 @@ shapes, the back, the hands' items and the moving body are pinned by what they d
 Moved with it:
 - `test/skin2_class_skins.test.js`: the setting's max, the wire's bound, the card's shelves.
 - `test/ww2_idlebob.test.js`: the motion bag's `velY`.
-- Every relay-version pin: world196.
+- Every relay-version pin: world197 (world196 on its branch, renumbered past main's CHAT-LANG world196 at the merge).
 
 What is not pinned is taste. The joint angles of each clip and the depth ratios are the port's own, and no reference
 says otherwise.

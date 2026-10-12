@@ -165,7 +165,7 @@
   {
     "name": "NAME1-host-sight-test-dropped",
     "file": "src/scenes/world.js",
-    "old": "    const blocked = (head, id) => nameSight.blocked(player.collider, eye, id, head);",
+    "old": "    const blocked = (head, id) => glassCuts(projectToScreen(head, 1, 1, proj, view)) || nameSight.blocked(player.collider, eye, id, head);",
     "new": "    const blocked = null;",
     "tests": [
       "test/name1_bubbles.test.js"

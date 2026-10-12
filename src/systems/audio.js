@@ -54,6 +54,12 @@ export function placeAudio(pan, p) {
   const [x, y, z] = audioFrame(p);
   pan.positionX.value = x; pan.positionY.value = y; pan.positionZ.value = z;
 }
+/** RAIN-LEAK: a stopped loop lets go of EVERY node it built - its source, gain, panner and low-pass. Disconnecting the
+ *  source alone left the rest wired into the bus, which a browser may keep alive for the page's life: a gain and a
+ *  filter per rain shower. Null nodes are skipped; a node already gone is no fault. */
+export function releaseNodes(...nodes) {
+  for (const n of nodes) { if (n) { try { n.disconnect(); } catch { /* gone */ } } }
+}
 /** The panning model every positional source takes (see AudioEngine._panner). */
 export const PANNING_MODEL = 'HRTF';
 
@@ -451,10 +457,11 @@ export class AudioEngine {
     const tail = lowpass > 0 ? this._lowpass(lowpass) : null;
     if (tail) src.connect(gain).connect(tail).connect(this._out()); else src.connect(gain).connect(this._out());
     src.start();
+    const release = () => releaseNodes(src, gain, tail);   // RAIN-LEAK: the whole chain, not the source alone
     return {
       stop() {
         try { src.stop(); } catch { /* already stopped */ }
-        src.disconnect();
+        release();
       },
       /** WX2: the loop's gain, live - the rain loop fades with the front. */
       setVolume(v) { gain.gain.value = Math.max(0, Math.min(1, v)); },
@@ -467,10 +474,10 @@ export class AudioEngine {
           gain.gain.setValueAtTime(gain.gain.value, t);
           gain.gain.linearRampToValueAtTime(0, t + seconds);
           src.stop(t + seconds + 0.05);
-          src.onended = () => { try { src.disconnect(); } catch { /* gone */ } };
+          src.onended = release;
         } catch {
           try { src.stop(); } catch { /* already stopped */ }
-          try { src.disconnect(); } catch { /* gone */ }
+          release();
         }
       },
       /** FIELD-WIND1: the loop's pitch, live (Unity's AudioSource.pitch, WebAudio's playbackRate) - the wind's bed
@@ -691,13 +698,14 @@ export class AudioEngine {
     const tail = lowpass > 0 ? this._lowpass(lowpass) : null;   // BA1: AudioLowPassFilter, as loop() has it
     if (tail) src.connect(gain).connect(pan).connect(tail).connect(this._out()); else src.connect(gain).connect(pan).connect(this._out());
     src.start();
+    const release = () => releaseNodes(src, gain, pan, tail);   // RAIN-LEAK: loop()'s
     return {
       move(p) { placeAudio(pan, p); },
       /** CSA-G: the loop's gain, live (a Unity AudioSource's `volume`). */
       setVolume(v) { gain.gain.value = Math.max(0, v); },
       stop() {
         try { src.stop(); } catch { /* already stopped */ }
-        src.disconnect();
+        release();
       },
       /** AUDIT SD III (A7): an ending, not a cut - `loop`'s (HOTFIX 1003): the gain to nothing over `seconds`, then the
        *  source stopped. The Rift's bell was cut at its level as its dungeon was left. */
@@ -708,10 +716,10 @@ export class AudioEngine {
           gain.gain.setValueAtTime(gain.gain.value, t);
           gain.gain.linearRampToValueAtTime(0, t + seconds);
           src.stop(t + seconds + 0.05);
-          src.onended = () => { try { src.disconnect(); } catch { /* gone */ } };
+          src.onended = release;
         } catch {
           try { src.stop(); } catch { /* already stopped */ }
-          try { src.disconnect(); } catch { /* gone */ }
+          release();
         }
       },
     };

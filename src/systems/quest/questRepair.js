@@ -183,6 +183,46 @@ function relayDungeonPlaces(quest, { only = null } = {}) {
 }
 
 /**
+ * QUEST-VOID (2026-10-12, a player online: the Dust of Restful Death's mummy in Ruins of Old Barbara's Place, "he cant
+ * find anything about it in the dungeon"; Mac: "the enemy is not marked on the map. i prob spawned the mob somewhere
+ * in the void"): THE NET UNDER THE MOUNT. The load's re-lays (relayOnlineDungeons, relayMovedLayouts) answer the drifts
+ * they know by the quest's stamp; this answers any other, at the one moment it costs the player: the dungeon as BUILT
+ * is in hand. `location` the built dungeon (its sized blocks, what the player walks); every quest linked to it whose
+ * Place there holds a target on a marker this build has not - a block address (dungeonX, dungeonZ) and flat
+ * (markerID) the enumeration of these blocks never yields - has that Place's markers enumerated again on THIS build
+ * and its placements put back (putBackPlacements: what is gone on purpose stays gone). A Place whose every target
+ * stands on a marker of this build is left alone, whatever else of its lists differs - nothing a player could find
+ * moves. `mapId` the mount's key for the dungeon (its site links'). Answers the count of Places re-laid. Run before the dungeon's scene mount (scenes/worldModes.js
+ * mountQuestResources). Not a DFU member (DFU's layout is the one size).
+ */
+export function relayBuiltDungeon(machine, location, env = {}, mapId = location?.mapTableData?.mapId ?? 0) {   // `mapId` the mount's own key (the dungeon adapter's currentMapId)
+  if (!machine?.getSiteLinks || !location?.dungeon?.blocks?.length) return 0;
+  let relaid = 0;
+  const seen = new Set();
+  for (const link of machine.getSiteLinks(SITE_TYPES.Dungeon, mapId, 0) ?? []) {
+    const quest = machine.getQuest?.(link.questUID);
+    if (!questRunning(quest) || isShelved(quest)) continue;
+    const place = quest.getPlace?.(link.placeSymbol);
+    const sd = place?.siteDetails;
+    if (!sd || sd.siteType !== SITE_TYPES.Dungeon || seen.has(place)) continue;
+    seen.add(place);
+    const world = quest.hooks?.world ?? null;
+    if (!world?.getBlock) continue;
+    let markers;
+    try { markers = place._enumerateDungeonQuestMarkers(world, location); } catch { continue; }
+    const here = new Set(`${markerAddresses(markers.questSpawnMarkers)};${markerAddresses(markers.questItemMarkers)}`.split(';'));
+    const held = [sd.selectedMarker, ...(sd.questSpawnMarkers ?? []), ...(sd.questItemMarkers ?? [])]
+      .filter((m) => (m?.targetResources?.length ?? 0) > 0 && Number.isInteger(m.dungeonX));   // a marker with no block address is not one to judge
+    if (!held.length || held.every((m) => here.has(markerAddresses([m])))) continue;
+    if (!markers.questSpawnMarkers && !markers.questItemMarkers) continue;   // a build with no markers at all: nowhere to stand them
+    place.siteDetails = { ...sd, questSpawnMarkers: markers.questSpawnMarkers, questItemMarkers: markers.questItemMarkers, selectedMarker: { targetResources: null } };
+    putBackPlacements(quest, env);
+    relaid++;
+  }
+  return relaid;
+}
+
+/**
  * MEDIUM-DISTINCT (2026-10-08, Mac: "Medium dungeons just copy and paste 2 layouts together"): A LAYOUT THE LAW MOVED.
  * A medium build no longer lays one interior block twice (world/smallerDungeons.js distinctInterior), so a dungeon whose
  * draws repeated is another layout now, and a running quest that chose its markers on the old one holds a marker in

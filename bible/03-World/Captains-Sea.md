@@ -163,9 +163,10 @@ casks hauled and her casks stowed are rolled DEEP_TIER rarity tiers up. The helm
 **WHAT I KNOW** (`systems/naval/shipKnowledge.js`): each ship in my sea carries `known`, `KNOW.hull` to
 `KNOW.studied`, raised by `knowledgeOf` each frame (`navalHost.js knowStep`) and never lowered while she is in the sea:
 
-- **KNOW.hull** - what the eye sees at any range: her kind ("a galleon"), her way, her smoke. Her card (the helm's
-  target card) is "Unknown galleon", her faction `unknown` ("Colours unknown"), nothing of her stance or where she is
-  bound; she wears NO TAG. The lookout's hail names her kind ("Sail ho! A sloop on the starboard beam!") and the crew
+- **KNOW.hull** - what the eye sees at any range: her kind ("a galleon"), her way, her smoke. She wears NO TAG and
+  gives NO CARD - not the look's, not the laid guns' (GLASS-SPOT, below): a sail on the sea, unnamed and unranged, till
+  she is made out; the glass's own card under the reticle is "Unknown galleon", nothing of her stance or where she is
+  bound. The lookout's hail names her kind ("Sail ho! A sloop on the starboard beam!") and the crew
   calls her so (`calledName`).
 - **KNOW.colours** - her colours, name and trade: by the naked eye within NAKED_EYE_M (by night a dark ship's within
   NAKED_EYE_DARK_M), a LOOKOUT aboard within LOOKOUT_ID_M times his worth (he calls it: "Lookout: A sloop flying
@@ -211,7 +212,8 @@ While it is up:
   the body not the borrowed head (S8/S9); the perspective key refused meanwhile; the travel view's own hold wins);
 - the LENS narrows to its magnification (`ui/spyglassView.js glassFov` - the field's tangent over it - at the frame's
   projection, the sky and the far ring alike; eased over GLASS_EASE_S); the spawners keep the wide lens, so nothing
-  they place pops into the view the glass comes down from;
+  they place pops into the view the glass comes down from; and it FOCUSES PAST THE SHIP I STAND ABOARD (GLASS-CLEAR,
+  below): her masts, sails and hands out of the view;
 - the LOOK is slowed by it (`glassLookScale` - the mouse's, the finger's, the pad's and the keyboard's: S13);
 - the WHEEL turns it, x2, x4, x8 (`spyglassWheel`, the glass's before the camera's); a pad's look-stick click
   (`GLASS_PAD_ZOOM`) and a finger's Magnify at the window's foot turn it round (`nextGlassZoom` - S3/S16); it opens at
@@ -224,14 +226,66 @@ While it is up:
   card under it over the world's strip - its centre the crosshair's over the docked bar (S10) - (`shipKnowledge.js
   glassCard`: her name in her tone, an unknown hull's never red (S11), her line, her rows as far as she is made out -
   her hold as it rides, her waters' tiers and an emptied prize's none (S20) - the study's bar while it fills, and how
-  close the next lesson wants her); its foot says the magnification and the presses. The helm's card shows an unknown
-  hull no bars (S24) - her hurts no more read than her colours.
+  close the next lesson wants her); its foot says the magnification and the presses. The helm's card names no unknown
+  hull at all (GLASS-SPOT, below - where S24 had shown her no bars: her hurts no more read than her colours).
 
 A finger has the touch corner's Glass (`touchButtons.js`) and, at a helm, the plate's own Glass over the Brace
 (`navalHud.js navalTouchGlass`, brass while the glass is up), and the window's own Magnify and Lower wherever it is up
 (`spyglassTaps` - S16); a pad has a bindings row and a d-pad choice (`plusPadBinds.js`, `plusPad.js`) - at a helm the
 d-pad press given the glass is the glass's, the helm's gesture on it yielding, its prompts saying so (`glassHelmPrompts`
 - S3). Controls.md has the row.
+
+## GLASS-SPOT and GLASS-CLEAR - nothing spotted before the glass; the ship out of its way (2026-10-11)
+
+The owner: "You can spot ships before you even decide to use the spyglass and the ship blocks your view most of the
+time when using your spyglass". `test/glassclear.test.js` (9), `tools/mutants/glassclear.json` (41, all dead).
+
+**GLASS-SPOT - A SAIL NOT MADE OUT GIVES NO CARD** (`navalHost.js targetCard`). The helm's target card named every hull
+within 900 m the look passed over - "Unknown two-master", her range, her way - so a ship was spotted, and ranged, at a
+glance: past the naked eye's reach, by night, in the fog, before any glass was raised. Now a hull at `KNOW.hull` gives
+none: the look's card passes her by, and a broadside laid on her shows no card at all - never the card of a ship made
+out that the look runs on to past her. She is a sail on the sea till the eye (NAKED_EYE_M), a Lookout, the glass or her
+own guns make her out; then her card is hers. The card's own rows for an unknown hull (`targetCardOf`'s `made`, and
+`shownName`'s "Unknown galleon") are kept as the knowledge law's belt-and-braces: the tags skip her, and the card's one
+other caller, the board card on foot, names only a ship struck or a prize, which `knowStep` makes out to the full the
+frame she strikes (the four records on them - SPY-H-card-stance-shown, SPY-H-card-faction-shown, SPY-H-name-unknown,
+ACS-S24-card-gate - are recorded `equivalent` for it).
+
+**GLASS-CLEAR - THE GLASS FOCUSES PAST HER** (`ui/spyglassView.js glassNear`, `glassClearDepth`, `glassEyeOverSea`;
+`navalHost.js ownExtent`; `world.js spyglassStep`). Raised at a helm the view is the head's, behind her own masts, sails,
+wheel and hands - and through a glass at x4 the nearest of them filled it: from the galleon's helm her own parts covered
+a fifth of the glass's circle abeam and all of it toward the bow. A glass shows nothing nearer than it is focused, so as
+its lens comes on the world's NEAR PLANE stands out from the eye's own GLASS_NEAR_MIN (0.2 m) to just past the ship I
+stand aboard:
+
+- **her box** (`ownExtent`): the ship my feet are aboard - my deck (`boatInPlay`: at her helm, or on foot), a sea
+  ship's I stand on, or another player's I ride - as ONE box in her own frame, heeling and pitching with her: every rigid
+  mesh of her hull and rig (`sparsOf` - kept OWN_SPARS_S, 0.5 s: it walks every mesh of hers, most of a millisecond on
+  the galley's 136; another ship's taken at once) and her set canvas where its booms swing it, each frame (`rigBoxesOf`
+  - it billows past the spars). Null aboard none.
+- **her depth** (`glassClearDepth`): how deep along the look that box reaches into the glass's view - the square about
+  its circle, the reticle's `field` - each face cut to the view's four sides and its deepest point taken: her far side
+  abeam, her bow ahead.
+- **the focus** (`glassNear`): her depth and GLASS_CLEAR_PAD (0.5 m), eased in with the lens, never past GLASS_NEAR_MAX
+  (120 m) - and NEVER SO FAR THAT THE SEA AT THE VIEW'S FOOT IS CUT, which would open a hole in it: where the view's lower
+  edge meets the sea (GLASS_SEA_MARGIN, 0.6 m, over its level for the swell; over the ground there where a shore stands
+  higher, `glassEyeOverSea` along the look's bearing, `heightAt`), its depth along the look, GLASS_SEA_SHARE (0.85) of
+  it. Aboard nothing, with the lens off, or the ships switched off: the eye's own.
+
+Because the focus stops at HER, every ship beyond her stays in the glass - and is held by it - however close: a merchant
+45 m off the galleon's beam lies wholly past a focus of 8 m. `naval.glass` holds no ship nearer than the focus (she is
+not drawn in it). No tag, no crew bar or line, and no player's name stands over what the focus cut away (`world.js
+glassCuts` - her own hands on my deck would float in the glass). The sky and clouds are drawn at the far plane, the
+shadow cascades about the eye and nothing reads the near plane but the frame's own matrix, so the deeper near costs
+nothing else; the sea is drawn under every hull (the hull's WaterMask never draws), so where her deck is cut away the
+sea shows.
+
+WHAT IT CANNOT CLEAR: where the sea holds the focus short of her. From the x4 glass, looking level along her own deck,
+that is only the Large Galley's long bow (93 m of her, her helm 82 m abaft her stem): the focus stops at the sea's 63 m,
+and her bow past it stays in view. A lower glass (x2) or a look lowered toward her deck brings the sea's foot nearer -
+the Carrack's, the Large Boat's and the galleon's forward deck then stay in the glass too. Every other hull and bearing,
+at x4 and x8, looking level or above: nothing of her past the focus (test/glassclear.test.js walks each hull's parts on
+twelve bearings at x4, level and raised).
 
 ## CAPT-BOARD - the harbourmaster's board
 
@@ -333,3 +387,10 @@ the crew card's line, the Holdings tabs, the tags and the hails now knowing a sh
 the action tables, the lens, the sky's and the far ring's lens narrowed with the world's (`test/climb4.test.js`,
 `test/hudlarge.test.js` E5), the wheel's rung for the glass (`test/audit24_wave37.test.js`). The harbour office's day is
 a reader of the event clock, named in `test/fixtures/time1_census.json`.
+
+GLASS-SPOT and GLASS-CLEAR: `test/glassclear.test.js` (9 tests; `tools/mutants/glassclear.json`, 41 records, all
+dead). Their pins moved say so (PIN MOVED): the look's card on an unknown hull (`test/spyglass.test.js` "at sea, the
+eye", `test/auditcaptsea.test.js` S24), the frame's lens and the glass's hold now taking the focus (`test/spyglass.test.js`
+"the world", `test/dwf_audit.test.js` E5-1/E5-4), `lowerGlass` putting it back (`test/auditcaptsea.test.js` S1/S15), and the players' names' sight test
+(`test/name1_bubbles.test.js`); three records re-aimed by content (NAV1H-the-card-by-the-look-alone,
+SPY-W-lens-unnarrowed, NAME1-host-sight-test-dropped) and four recorded `equivalent` (above).

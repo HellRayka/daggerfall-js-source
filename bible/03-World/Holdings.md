@@ -195,6 +195,9 @@ waist in JETTY_STEP (1 m): a bank that meets the deck within STEP_M takes a rail
 most, RAMP_MAX (10 m) long; no land within JETTY_MAX, no jetty - the quay stands alone, a stage moored to a bar.
 JETTY_MAX is Iliac Puddle's whole shore fit (SHORE_TERRAIN_FIT_METERS, 180 m) and JETTY_BEACH (20 m) - HARBOUR-BOOK,
 below: the jetty is a pier as long as the shelf asks.
+A harbour's quays never cross (QUAY-CROSSING, `01-Overview/Field-Bugs-2026-10-12.md`): a later berth's jetty ends where it
+meets an earlier berth's pier (`planQuay`'s `others`, laid in the berths' order by `scenes/quayPool.js`), and
+`findHarbour` sounds no berth whose ship and quay overlap an earlier one's (`quayBox`, `boxesMeet`).
 On it: a kerb along its face, three iron bollards by her stern, her waist and her bow, a lantern post at each landward
 corner with its lantern hung out over the quay, and the port's cargo on its back - crates (some two high) and barrels,
 drawn off the harbour's key and the berth's number on QUAY_SALT, clear of the jetty's mouth, the gangway's lane at her

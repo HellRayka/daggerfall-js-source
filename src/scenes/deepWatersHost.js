@@ -46,6 +46,7 @@
 // ═══════════════════════════════════════════════════════════════════
 
 import { openDeepWaters, deepWatersLocationRects } from '../world/deepWatersClient.js';
+import { isValidMapPixel } from '../world/deepWatersBake.js';   // ETHER-HOLD: the mod's map is the Bay's 1000 x 500
 import { modSetting, modSettingsGeneration, MOD_SETTINGS } from '../systems/modSettings.js';
 import { DeepWaterTileData } from '../world/deepWaterTileData.js';
 import { sampleMeshLocalY, HOLES_RESOLUTION, TILE_WORLD_SIZE } from '../world/deepWaterFloor.js';
@@ -251,9 +252,12 @@ export function createDeepWatersHost({ woods, woodsBytes = null, locations = [],
     return !mapDataHasWater({ samples: pixel.samples, tilemap: pixel.tilemap });
   }
 
-  /** The promote, on the worker - or its answer at once for a dry pixel. */
+  /** The promote, on the worker - or its answer at once for a dry pixel, and for a pixel past the Bay's map (the
+   *  Etheric Sea, TAMRIEL2's continent): the mod's bathymetry is the Bay's, so nothing is carved there and the kernel's
+   *  water stands and swims. Every arm - the near promote, the pump's deferred builds, a refresh - comes through here
+   *  (ETHER-HOLD: the deferred arm carved the Etheric Sea's floor, and a player stood on it, unable to swim). */
   function promote(pixel) {
-    if (isDry(pixel)) return Promise.resolve(null);
+    if (!isValidMapPixel(pixel.px, pixel.py) || isDry(pixel)) return Promise.resolve(null);
     return dw.buildPixel(jobFor(pixel), centre());
   }
 

@@ -518,9 +518,22 @@ export const CHAT_REGION_PREFIX = 'chat:region.';
 export const CHAT_REGION_COUNT = 62;
 /** The region's channel key, or null for an index the politic map does not have. */
 export const chatRegionRoom = (index) => (Number.isInteger(index) && index >= 0 && index < CHAT_REGION_COUNT ? `${CHAT_REGION_PREFIX}${index}` : null);
+/** CHAT-LANG (2026-10-11, the players: "More chat channels per-language"): A LANGUAGE IS A CHANNEL of its own, the
+ *  region's shape - one room per language, everyone who chose it in it wherever they stand, the World channel's whole
+ *  machinery (the roster, the badges, the mute, the rate, the room's budget) with nothing new in it. A player holds at
+ *  most one (the Language tab, net/chat.js), chosen by them (`chatLang`, ui prefs) - never guessed from the browser.
+ *  Keyed by the language's ISO 639-1 code, named in its own tongue. */
+export const CHAT_LANG_PREFIX = 'chat:lang.';
+export const CHAT_LANGS = Object.freeze({
+  en: 'English', de: 'Deutsch', fr: 'Fran\u00e7ais', es: 'Espa\u00f1ol', pt: 'Portugu\u00eas', it: 'Italiano', nl: 'Nederlands',
+  pl: 'Polski', ru: '\u0420\u0443\u0441\u0441\u043a\u0438\u0439', fi: 'Suomi', sv: 'Svenska', tr: 'T\u00fcrk\u00e7e', ja: '\u65e5\u672c\u8a9e', zh: '\u4e2d\u6587', ko: '\ud55c\uad6d\uc5b4',
+});
+/** The language's channel key, or null for a code the table does not have. */
+export const chatLangRoom = (code) => (typeof code === 'string' && Object.hasOwn(CHAT_LANGS, code) ? `${CHAT_LANG_PREFIX}${code}` : null);
 /** Every channel the relay will open (AUDIT CHAT A1: a whitelist - a later tab is a later entry, and nothing else is a
- *  channel). CHAT-CHAN: the world channel and the 62 region channels, enumerated, so the whitelist stays a list. */
-export const CHAT_ROOMS = Object.freeze(new Set([CHAT_WORLD_ROOM, ...Array.from({ length: CHAT_REGION_COUNT }, (_, i) => chatRegionRoom(i)), ...HUB_SHARD_ROOMS, ...REGION_SHARD_ROOMS]));   // SCALE5c: and the hub's shards (net/hubShards.js); part two: and each region's
+ *  channel). CHAT-CHAN: the world channel and the 62 region channels, enumerated, so the whitelist stays a list.
+ *  CHAT-LANG: and the language channels, one per CHAT_LANGS row (unsharded - a language's room is a region's size). */
+export const CHAT_ROOMS = Object.freeze(new Set([CHAT_WORLD_ROOM, ...Array.from({ length: CHAT_REGION_COUNT }, (_, i) => chatRegionRoom(i)), ...HUB_SHARD_ROOMS, ...REGION_SHARD_ROOMS, ...Object.keys(CHAT_LANGS).map(chatLangRoom)]));   // SCALE5c: and the hub's shards (net/hubShards.js); part two: and each region's
 /** CHAT-CHAN: the channels a LINE may name inside a room (`{t:'chat', text, ch}`). A party's line is said on the hub
  *  link and heard by the party's members alone; a line naming anything else is refused whole - it is never allowed to
  *  fall through to the room's own fan, where a party line said to an old or a confused relay would reach everyone. */
@@ -1346,7 +1359,8 @@ export const KEEPALIVE_FAN_MS = HEARTBEAT_MS / 2;
  *  is deployed by CI and the relay by hand, so a skew between them is the ordinary state of a release day, and until
  *  now nothing on either end could see it. */
 // Integrated Arena spectator visibility with staff teleport, stable boat identity and private ownership; deploy relay before clients.
-export const RELAY_VERSION = 'world196';   // DOLL-SKIN (2026-10-11, the owner: "transform the paperdoll into a proper directional sprite with attack animations, jump animations, etc allowing the user to use their paperdoll instead of the eye of the Beholder skin system"; player/dollSkin.js, characters/dollPuppet.js; bible/06-Systems/Doll-Skin.md; NOT YET DEPLOYED): THE PAPERDOLL AS A SKIN - a look's `eo` may name the paperdoll (FOOT_SKINS 37: the set after every on-foot skin), which each other player draws from the look's own recipe on their own machine; and a pose in the air may carry `jp` (1 rising, 2 falling - player/motor.js airPoseOf), the jump the doll poses. A look or pose without either keeps the bytes it had, and an older client draws the paperdoll-wearer as their class.
+export const RELAY_VERSION = 'world197';   // DOLL-SKIN (2026-10-11, the owner: "transform the paperdoll into a proper directional sprite with attack animations, jump animations, etc allowing the user to use their paperdoll instead of the eye of the Beholder skin system"; player/dollSkin.js, characters/dollPuppet.js; bible/06-Systems/Doll-Skin.md; NOT YET DEPLOYED; world196 on its branch - renumbered past main's CHAT-LANG world196 at the merge): THE PAPERDOLL AS A SKIN - a look's `eo` may name the paperdoll (FOOT_SKINS 37: the set after every on-foot skin), which each other player draws from the look's own recipe on their own machine; and a pose in the air may carry `jp` (1 rising, 2 falling - player/motor.js airPoseOf), the jump the doll poses. A look or pose without either keeps the bytes it had, and an older client draws the paperdoll-wearer as their class.
+// world196:   CHAT-LANG (2026-10-11, the players: "More chat channels per-language"; NOT YET DEPLOYED; world192 on its branch - renumbered past main's world192-world195 at the port): the language channels, `chat:lang.<code>` for each CHAT_LANGS row, joined CHAT_ROOMS - the relay opens them as it opens a region's; nothing else in the law moved. The client's Language tab waits for this relay (LANG_RELAY_MIN)
 // world195:   COATS1 (2026-10-11, a player's ask: "give the sprite different color types and colors. Like a variation of horse sprites"; systems/horseCoats.js; bible/06-Systems/Horse-Coats.md; world194 on its branch, renumbered past main's SLIM-FRAME world194 at the merge; NOT YET DEPLOYED): THE HORSE'S LOOK - a pose in the saddle may carry `rc`, the look the rider's horse wears (systems/horseCoats.js: its coat, pattern, legs and seed, one number; rideOf, omitted for the bay and on foot, a look past the law's a bay), and a parked team's word `hc`, its horses' look (validParkData, 1..HORSE_LOOK_MAX, else kept as a bay); a pose or word without either keeps the bytes it had, and an older client draws a bay.
 // world194:   SLIM-FRAME (2026-10-11, the owner: "I notice some players look like they are walking off the ground"; bible/11-Multiplayer/Scale-Arc.md SLIM-FRAME): THE SECOND WIRE'S PLACE IN ITS OWN UNITS - slimPose rounds a pose's height (the scene's metres in every room) to the centimetre, and a dungeon's, a town's and a building's x and z with it; a native room's x and z keep whole world units (nativePoseRoom, moved here from net/online.js, so the relay's fan rounds by the room it was said in). SCALE5b rounded all three to whole units, so every peer heard on the second wire stood on a whole metre of height. Before it, world193: SERPENT4 (2026-10-11, the players' feature-feedback thread on the Serpent boss fight; bible/11-Multiplayer/Sea-Serpent.md section 16; world192 on its branch, renumbered past main's SCALE5c world192 at the merge; NOT YET DEPLOYED): THE SEA SERPENT REWORKED - its waters open until it dives (serpentLaw.js serpentAdmits), a sixth off its health, its girth SERPENT_GIRTH times (serpentBody.js - the relay judges a blow by it), a part dealt or a quarter of the fight stood earns and the hub gives a dealer's party a stander's receipt (the cell says its kin with the kill), a hand's own weapons on a hand's purse (the `hit` word's `r`); its law version 3 (a game before it is told to reload)
 // world193:   SERPENT4 (2026-10-11, the players' feature-feedback thread on the Serpent boss fight; bible/11-Multiplayer/Sea-Serpent.md section 16; world192 on its branch, renumbered past main's SCALE5c world192 at the merge; NOT YET DEPLOYED): THE SEA SERPENT REWORKED - its waters open until it dives (serpentLaw.js serpentAdmits), a sixth off its health, its girth SERPENT_GIRTH times (serpentBody.js - the relay judges a blow by it), a part dealt or a quarter of the fight stood earns and the hub gives a dealer's party a stander's receipt (the cell says its kin with the kill), a hand's own weapons on a hand's purse (the `hit` word's `r`); its law version 3 (a game before it is told to reload)
@@ -3740,6 +3754,10 @@ export const relaySupportsRenown = (v) => { const m = /^world(\d+)$/.exec(typeof
  *  welcome said less (DM_RELAY_MIN's reason). */
 export const GUILD_RELAY_MIN = 115;
 export const relaySupportsGuild = (v) => { const m = /^world(\d+)$/.exec(typeof v === 'string' ? v : ''); return !!m && Number(m[1]) >= GUILD_RELAY_MIN; };
+/** CHAT-LANG: the relay that opens the language channels (CHAT_LANGS in its CHAT_ROOMS) - an older one refuses the key
+ *  ('no such room'), so the Language tab joins only once the World link's welcome names this one or later. */
+export const LANG_RELAY_MIN = 196;
+export const relaySupportsLang = (v) => { const m = /^world(\d+)$/.exec(typeof v === 'string' ? v : ''); return !!m && Number(m[1]) >= LANG_RELAY_MIN; };
 export const duelGate = (bucket, nowMs) => tokenGate(bucket, nowMs, DUEL_HZ_MAX);
 export const duelInGate = (bucket, nowMs) => tokenGate(bucket, nowMs, DUEL_IN_HZ_MAX);
 const intIn = (v, lo, hi) => Number.isInteger(v) && v >= lo && v <= hi;

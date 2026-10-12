@@ -339,7 +339,9 @@
     "new": "    const stance = hid ?",
     "tests": [
       "test/spyglass.test.js"
-    ]
+    ],
+    "equivalent": true,
+    "why": "GLASS-SPOT (2026-10-11): no card is drawn for a hull not made out - the look's and the laid guns' cards are gated before targetCardOf (navalHost.js targetCard), and its one other caller, the board card on foot, names only a ship struck or a prize, which knowStep makes out to the full (shipKnowledge.js knowledgeOf's `struck`) the frame she strikes. Her unknown rows are kept as the knowledge law's belt-and-braces; test/glassclear.test.js pins both gates."
   },
   {
     "name": "SPY-H-card-faction-shown",
@@ -348,7 +350,9 @@
     "new": "faction: hid ? 'merchant' : s.cls.faction,",
     "tests": [
       "test/spyglass.test.js"
-    ]
+    ],
+    "equivalent": true,
+    "why": "GLASS-SPOT (2026-10-11): no card is drawn for a hull not made out - the look's and the laid guns' cards are gated before targetCardOf (navalHost.js targetCard), and its one other caller, the board card on foot, names only a ship struck or a prize, which knowStep makes out to the full (shipKnowledge.js knowledgeOf's `struck`) the frame she strikes. Her unknown rows are kept as the knowledge law's belt-and-braces; test/glassclear.test.js pins both gates."
   },
   {
     "name": "SPY-H-name-unknown",
@@ -357,7 +361,9 @@
     "new": "    if (disguisedOf(e)) return disguiseOf(e).name;",
     "tests": [
       "test/spyglass.test.js"
-    ]
+    ],
+    "equivalent": true,
+    "why": "GLASS-SPOT (2026-10-11): shownName's unknown branch has no reader left that can reach it - the tags skip a hull not made out (navalHost.js tags: SPYGLASS's no tag), and targetCardOf is reached for one only past GLASS-SPOT's gates, which give her no card (its board card on foot names a ship struck or a prize, made out to the full the frame she strikes). Kept as the knowledge law's belt-and-braces: a new reader of her name says \"Unknown galleon\" before it says hers; test/glassclear.test.js pins the gates."
   },
   {
     "name": "SPY-H-glass-never-held",
@@ -524,8 +530,8 @@
   {
     "name": "SPY-W-lens-unnarrowed",
     "file": "src/scenes/world.js",
-    "old": "    const proj = mirrorProjectionX(perspective(glassFov(fieldOfView() + climbFeel.fovRad(), spyglass.lens), worldAspect, 0.2, 6000));",
-    "new": "    const proj = mirrorProjectionX(perspective(fieldOfView() + climbFeel.fovRad(), worldAspect, 0.2, 6000));",
+    "old": "    const proj = mirrorProjectionX(perspective(glassFov(fieldOfView() + climbFeel.fovRad(), spyglass.lens), worldAspect, spyglass.near, 6000));",
+    "new": "    const proj = mirrorProjectionX(perspective(fieldOfView() + climbFeel.fovRad(), worldAspect, spyglass.near, 6000));",
     "tests": [
       "test/spyglass.test.js"
     ]

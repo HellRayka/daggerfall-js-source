@@ -175,7 +175,7 @@
   {
     "name": "NAV1H-the-card-by-the-look-alone",
     "file": "src/scenes/navalHost.js",
-    "old": "    if (aimHit?.ship?.boat && sea.has(aimHit.ship.id)) return targetCardOf(aimHit.ship, boatPose(boat).position);\n",
+    "old": "    if (aimHit?.ship?.boat && sea.has(aimHit.ship.id)) return knownOf(aimHit.ship) >= KNOW.colours ? targetCardOf(aimHit.ship, boatPose(boat).position) : null;   // GLASS-SPOT: the guns laid on a hull not made out - no card, and never another's\n",
     "new": "",
     "tests": [
       "test/navaudit_helm.test.js"

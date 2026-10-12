@@ -8,7 +8,7 @@ import { spawnSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { buildShipyardModel, SHIPYARD, HULL_STATIONS } from '../src/world/shipyardModel.js';
-import { buildLighthouseModel, buildLighthouseGlass, LIGHTHOUSE, LIGHTHOUSE_POINTS, GALLERY_Y, TOWER_SIDES, towerR, OIL_CASKS, WATER_BUTT, STEP_BOX } from '../src/world/lighthouseModel.js';
+import { buildLighthouseModel, buildLighthouseFire, LIGHTHOUSE, LIGHTHOUSE_POINTS, GALLERY_Y, LANTERN_H, TOWER_SIDES, towerR, OIL_CASKS, WATER_BUTT, STEP_BOX } from '../src/world/lighthouseModel.js';
 import { PORT_REC, PORT_PAINTERS, PORT_ARCHIVE } from '../src/world/portArt.js';
 import { peopleOf, createPortHost, feetInPort, guardFor, GUARD_HEADROOM, beamPuffs, nearFade, BEAM_PUFFS, BEAM_NEAR_FADE, BEAM_PERIOD_S, OFFICE_LAMP_RANGE } from '../src/scenes/portHost.js';
 import { KEEPER_HALF, KEEPER_HEIGHT, yardToScene } from '../src/scenes/merchantYardsHost.js';
@@ -229,7 +229,7 @@ test('AUDIT SHIPYARDS THE GALLERY HOLDS (L4-1), over the real collider and motor
     for (const [k, pat] of pats.entries()) for (const turn of [0, 0.5]) {
       for (let i = 0; i < 150; i++) { rig.step(1, pat(i), () => up.yaw + turn + k * 0.3); maxR = Math.max(maxR, rig.r()); minY = Math.min(minY, rig.body.pos[1]); }
     }
-    assert.ok(maxR < G.railR, `${who} (turned ${yaw}): kept inside the railing - ${maxR.toFixed(2)} m off the axis`);
+    assert.ok(maxR < G.parapetR, `${who} (turned ${yaw}): kept inside the parapet - ${maxR.toFixed(2)} m off the axis`);   // PIN MOVED (BEACON-TOWER): the railing a parapet
     assert.ok(minY > GALLERY_Y - 0.1, `${who} (turned ${yaw}): never below the gallery's floor - ${minY.toFixed(2)}`);
     rig.host.activate('port:9:lighthouse|hatch', 'grab', 'down');
     const down = rig.climbs[1].at;
@@ -252,8 +252,8 @@ test('AUDIT SHIPYARDS THE GUARD IS NO FLOOR (L4-1, the fix\'s own case): a body 
   assert.equal(guardFor(site, at, onWalk(GALLERY_Y + 0.02), false), true);
   assert.equal(guardFor(site, at, onWalk(GALLERY_Y + G.guardH - GUARD_HEADROOM + 0.05), false), false, 'too near the lid to stand it under');
   assert.equal(guardFor(site, at, onWalk(GALLERY_Y + G.guardH - 0.3), true), true, 'standing, it stays up to its lid');
-  assert.equal(guardFor(site, at, yardToScene(at, 0, 0, GALLERY_Y + 0.05, LIGHTHOUSE.tower.z - G.railR - 0.1), false), false, 'on the floor\'s lip outside the railing');
-  assert.equal(guardFor(site, at, yardToScene(at, 0, 0, GALLERY_Y + 0.05, LIGHTHOUSE.tower.z - G.railR + 0.2), false), true, 'inside it');
+  assert.equal(guardFor(site, at, yardToScene(at, 0, 0, GALLERY_Y + 0.05, LIGHTHOUSE.tower.z - G.parapetR - 0.1), false), false, 'past the parapet\'s inner face');
+  assert.equal(guardFor(site, at, yardToScene(at, 0, 0, GALLERY_Y + 0.05, LIGHTHOUSE.tower.z - G.parapetR + 0.2), false), true, 'inside it');
   assert.equal(guardFor(site, at, onWalk(0), true), false, 'down at the foot');
 });
 
@@ -274,14 +274,15 @@ test('AUDIT SHIPYARDS THE WAY DOWN CLEAR OF THE STEP (L4-4): the hatch stands th
   }
 });
 
-test('AUDIT SHIPYARDS THE HOLLOW TOWER HOLDS NOBODY (L4-5): its collider is held back while a body is inside the tower up to half a metre under the gallery (it stopped at 2.5 m: a body levitating inside was sealed in) and inside the lantern room up to its dome\'s top (else it rose into the glass, shut in with the lamp) - never on the gallery', () => {
+test('AUDIT SHIPYARDS THE HOLLOW TOWER HOLDS NOBODY (L4-5): its collider is held back while a body is inside the tower up to half a metre under the gallery (it stopped at 2.5 m: a body levitating inside was sealed in) and inside the lantern up to its roof\'s point (else it rose into the lantern room\'s glass the tower had then, shut in with the lamp) - never on the gallery', () => {
   const site = { kind: 'lighthouse', yaw: 0 }, T = LIGHTHOUSE.tower, L = LIGHTHOUSE.lantern;
-  const top = GALLERY_Y + L.wallH + L.glassH + L.cornice + L.domeH;
+  const top = GALLERY_Y + L.sillH + L.archH + L.cornice + L.roofH;   // PIN MOVED (BEACON-TOWER): the lantern's sills, arches, cornice and roof
+  assert.equal(top, GALLERY_Y + LANTERN_H);
   assert.equal(feetInPort(site, [0, 0, 0], [T.x, 10, T.z]), true, 'inside the tower at 10 m');
   assert.equal(feetInPort(site, [0, 0, 0], [T.x + 2.4, GALLERY_Y - 0.6, T.z]), true, 'just under the gallery');
   assert.equal(feetInPort(site, [0, 0, 0], LIGHTHOUSE_POINTS.gallery), false, 'on the gallery');
-  assert.equal(feetInPort(site, [0, 0, 0], [T.x + 1.2, GALLERY_Y + 1, T.z]), true, 'inside the lantern room');
-  assert.equal(feetInPort(site, [0, 0, 0], [T.x, top + 0.1, T.z]), false, 'over the dome');
+  assert.equal(feetInPort(site, [0, 0, 0], [T.x + 1.2, GALLERY_Y + 1, T.z]), true, 'inside the lantern');
+  assert.equal(feetInPort(site, [0, 0, 0], [T.x, top + 0.1, T.z]), false, 'over the roof\'s point');
   // a body levitating up the tower's axis: never stood under it inside, and free over the dome
   const rig = towerRig(0);
   rig.body = new PlayerMotor(rig.col);
@@ -292,7 +293,7 @@ test('AUDIT SHIPYARDS THE HOLLOW TOWER HOLDS NOBODY (L4-5): its collider is held
   rig.body.levitating = true;
   let stoodAt = null;
   for (let i = 0; i < 600 && stoodAt === null; i++) { rig.step(1, { ...STILL, up: true }); if (rig.buckets.has('port:9:lighthouse')) stoodAt = rig.body.pos[1]; }
-  assert.ok(stoodAt !== null && stoodAt >= top - 0.05, `stood with the feet over the dome: ${stoodAt?.toFixed(2)}`);
+  assert.ok(stoodAt !== null && stoodAt >= top - 0.05, `stood with the feet over the roof's point: ${stoodAt?.toFixed(2)}`);
 });
 
 // ── the pool's light, its art and its frame ────────────────────────────────────────────────────────────────────────
@@ -317,23 +318,31 @@ function poolRig({ now = () => 0, beamClock, lit = true } = {}) {
   return { host, log, renderer, sites };
 }
 
-test('AUDIT SHIPYARDS THE LAMP\'S GLASS CASTS NOTHING (L5-2): the lantern\'s glass and the lamp\'s lens are a mesh of their own, drawn with noShadow (round the lamp they shadowed its own light on every side: 600 rays of 600 hit the model within a metre) and never cast where the place is cast alone; and they stand in the collider still', () => {
+test('AUDIT SHIPYARDS THE BEACON\'S FLAMES CAST NOTHING (L5-2\'s law; BEACON-TOWER, PIN MOVED): the flames over the coals are a mesh of their own, drawn with noShadow (round the lamp the lantern room\'s glass the tower had then shadowed its own light on every side: 600 rays of 600 hit the model within a metre) and only in the lanterns\' hours, never cast where the place is cast alone - and no solid: the collider holds the model and the keeper\'s box alone', () => {
   const { host, log, renderer } = poolRig();
   host.frame();
-  assert.equal(log.meshes.length, 3, 'the shipyard, the lighthouse, its glass');
-  const glass = log.meshes.find((m) => m.tris === buildLighthouseGlass().indices.length / 3);
-  assert.ok(glass, 'the glass a mesh of its own');
+  assert.equal(log.meshes.length, 3, 'the shipyard, the lighthouse, its flames');
+  const fire = log.meshes.find((m) => m.tris === buildLighthouseFire().indices.length / 3);
+  assert.ok(fire, 'the flames a mesh of their own');
   host.draw(renderer);
-  const drawn = log.draws.filter((d) => d.mesh === glass);
+  const drawn = log.draws.filter((d) => d.mesh === fire);
   assert.equal(drawn.length, 1);
   assert.deepEqual(drawn[0].o, { noShadow: true });
-  assert.ok(log.draws.filter((d) => d.mesh !== glass).every((d) => !d.o), 'the timber and the stone cast as ever');
+  assert.ok(log.draws.filter((d) => d.mesh !== fire).every((d) => !d.o), 'the timber and the stone cast as ever');
   log.draws.length = 0;
   assert.equal(host.draw(renderer, () => DECOR_SHADOW), 0, 'off screen within a shadow\'s reach: cast alone, none drawn');
-  assert.ok(!log.shadows.includes(glass) && log.shadows.length === 2, 'the glass never cast');
+  assert.ok(!log.shadows.includes(fire) && log.shadows.length === 2, 'the flames never cast');
   assert.deepEqual(log.draws, [], 'nor drawn');
   const bucket = log.buckets.get('port:9:lighthouse'), people = 1, box = 36;
-  assert.equal(bucket.idx.length / 3, buildLighthouseModel().indices.length / 3 + people * box / 3 + buildLighthouseGlass().indices.length / 3, 'the model, the keeper\'s box and the glass in the collider');
+  assert.equal(bucket.idx.length / 3, buildLighthouseModel().indices.length / 3 + people * box / 3, 'the model and the keeper\'s box in the collider - never the flames');
+  // by day the brazier's coals smoulder and no flame stands over them
+  const day = poolRig({ lit: false });
+  day.host.frame();
+  day.host.draw(day.renderer);
+  const dayFire = day.log.meshes.find((m) => m.tris === buildLighthouseFire().indices.length / 3);
+  assert.ok(dayFire, 'made all the same');
+  assert.equal(day.log.draws.filter((d) => d.mesh === dayFire).length, 0, 'by day: no flames');
+  assert.equal(day.log.draws.length, 2, 'the shipyard and the tower drawn');
 });
 
 test('AUDIT SHIPYARDS A NIGHT FRAME ALLOCATES NOTHING HERE (L4-2, PERF-LIGHTS\' law): the pool\'s frame, its glows (a lit lighthouse\'s 37 particles: 16 KB a call) and its lights write their records in place - measured as perfextb measures, in a node of its own with the collector at hand and a control that allocates', () => {

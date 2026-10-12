@@ -292,7 +292,11 @@ the player's horse is let go, so a remount never gallops in place on the gait it
   a 3D horse (the cart's seat, a rig not up yet): astride one, the wheel and the toggle take the view out as on foot,
   and the third-person camera turns about the rider's head. In first person the horse is drawn where Daggerfall's
   riding sprite was (`player/mountRig.js` - after the world, under the hands), taken with the world's own camera
-  from the eye on its back; the sprite stands down.
+  from the eye on its back; the sprite stands down. HORSE-POV (2026-10-12, the owner: "the 2d sprite is still painted
+  on the screen, especially in third person"): in third person the riding sprite is not drawn at all -
+  `player/mwView.js` mwViewHides hides the first-person horse whenever the Morrowind body is in third person (its horse
+  is in the world); before, mwViewDrawSaddle's false out of first person let the sprite paint over the 3D rider.
+  Pinned: `test/horsepov.test.js`; mutants `tools/mutants/horsepov.json`.
 - **Other riders** (`net/peerBodies.js`): a peer on a horse whose Morrowind body stands here sits a 3D horse of its
   own, in the look their pose names (`rc`), stepped at the body's pace; the rider layer yields them
   (`net/peerRiders.js` sync's `yields`, `scenes/world.js` peerRidesIn3d) - a beast stays the layer's. A yielded rider

@@ -161,6 +161,7 @@ import { rosterRows, rosterTitle } from '../net/roster.js';   // CHAT-R1: who is
 import { PARTY_GREEN_CSS } from '../net/social.js';   // CHAT-CHAN: the Party tab's mark wears the party's one green
 import { SHORTCODE_LIST, findCommandOf } from '../net/chatCommands.js';   // EMOTE1: the picker offers the shortcodes' own emoji, in their order, so a pick and a :code: say the same thing
 import { getPref, setPref } from '../systems/uiPrefs.js';   // CHAT-R2: the hidden state outlives the session
+import { CHANNEL_COLOURS, NAME_COLOURS, PING_COLOURS, channelRules, pipRules } from './chatColours.js';   // CHAT-COLOURS, NAME-INK, PING1
 import { PIXELIFY_FIVE_FACE, PIXEL_FONT_CSS, PIXEL_TEXT_SHADOW } from './pixelifyFive.js';   // FONT1: the enhanced skin's own face, unsmoothed, with Silkscreen's five
 import { noteFirstUse } from '../systems/tutorials.js';   // TUT1: the first touch of a system pops its tutorial page
 
@@ -222,9 +223,9 @@ ${PIXELIFY_FIVE_FACE}
 .dfchat.touch { top: calc(72px + env(safe-area-inset-top, 0px)); }
 .dfchat-peek { display: flex; flex-direction: column; gap: 3px; }
 .dfchat-line { flex: none; font-size: calc(13px * var(--dfchat-scale, 1)); line-height: 1.35; overflow-wrap: anywhere; overflow: hidden; text-shadow: ${PIXEL_TEXT_SHADOW}; }
-.dfchat-name { color: var(--brass, #c08a3e); font-weight: 600; }
+.dfchat-name { color: ${NAME_COLOURS.other.light}; font-weight: 600; }   /* NAME-INK: a name is never the words' colour */
 .dfchat-tag { color: var(--dim, #9a9486); font-size: calc(11px * var(--dfchat-scale, 1)); margin: 0 6px 0 2px; }
-.dfchat-line.mine .dfchat-name { color: #dcc27c; }
+.dfchat-line.mine .dfchat-name { color: ${NAME_COLOURS.mine.light}; }
 .dfchat-line.system .dfchat-text { color: #8fb8d8; font-style: italic; }
 /* CHAT-CHAN: an aside out of character - (( )) - is drawn as one: dimmed and leaning, the words kept readable */
 .dfchat-line.ooc .dfchat-text { color: #b3ab9c; font-style: italic; }
@@ -253,6 +254,22 @@ ${PIXELIFY_FIVE_FACE}
 .dfchat-chan[data-tab="region"] { color: #e0a45a; }
 .dfchat-chan[data-tab="party"] { color: ${PARTY_GREEN_CSS}; }
 .dfchat-chan[data-tab="local"] { color: #e9e4d9; }
+/* CHAT-COLOURS (the players: "White for Global, Green for Regional, Purple for Guild, Grey for Local"): each channel's
+   words in its own colour (ui/chatColours.js - Language rose and Party teal beside the four asked for), and a pip of it
+   before each tab's name and each peek line's channel mark, so the colour is learned where the channel is named.
+   The switch is the player's (Settings: Chat colours by channel) - off, every line is the bone it always was. */
+${channelRules('.dfchat[data-colours="on"]', 'light')}
+.dfchat[data-colours="on"] :is(.dfchat-tab, .dfchat-chan)[data-tab]::before { content: ''; display: inline-block; width: 7px; height: 7px;
+  margin: 0 5px 1px 0; vertical-align: middle; box-shadow: 0 0 0 1px rgba(0,0,0,0.65); }
+${pipRules('.dfchat[data-colours="on"]', 'light')}
+${Object.entries(CHANNEL_COLOURS).map(([ch, c]) => `.dfchat[data-colours="on"] .dfchat-chan[data-tab="${ch}"] { color: ${c.light}; }`).join('\n')}
+/* PING1 (the players: "A unique color or alert for @name pings"): a line naming me laid on a wash of the mention's gold
+   with a bar at its edge, my @name in the gold itself; its tab's dot and the Chat button's count gold too */
+.dfchat-line.ping { background: ${PING_COLOURS.wash.light}; box-shadow: inset 3px 0 0 ${PING_COLOURS.bar.light}; padding-left: 7px; border-radius: 2px; }
+.dfchat-mention { color: ${PING_COLOURS.mention.light}; font-weight: 700; }
+.dfchat-line.ping :is(.dfchat-time, .dfchat-tag) { color: #c2bcae; }   /* the time and tag 4.5:1 on the wash too */
+.dfchat-tab.pinged .dfchat-badge:not(:empty) { background: ${PING_COLOURS.bar.light}; box-shadow: 0 0 0 2px rgba(255, 200, 69, 0.35); }
+.dfchat-badge.ping { background: ${PING_COLOURS.bar.light}; color: #1a1205; }
 /* RED1 - THE SERVER SPEAKING. Every red line is a system line too
    (nobody is speaking it), so this rule follows that one and wins on
    specificity rather than fighting it. Not italic: the system's own
@@ -788,8 +805,25 @@ export function createChatPanel({ log, onSend, roster = null, canOpen = () => tr
     node.replaceChildren(...parts);
     return node;
   };
+  /** PING1: a pinging line's words as text and the span(s) that name me - `@Name` in the mention's own colour. */
+  const mentionParts = (text, self) => {
+    const plain = (t) => (typeof doc.createTextNode === 'function' ? doc.createTextNode(t) : el('span', 'dfchat-plain', t));
+    const name = String(self ?? '').trim();
+    if (!name) return [plain(text)];
+    const out = [];
+    const low = text.toLowerCase(), key = `@${name.toLowerCase()}`;
+    let at = 0;
+    for (let i = low.indexOf(key); i >= 0; i = low.indexOf(key, i + key.length)) {
+      if (i > at) out.push(plain(text.slice(at, i)));
+      out.push(el('span', 'dfchat-mention', text.slice(i, i + key.length)));
+      at = i + key.length;
+    }
+    if (at < text.length) out.push(plain(text.slice(at)));
+    return out;
+  };
   const lineNode = (line, withTime, withChan = false, hit = '') => {
-    const n = el('div', `dfchat-line${line.mine ? ' mine' : ''}${line.system ? ' system' : ''}${line.red ? ' red' : ''}${line.dm ? ' dm' : ''}${line.kind === 'ooc' ? ' ooc' : ''}${line.kind === 'roll' ? ' roll' : ''}${line.kind === 'me' ? ' me' : ''}`);
+    const n = el('div', `dfchat-line${line.mine ? ' mine' : ''}${line.system ? ' system' : ''}${line.red ? ' red' : ''}${line.dm ? ' dm' : ''}${line.kind === 'ooc' ? ' ooc' : ''}${line.kind === 'roll' ? ' roll' : ''}${line.kind === 'me' ? ' me' : ''}${line.ping ? ' ping' : ''}`);
+    if (line.tab) n.dataset.ch = line.tab;   // CHAT-COLOURS: the channel it was said on - its colour is the sheet's
     const chan = withChan ? chanOf(line) : null;
     if (chan) n.append(chan);
     const time = withTime ? el('span', 'dfchat-time', clockOf(line.at)) : null;
@@ -802,7 +836,8 @@ export function createChatPanel({ log, onSend, roster = null, canOpen = () => tr
     // exactly the thing a player could be fooled by. Its own colour
     // instead, which is a mark no player's line can wear.
     if (line.system) { const text = el('span', 'dfchat-text', line.text); n.append(text); return { node: n, chan, time, nameEl: null, tag: null, text }; }
-    const nameEl = el('span', 'dfchat-name', line.name || '?'), tag = el('span', 'dfchat-tag', `#${tagOf(line.id)}`), text = el('span', 'dfchat-text', line.text);
+    const nameEl = el('span', 'dfchat-name', line.name || '?'), tag = el('span', 'dfchat-tag', `#${tagOf(line.id)}`), text = el('span', 'dfchat-text', line.ping ? null : line.text);
+    if (line.ping) text.append(...mentionParts(line.text, log.self));   // PING1: my @name picked out in the words
     if (hit) {   // CHAT-FIND: a search's result wears where the query stands - in the name, in the words, or (a '#' query) the tag
       markHits(nameEl, line.name || '?', hit); markHits(text, line.text, hit);
       if (hit.startsWith('#') && playerFound(line.name, line.id, hit)) tag.replaceChildren(el('mark', 'dfchat-hit', tag.textContent));
@@ -1057,17 +1092,18 @@ export function createChatPanel({ log, onSend, roster = null, canOpen = () => tr
     painted = log.version;
     root.dataset.state = log.open ? 'open' : 'closed';
     root.dataset.hidden = hidden ? '1' : '0';
+    root.dataset.colours = getPref('chatChannelColours') === false ? 'off' : 'on';   // CHAT-COLOURS: the player's own switch
     for (const tab of log.tabs) {
       const t = tabButtons.get(tab.id);
       const display = tab.shown ? '' : 'none';   // CHAT-P: a tab off the bar (the Party tab outside a party) is not drawn
       if (t.b.style.display !== display) t.b.style.display = display;
-      t.b.className = `dfchat-tab${tab.id === log.active ? ' active' : ''}`;
+      t.b.className = `dfchat-tab${tab.id === log.active ? ' active' : ''}${tab.pings ? ' pinged' : ''}`;   // PING1: a tab holding a line that names me
       t.badge.textContent = tab.unread ? String(tab.unread) : '';
       // CHAT-CHAN: who a tab reaches, a hover away - and the place a moving channel is (the Region tab's region)
       const title = tab.place ? `${tab.place} - ${tab.hint ?? ''}` : (tab.hint ?? '');
       if (t.b.title !== title) t.b.title = title;
       // CHAT-CHAN: and the unread count is the tab's spoken NAME - the eye gets a dot (the sheet), a reader the number
-      const name = tab.unread ? `${tab.label}, ${tab.unread} unread` : tab.label;
+      const name = tab.unread ? `${tab.label}, ${tab.unread} unread${tab.pings ? `, ${tab.pings} mentioning you` : ''}` : tab.label;
       if (t.name !== name) { t.name = name; t.b.setAttribute('aria-label', name); }
     }
     // CHAT-CHAN: the field says where a line typed into it goes
@@ -1076,6 +1112,8 @@ export function createChatPanel({ log, onSend, roster = null, canOpen = () => tr
     if (input.placeholder !== ph) input.placeholder = ph;
     const unread = log.unreadTotal();
     badgeOut.textContent = unread ? String(unread) : '';
+    const badgeCls = `dfchat-badge${log.pingTotal() > 0 ? ' ping' : ''}`;   // PING1: the Chat button's count in the mention's gold
+    if (badgeOut.className !== badgeCls) badgeOut.className = badgeCls;
     let follow = false;
     placeFind();   // CHAT-FIND: the screen can narrow under an open chat
     if (log.open) { follow = paintList(newest); paintWho(); }

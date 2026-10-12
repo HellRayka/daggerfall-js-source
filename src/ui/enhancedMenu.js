@@ -207,6 +207,8 @@ import { installVanillaEnhancedPack } from '../systems/vanillaEnhancedPack.js'; 
 import { PLUS_THEMES } from './enhancedFrame.js';   // PLUS2: Enhanced Plus's colours
 import { plusTheme, setPlusTheme } from './enhancedPlusStyle.js';
 import { plusCursorOn, setPlusCursor } from './plusCursor.js';   // OVH1: the three looks
+import { CHAT_LANGS } from '../net/wire.js';   // CHAT-LANG: the language channels, for the Chat rows
+import { TEXT_FONTS, textFont, textFontSystem, setTextFont, setTextFontSystem, cleanFamily, canListFonts, installedFamilies } from './textFont.js';   // TEXT-FONT: the words' face
 import { GRIMOIRE_PAGES, GRIMOIRE_BACKDROPS, GRIMOIRE_VITALS, GRIMOIRE_SPELLBOOKS, grimoirePages, grimoireBackdrop, grimoireVitals, grimoireSpellbook, setGrimoirePages, setGrimoireBackdrop, setGrimoireVitals, setGrimoireSpellbook } from './grimoireDress.js';   // GRIM1: DFO Grimoire's own rows; GRIM3: and its spellbook
 import { UI_PACKS, packUrl } from '../systems/uiPack.js';   // OVH2: a pack's own picture on its card
 import { FEATURES, KINDS, KIND_ORDER, featureForControl, resolveControl, modModules, modDials, featureSearchText } from '../systems/features.js';   // FT14: each mod's curated keys (ORG2: the map places the rows, ui/settingsMap.js)
@@ -2892,6 +2894,16 @@ function peerSpritesCard() {
   c.append(prefRow('showToTravellers', 'Show me to travellers in my region',
     'Outdoors, players in your region see you on the overworld and the map. '
     + 'Nothing is shared from indoors except with your party. Kept on this device.', { home: true }));   // AUDIT DEEP2 C5: the party pose rides from indoors too
+  // CHAT-LANG, CHAT-COLOURS, PING1 (2026-10-11, the players: "More chat channels per-language", "Chat color-coding per
+  // channel", "A unique color or alert for @name pings"): the chat's own three, beside the other players'
+  c.append(el('h3', null, 'Chat'));
+  c.append(choiceRow('chatLang', 'Language channel',
+    'A chat tab for players who speak your language, wherever they are. /lang in the chat chooses it too.',
+    [['', 'Off'], ...Object.entries(CHAT_LANGS).map(([code, name]) => [code, name])], { home: true }));
+  c.append(prefRow('chatChannelColours', 'Chat colours by channel',
+    'World white, Region green, Guild purple, Local grey, Party teal, Language rose.', { home: true }));
+  c.append(prefRow('chatPingSound', 'Chime when someone @mentions you',
+    'A line with @YourName is always marked in gold; this adds a chime.', { home: true }));
   return c;
 }
 
@@ -3539,6 +3551,47 @@ function overhaulPicture(p, o, inUse) {
   if (inUse) pic.append(el('span', 'look-badge', 'In use'));
   return pic;
 }
+/** TEXT-FONT: the installed font 'My font' writes in - typed (shown in its own face as it is typed), or picked from the
+ *  machine's list where the browser offers one. Kept on Enter or on leaving the field. */
+function systemFontRow(redraw) {
+  const row = el('div', 'look-colours look-fontrow');
+  row.setAttribute('role', 'group');
+  row.setAttribute('aria-label', 'Your font');
+  row.append(el('span', 'look-colours-label', 'Font name'));
+  const input = document.createElement('input');
+  input.className = 'look-fontname';
+  input.type = 'text';
+  input.spellcheck = false;
+  input.placeholder = 'e.g. Verdana';
+  input.value = textFontSystem();
+  input.setAttribute('aria-label', 'Installed font name');
+  const list = document.createElement('datalist');
+  list.id = 'look-fontlist';
+  input.setAttribute('list', list.id);
+  const look = () => { const f = cleanFamily(input.value); if (f) input.style.setProperty('font-family', `'${f}', sans-serif`, 'important'); else input.style.removeProperty('font-family'); };   // important: over the words' own face
+  look();
+  const keep = () => { if (cleanFamily(input.value) !== textFontSystem()) { setTextFontSystem(input.value); redraw(); } };
+  input.oninput = look;
+  input.onchange = keep;
+  input.onkeydown = (e) => { e.stopPropagation(); if (e.key === 'Enter') { e.preventDefault(); keep(); } };
+  input.onkeyup = (e) => e.stopPropagation();
+  input.onclick = (e) => e.stopPropagation();
+  row.append(input, list);
+  if (canListFonts()) {
+    const b = el('button', 'look-colour', 'List my fonts');
+    b.type = 'button';
+    b.onclick = async (e) => {
+      e.stopPropagation();
+      const fams = await installedFamilies();
+      list.replaceChildren(...fams.map((f) => { const o = document.createElement('option'); o.value = f; return o; }));
+      b.textContent = fams.length ? `${fams.length} fonts - pick in the field` : 'No list given - type the name';
+      input.focus();
+      if (fams.length) input.showPicker?.();
+    };
+    row.append(b);
+  }
+  return row;
+}
 function overhaulPanel(p) {
   if (!p.options.length) {   // OVH1b: a panel with nothing in it yet - its title, an empty picture, one line
     const card = el('section', 'look-panel look-empty');
@@ -3652,6 +3705,11 @@ function overhaulPanel(p) {
       hrow.append(b);
     }
     card.append(hrow);
+    // TEXT-FONT (2026-10-11, a player: "a Sans font, a Monospace font and a Dyslexic compatible font would be nice. But
+    // allowing selection from system fonts would be most ideal"): the words' face, worn at once; 'My font' names one of
+    // this machine's own (ui/textFont.js).
+    card.append(choiceRow('Text font', TEXT_FONTS, textFont(), (id) => setTextFont(id)));
+    if (textFont() === 'system') card.append(systemFontRow(render));
     card.append(plusControllerRows());   // PADPLUS1
   }
   // VE4: A LOOK'S ADD-ONS - Vanilla Enhanced's Masked Roads and Snowless Swamps and Jungles, offered as switches while
