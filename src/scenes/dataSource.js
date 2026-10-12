@@ -57,9 +57,17 @@ const MW_STORE = 'morrowind';
  *  stale) became exactly the derived artifact this contract was kept
  *  for. Said out loud here so nobody reads the roads as living here. */
 const DERIVED_STORE = 'derived';
+/** TESA1 (bible/03-World/Arena-Provinces.md): the player's own copy of
+ *  The Elder Scrolls: Arena - Bethesda's freeware release, which is no
+ *  more redistributable than ARENA2 and never enters the repo or the
+ *  build either. Its own store for the Morrowind store's reasons: it is
+ *  not Daggerfall's data (KEEP's diet and clearStoredData's recovery
+ *  wipe are ARENA2's) and it comes and goes on its own card. It keeps
+ *  only the files the port reads - ARENA_FILES. */
+const ARENA_STORE = 'arena';
 /** Every injected-asset store, so the upgrade and the helpers below
  *  cannot drift from each other - adding a domain is one entry. */
-const ASSET_STORES = [MUSIC_STORE, TEXTURE_STORE, MW_STORE, DERIVED_STORE];
+const ASSET_STORES = [MUSIC_STORE, TEXTURE_STORE, MW_STORE, DERIVED_STORE, ARENA_STORE];
 const mem = new Map(); // NAME -> Uint8Array
 
 // Ingest DIET (2026-08-14, the mobile storage fix): ARENA2 is 517MB
@@ -155,7 +163,8 @@ function openDb() {
     // 5 (R6): the derived store. The upgrade is ADDITIVE and every arm
     // below is guarded by `contains`, so a player arriving at any older
     // version gains the new store and keeps every byte of the old ones.
-    const req = indexedDB.open(DB_NAME, 5);
+    // 6 (TESA1): the Arena store, the same additive arm.
+    const req = indexedDB.open(DB_NAME, 6);
     req.onupgradeneeded = () => {
       const d = req.result;
       if (!d.objectStoreNames.contains(STORE)) d.createObjectStore(STORE);
@@ -907,6 +916,65 @@ export async function registerMorrowindData() {
   return _mwCount;
 }
 
+// ---- TESA1: the player's own Arena -------------------------------------
+
+/** The files of Arena the port reads, by their canonical (uppercase) names: CITYDATA.65, the world map's places as a
+ *  new character starts them (formats/arenaCityData.js). A folder pick keeps these and nothing else. */
+export const ARENA_CITYDATA = 'CITYDATA.65';
+export const ARENA_FILES = Object.freeze([ARENA_CITYDATA]);
+export const isArenaFile = (name) => ARENA_FILES.includes(normalizeName(name));
+
+export async function storeArenaFiles(files) {
+  return storeAssets(ARENA_STORE, files, isArenaFile, (f, base) => normalizeName(base));
+}
+export const storedArenaNames = () => assetNames(ARENA_STORE);
+export const loadArenaFile = (fileName) => assetBytes(ARENA_STORE, fileName);
+
+let _arenaRegistered = false;
+let _arenaPlacesInstalled = false;
+/** Has a registration read the store this page? */
+export const arenaDataRegistered = () => _arenaRegistered;
+/** Did it find a CITYDATA the reader took? The Arena card's reading. */
+export const arenaDataAttached = () => _arenaPlacesInstalled;
+
+/** THE ONE REGISTRATION (the texture store's law, AUDIT VE R2): the stored CITYDATA read, parsed and installed for every
+ *  reader (world/arenaPlaces.js) - by the world host at its boot, by a pick, by the card. A missing or malformed file
+ *  installs nothing, and TAMRIEL1's authored cities stand. Answers 1 when Arena's places are installed, else 0. */
+export async function registerArenaData() {
+  const [{ parseArenaCityData }, { setArenaCityData }] = await Promise.all([import('../formats/arenaCityData.js'), import('../world/arenaPlaces.js')]);
+  let bytes = null;
+  try { bytes = await loadArenaFile(ARENA_CITYDATA); } catch { bytes = null; }   // no IndexedDB (private mode): no Arena
+  const cityData = bytes ? parseArenaCityData(bytes) : null;
+  setArenaCityData(cityData);
+  _arenaRegistered = true;
+  _arenaPlacesInstalled = !!cityData;
+  return cityData ? 1 : 0;
+}
+
+/** REMOVE THE ARENA DATA - the store emptied and the places taken off the map at once. */
+export async function clearStoredArena() {
+  await clearAssets(ARENA_STORE);
+  const { setArenaCityData } = await import('../world/arenaPlaces.js');
+  setArenaCityData(null);
+  _arenaRegistered = true;
+  _arenaPlacesInstalled = false;
+}
+
+export async function pickArenaFolder() {
+  return pickAssetFolder({
+    title: 'Your Arena data',
+    blurb: `<p>Pick your <b>ARENA</b> folder - The Elder Scrolls: Arena, free
+      from Bethesda. Nothing is uploaded - it is stored in this browser,
+      exactly like the ARENA2 pick.</p>
+      <p style="color:#999">Arena's cities, towns, villages and dungeons
+      stand on the map of Tamriel beyond the Iliac Bay. Only
+      <b>CITYDATA.65</b> is kept.</p>`,
+    store: storeArenaFiles,
+    register: registerArenaData,
+    doneText: (n) => (n ? 'Arena\u2019s places will stand on the map of Tamriel' : 'no CITYDATA.65 in that folder'),
+  });
+}
+
 export async function pickMorrowindFiles() {
   return pickAssetFolder({
     title: 'Your Morrowind data',
@@ -1028,7 +1096,7 @@ async function pickAssetFolder({ title, blurb, store, register, directory = true
         await store(files, (t) => { msg.textContent = t; });   // DFMOD1: a store may report as it goes
         msg.textContent = 'registering...';
         count = await register();
-        msg.textContent = doneText ?? (count ? `${count} files will be used` : 'nothing usable in that folder');   // IIL3: a picker that is not counting files says its own
+        msg.textContent = (typeof doneText === 'function' ? doneText(count) : doneText) ?? (count ? `${count} files will be used` : 'nothing usable in that folder');   // IIL3: a picker that is not counting files says its own (TESA1: or says it by the count)
       } catch (err) {
         // NEVER TRAPS: a storage failure costs the pack, not the game.
         msg.textContent = `could not store that: ${err?.message ?? err}`;

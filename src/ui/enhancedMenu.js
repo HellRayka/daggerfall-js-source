@@ -102,7 +102,7 @@ import { mwRaceId } from '../formats/mwNpc.js';
 import { EQUIP_SLOTS, equipTableOf } from '../systems/equip.js';
 import { dfWornEquipment } from '../formats/mwItemMap.js';
 import { ARMOR_ENUM } from '../combat/enemyEquipment.js';
-import { morrowindDataCount, morrowindDataCounted, countMorrowindArchives, assetPickerOpen, textureStoreRegistered, textureStoreSettled } from '../scenes/dataSource.js';   // MAC1: the boot door counts the store itself; AUDIT 65 XL-6: by NAME - it never reads a stored file   // MW-IMPORT: the attach door; MWFIX: and the modal it opens owns the keyboard
+import { morrowindDataCount, morrowindDataCounted, countMorrowindArchives, assetPickerOpen, textureStoreRegistered, textureStoreSettled, arenaDataAttached, arenaDataRegistered } from '../scenes/dataSource.js';   // MAC1: the boot door counts the store itself; AUDIT 65 XL-6: by NAME - it never reads a stored file   // MW-IMPORT: the attach door; MWFIX: and the modal it opens owns the keyboard
 import { CATEGORIES, keysOf, isSettingItem, optionPath, whereIs } from '../ui/settingsMap.js';   // ORG2: the one map of every option
 import { GRAPHICS_PRESETS, PRESET_ROWS, presetNow } from '../systems/graphicsPresets.js';   // ORG2
 import { widgetFor, blockedReason, formatValue, stepValue, COLOUR_KEYS, ENUM_LAW } from '../ui/settingsLaw.js';   // FT14: the enum's own values are the bar's segments
@@ -1686,7 +1686,7 @@ function itemText(item, pool) {
   if (item === 'preset:graphics') return 'quality preset graphics low medium high ultra performance';
   if (item === 'link:overhauls') return 'overhauls looks textures vanilla enhanced sounds interface';
   if (item === 'bindings') return 'key bindings keys keyboard rebind controls';
-  if (item.startsWith('card:')) return { morrowind: 'morrowind files data body 3d attach', packs: 'packs textures music replacement folder',
+  if (item.startsWith('card:')) return { morrowind: 'morrowind files data body 3d attach', packs: 'packs textures music replacement folder', arena: 'arena elder scrolls files data tamriel map cities attach',
     peerSprites: 'other players look sprites', nightSounds: 'night sounds crickets howl' }[item.slice(5)] ?? '';
   return '';
 }
@@ -1727,7 +1727,7 @@ function itemNodes(item, ctx) {
   if (item === 'mods-index') return modsIndexRows();
   if (item === 'bindings') { const box = el('div', 'opt-bindings'); paneControls(box, { render }); return [box]; }
   if (item.startsWith('card:')) {
-    const make = { morrowind: () => morrowindCard(), packs: () => packsCard(), peerSprites: () => peerSpritesCard(), nightSounds: () => nightSoundsCard() }[item.slice(5)];
+    const make = { morrowind: () => morrowindCard(), packs: () => packsCard(), arena: () => arenaCard(), peerSprites: () => peerSpritesCard(), nightSounds: () => nightSoundsCard() }[item.slice(5)];
     return make ? [make()] : [];
   }
   return [];
@@ -2853,6 +2853,35 @@ export function morrowindCard({ count = morrowindDataCount(), armState = fpArm.s
   mw.append(acts(actions));
   for (const line of morrowindTroubleLines(armState)) mw.append(el('p', 'meta', line));
   return mw;
+}
+
+/** TESA1 (bible/03-World/Arena-Provinces.md): THE ARENA CARD - the player's own copy of The Elder Scrolls: Arena,
+ *  attached and removed here as the Morrowind files are (MWA4: attached is on, Remove data the off). */
+export const ARENA_CARD_LINE = 'Your copy of The Elder Scrolls: Arena puts its cities, towns and dungeons on the map of Tamriel. It stays in this browser.';
+let _arenaAsked = false;
+/** The menu runs before any host boots, so the card asks the store itself, once a page (the texture store's law). */
+function askArenaStore() {
+  if (_arenaAsked || arenaDataRegistered()) return;
+  _arenaAsked = true;
+  import('../scenes/dataSource.js').then((ds) => ds.registerArenaData()).catch(() => 0).finally(() => render());
+}
+export function arenaCard({ attached = arenaDataAttached() } = {}) {
+  askArenaStore();
+  const c = el('div', 'card');
+  c.append(el('h3', null, 'The Elder Scrolls: Arena'));
+  c.append(el('p', 'meta', ARENA_CARD_LINE));
+  c.append(stats([['Data', attached ? 'CITYDATA.65 attached' : 'none attached']]));
+  const actions = [{ label: 'Attach data', primary: !attached, onClick: async () => { const ds = await import('../scenes/dataSource.js'); await ds.pickArenaFolder(); render(); } }];
+  if (attached) {
+    actions.push({ label: 'Remove data', onClick: () => ask(
+      'Remove Arena data',
+      'This clears the Arena files from this browser and takes Arena\u2019s places off the map. You can attach them again later.',
+      'Remove',
+      async () => { const ds = await import('../scenes/dataSource.js'); await ds.clearStoredArena(); render(); },
+    ) });
+  }
+  c.append(acts(actions));
+  return c;
 }
 
 /** 2026-09-17 (per-request): a toggle for how OTHER PLAYERS look when you have no Morrowind body of your own to put

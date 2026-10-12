@@ -279,8 +279,9 @@ import { treeKind, isTreeRecord, FOREST_STAMP } from './treeHost.js';   // PROF4
 import { createLowPolyTrees } from '../systems/lowPolyTreesAssets.js';   // LPT1: Low Poly Trees - the host's one door
 import { LPT_SCALE_MAX, lptVariety, buildTreeSet } from '../world/lowPolyTrees.js'; import { naturePicture } from '../world/naturePicture.js';   // LPT1: each tree's own draw, and a near pixel's set; AUDIT 05b A12: which picture a nature flat stands as, every host's one choice
 import { realForestsOn, FOREST_HIDDEN_LOCATION_TYPES, roadVergesOn, climateBlendOn } from './shared.js';   // FOREST1: the Real forests switch, and the places the woods hide; VERGE1: the clear roadsides' switch; ECOTONE1: the blended climates'
-import { landformsOn, tamrielLandOn, tamrielTraceOn, etherSeaOn, etherCrossOutOn } from './shared.js';   // LANDFORM1-3: the Landforms switch; TAMRIEL2: the land beyond the Bay's; TAMRIEL3: the trace's door; ETHER-SEA: the Etheric Sea's
+import { landformsOn, tamrielLandOn, tamrielTraceOn, etherSeaOn, etherCrossOutOn, arenaPlacesOn } from './shared.js';   // LANDFORM1-3: the Landforms switch; TAMRIEL2: the land beyond the Bay's; TAMRIEL3: the trace's door; ETHER-SEA: the Etheric Sea's
 import { preloadTamrielTrace } from '../ui/tamrielTrace.js';   // TAMRIEL3: Daggerfall's own map of Tamriel, off the player's two files
+import { arenaPlaces, setArenaCityData } from '../world/arenaPlaces.js';   // TESA1: Arena's places on it
 import { fitBayToPicture } from '../world/tamrielLand.js';   // TAMRIEL3: where the Bay stands on it
 import { groundWoods, groundClimateIndex } from '../world/tamrielGround.js';   // TAMRIEL2: the continent's ground round the Bay, for the kernels and the far ring
 import { etherWoods, etherClimateIndex, etherPoliticIndex, etherFrame, inEther, inEtherLaw, isleAt, islesNear, veilhaven, ETHER_HARBOUR_REACH, ETHER_SEA_NAME, CROSS_X, CROSS_LAND_PX, etherLight, ETHER_KEY_TINT } from '../world/ethericSea.js';   // ETHER-SEA: the Etheric Sea's ground and its box
@@ -897,7 +898,7 @@ import { isTouchDevice } from '../ui/touchDevice.js';   // JOURNAL1: ...or a tap
 import { composeCard, createCardAnswerGate, CARD_WAIT_MS } from '../net/profileCard.js';   // INSPECT1: my card when asked, and how often one asker is answered
 import { relayVersionSeen, buildUpdateSeen, fetchLiveBuildTag, RELAY_RESTART_TEXT, BUILD_UPDATE_TEXT, BUILD_POLL_MS } from '../net/updateNotice.js';   // SRV-N: the relay moved, or the build did
 import { BUILD_TAG } from '../buildTag.js';   // SRV-N: which build this tab is actually running
-import { morrowindDataCount, morrowindDataGeneration, getBytes } from './dataSource.js';   // MWBODY1: the bodies' gate - Morrowind data attached - and its generation
+import { morrowindDataCount, morrowindDataGeneration, getBytes, registerArenaData } from './dataSource.js';   // MWBODY1: the bodies' gate - Morrowind data attached - and its generation
 // Q4-v: THE QUEST BRIDGE - the machine goes live in this host.
 import { createQuestBridge, tokensToRows } from './questBridge.js';
 import { loadQuestPack } from './questData.js';
@@ -7777,6 +7778,21 @@ export async function bootWorld(canvas, renderer, params, status) {
   // the land module and the frame for every reader - the held map's ink, the ground beyond the Bay on this thread and
   // on the worker (terrainGen.setTamriel), the stream's frame. Until it lands the authored shape stands; a missing
   // file leaves it standing and says so. `?tamrieltrace=off` the door.
+  // TESA1 (bible/03-World/Arena-Provinces.md): ARENA'S PLACES - the player's own CITYDATA.65 (the Arena card,
+  // scenes/dataSource.js registerArenaData) installed for the held map's ink, and stood on the trace as soon as both
+  // have landed (world/arenaPlaces.js: ~90 ms, once a trace) so the map's first open does not pay for it. Before the
+  // trace, and without one, the authored cities stand. `?arenaplaces=off` the door.
+  let arenaSaid = null;
+  const arenaWarm = () => {
+    const m = arenaPlaces();
+    if (!m || m === arenaSaid) return;   // said once a model, whichever landing finished it
+    arenaSaid = m;
+    console.log(`[arena] ${m.places.length} of Arena's places stood on the picture: ${m.places.filter((p) => p.snapped > 0).length} snapped onto their province's land, ${m.lost.length} left off`);
+  };
+  const arenaReady = arenaPlacesOn()
+    ? registerArenaData().then((n) => { if (n) arenaWarm(); return n; })
+      .catch((e) => { console.warn('[arena] the Arena data could not be read; the authored cities stand:', e?.message ?? e); return 0; })
+    : Promise.resolve(setArenaCityData(null)).then(() => 0);
   if (tamrielTraceOn()) {
     preloadTamrielTrace({ fetchBytes, palette }).then((trace) => {
       if (!trace) { console.warn('[tamriel] the picture traced to nothing; the authored continent stands'); return; }
@@ -7785,6 +7801,7 @@ export async function bootWorld(canvas, renderer, params, status) {
       terrainGen.setTamriel({ trace, fit: fitPx });
       StreamingWorldState.frame = tamrielLand ? tamrielFrameInBay() : null;
       console.log(`[tamriel] the picture traced: ${trace.land.reduce((n, v) => n + v, 0)} land pixels; the Bay fitted at picture (${fit?.ox}, ${fit?.oy}) x${fit?.ppu}, ${fit ? Math.round((100 * fit.score) / fit.cells) : 0}% of its cells and ${fit ? Math.round((100 * fit.seam) / fit.edge) : 0}% of its edge agreeing`);   // TAMRIEL4: the seam the fit is made for
+      arenaReady.then((n) => { if (n) arenaWarm(); });   // TESA1: the places onto the trace that just landed
     }).catch((e) => console.warn('[tamriel] TMAP00I0/TAMRIEL2 unavailable; the authored continent stands:', e?.message ?? e));
   }
   // TO1: the mod's own control strip, beside it. Its own loader

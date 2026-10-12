@@ -885,6 +885,13 @@ export function tamrielTraceOn(search) {
   return pageParam('tamrieltrace', search) !== 'off';
 }
 
+/** TESA1 (bible/03-World/Arena-Provinces.md): ARENA'S PLACES' KILL DOOR - `?arenaplaces=off` leaves the player's attached
+ *  Arena unread at the world's boot, and TAMRIEL1's authored cities stand. No Features row: attached is on (the Arena
+ *  card's Remove data is the off), and this is a door for a day the fit reads a place wrong. */
+export function arenaPlacesOn(search) {
+  return pageParam('arenaplaces', search) !== 'off';
+}
+
 /** VERGE1: THE CLEAR ROADSIDES' SWITCH - the Features row (`roadVerges`) on the enhanced skin, and on for everyone
  *  online whatever their skin: where the wild's flats stand is the room's ground (realForestsOn's shape). `?verges=off`
  *  the kill door, offline. The world host reads it once, at its mount. */

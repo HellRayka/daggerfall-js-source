@@ -34,6 +34,8 @@ import { pictureToBay, bayToPicture, inBay, BAY_W, BAY_H, tamrielFit, tamrielFra
 // TAMRIEL3: the picture's own land where the world host traced it (world/tamrielLand.js) - the coast, the borders and
 // the provinces' places come off the trace, the authored shape stands where there is none
 import { tamrielTrace, tamrielLandVersion, provinceKeyAt, PROVINCE_OF_ID } from '../world/tamrielLand.js';
+// TESA1: Arena's places, where the player attached their Arena and the trace stands them (world/arenaPlaces.js)
+import { arenaPlaces, arenaPlacesVersion } from '../world/arenaPlaces.js';
 import { makeNoise, octaveNoise } from './introMap.js';   // the intro's own seeded value noise - ONE home for it
 import { PEN, NAME_FACE, HALO_PEN, penOf, toPaper, paintGlyph, roundCorners, spacedName, boundarySegments, linkSegments } from './inkMap.js';
 import { simplifyChain } from './overworldModel.js';   // TAMRIEL3: the coast's chain thinned as the overworld's are
@@ -59,12 +61,20 @@ export const CARET_LATTICE = 1;
 export const CONTINENT_BELOW = 0.85;
 /** A city beyond the Bay answers a hover within this many paper pixels. */
 export const CITY_HIT_PX = 9;
+/** TESA1: an Arena place's kind, as the hover says it. */
+export const ARENA_KIND_WORDS = Object.freeze({
+  'city-state': 'city-state', town: 'town', village: 'village', 'staff-dungeon': 'dungeon', 'map-dungeon': 'dungeon', dungeon: 'dungeon',
+});
+/** TESA1: an Arena place's glyph, the Bay's own kinds - a capital is the city glyph whatever its kind. */
+export const ARENA_KIND_GLYPHS = Object.freeze({
+  'city-state': 'hamlet', town: 'village', village: 'village', 'staff-dungeon': 'dungeon', 'map-dungeon': 'dungeon', dungeon: 'dungeon',
+});
 /** The words. */
 export const TAMRIEL_TEXT = Object.freeze({
   beyond: 'beyond the Bay',
   sea: (name) => name,
   land: (province) => `${province} (beyond the Bay)`,
-  city: (province, city) => `${province} : ${city} (beyond the Bay)`,
+  city: (province, city, kind = null) => (kind ? `${province} : ${city} (${ARENA_KIND_WORDS[kind] ?? kind}, beyond the Bay)` : `${province} : ${city} (beyond the Bay)`),
 });
 
 // ── THE MODEL ───────────────────────────────────────────────────
@@ -415,6 +425,22 @@ export function placeCity(city) {
   return best;
 }
 
+/** TESA1: the ink's cities off Arena's places - every named place beyond the Bay's rectangle (the Bay's own are
+ *  Daggerfall's, inked by the Bay's painter), each a capital where TAMRIEL1 named it one, by name in its province.
+ *  The unnamed dungeons (a name each Arena save rolls) are not inked.
+ *  @param {NonNullable<ReturnType<typeof arenaPlaces>>} model */
+export function arenaInkCities(model) {
+  const capital = new Set(CITIES.filter((c) => c.capital).map((c) => `${c.province}|${c.name}`));
+  const out = [];
+  for (const p of model.places) {
+    if (!p.name) continue;
+    const [x, y] = pictureToBay(p.px, p.py);
+    if (inBay(x, y)) continue;
+    out.push({ name: p.name, province: p.province, capital: capital.has(`${p.province}|${p.name}`), kind: p.kind, x, y });
+  }
+  return out;
+}
+
 /**
  * THE INK MODEL: everything the painter strokes, in the sheet's (Bay) coordinates, clipped to the outside of the
  * Bay's rectangle and stitched to the Bay's own coast ends. Pure over its inputs and the land module's state.
@@ -453,10 +479,12 @@ export function buildTamrielInk({ bayCoast = [] } = {}) {
     : PROVINCES.map((p) => { const [x, y] = pictureToBay(p.label[0], p.label[1]); return { key: p.key, name: p.name, x, y }; });
   const seas = SEAS.map((s) => { const [x, y] = pictureToBay(s.at[0], s.at[1]); return { name: s.name, x, y }; })
     .filter((s) => !traced || !provinceKeyAt(...bayToPicture(s.x, s.y)));   // a sea's name on the picture's land is left off
-  const cities = CITIES.map((c) => { const at = placeCity(c); if (!at) return null; const [x, y] = pictureToBay(at[0], at[1]); return { name: c.name, province: c.province, capital: !!c.capital, x, y }; })
+  // TESA1: Arena's places where the player's Arena stands them on the trace; TAMRIEL1's authored cities else
+  const arena = traced ? arenaPlaces() : null;
+  const cities = arena ? arenaInkCities(arena) : CITIES.map((c) => { const at = placeCity(c); if (!at) return null; const [x, y] = pictureToBay(at[0], at[1]); return { name: c.name, province: c.province, capital: !!c.capital, kind: null, x, y }; })
     .filter((c) => c && !inBay(c.x, c.y));
   const frame = tamrielFrameInBay();
-  return { coast, borders, rivers, carets, provinces, seas, cities, frame, joined: stitched.joined, bayEnds: ends.length, traced: !!traced, version: tamrielLandVersion() };
+  return { coast, borders, rivers, carets, provinces, seas, cities, frame, joined: stitched.joined, bayEnds: ends.length, traced: !!traced, arena: !!arena, version: tamrielLandVersion(), arenaVersion: arenaPlacesVersion() };
 }
 
 /** ONE model a data set and a trace: keyed by the Bay model's own coast array (the window mints one per WOODS
@@ -465,10 +493,11 @@ const _inks = new WeakMap();
 const _noBay = { ink: null };
 export function tamrielInkFor(bayModel) {
   const key = bayModel?.coast;
-  const v = tamrielLandVersion();
-  if (!key) { if (!_noBay.ink || _noBay.ink.version !== v) _noBay.ink = buildTamrielInk(); return _noBay.ink; }
+  const v = tamrielLandVersion(), a = arenaPlacesVersion();   // TESA1: Arena's places attached or removed rebuild it too
+  const stale = (ink) => !ink || ink.version !== v || ink.arenaVersion !== a;
+  if (!key) { if (stale(_noBay.ink)) _noBay.ink = buildTamrielInk(); return _noBay.ink; }
   let ink = _inks.get(key);
-  if (!ink || ink.version !== v) { ink = buildTamrielInk({ bayCoast: key }); _inks.set(key, ink); }
+  if (stale(ink)) { ink = buildTamrielInk({ bayCoast: key }); _inks.set(key, ink); }
   return ink;
 }
 
@@ -532,8 +561,9 @@ export function paintTamrielInk(ctx, view, ink, opts) {
     if (!c.capital && !all) continue;
     if (!visible(c.x, c.y)) continue;
     const [x, y] = toPaper(view, c.x, c.y);
-    paintGlyph(ctx, c.capital ? 'city' : 'hamlet', x, y, true);
-    paintGlyph(ctx, c.capital ? 'city' : 'hamlet', x, y, false);
+    const glyph = c.capital ? 'city' : (ARENA_KIND_GLYPHS[c.kind] ?? 'hamlet');   // TESA1: an Arena place by its kind
+    paintGlyph(ctx, glyph, x, y, true);
+    paintGlyph(ctx, glyph, x, y, false);
     named.push([c, x, y]);
   }
   const size = continent ? 11 : 12;
@@ -578,7 +608,7 @@ export function tamrielPlaceAt(mx, my, view, ink = null) {
       const d = Math.hypot(c.x - mx, c.y - my);
       if (d < bd) { bd = d; best = c; }
     }
-    if (best) return TAMRIEL_TEXT.city(provinceByKey(best.province)?.name ?? best.province, best.name);
+    if (best) return TAMRIEL_TEXT.city(provinceByKey(best.province)?.name ?? best.province, best.name, best.kind);
   }
   const [px, py] = bayToPicture(mx, my);
   const key = provinceKeyAt(px, py);

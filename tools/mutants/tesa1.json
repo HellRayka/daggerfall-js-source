@@ -1,0 +1,299 @@
+[
+  {
+    "name": "TESA1-the-stride",
+    "file": "src/formats/arenaCityData.js",
+    "old": "      const at = dims + 8 + id * LOCATION_BYTES;",
+    "new": "      const at = dims + 8 + id * (LOCATION_BYTES - 1);",
+    "tests": [
+      "test/tesa1_arena.test.js"
+    ]
+  },
+  {
+    "name": "TESA1-the-y-offset",
+    "file": "src/formats/arenaCityData.js",
+    "old": "        y: v.getUint16(at + NAME_BYTES + 2, true),",
+    "new": "        y: v.getUint16(at + NAME_BYTES + 1, true),",
+    "tests": [
+      "test/tesa1_arena.test.js"
+    ]
+  },
+  {
+    "name": "TESA1-the-rect-height",
+    "file": "src/formats/arenaCityData.js",
+    "old": "h: v.getUint16(dims + 6, true) };",
+    "new": "h: v.getUint16(dims + 4, true) };",
+    "tests": [
+      "test/tesa1_arena.test.js"
+    ]
+  },
+  {
+    "name": "TESA1-a-longer-file",
+    "file": "src/formats/arenaCityData.js",
+    "old": "  if (!bytes || bytes.length !== CITYDATA_BYTES) return null;",
+    "new": "  if (!bytes || bytes.length < CITYDATA_BYTES) return null;",
+    "tests": [
+      "test/tesa1_arena.test.js"
+    ]
+  },
+  {
+    "name": "TESA1-the-terminator",
+    "file": "src/formats/arenaCityData.js",
+    "old": "    if (!c) break;",
+    "new": "    if (c < 0) break;",
+    "tests": [
+      "test/tesa1_arena.test.js"
+    ]
+  },
+  {
+    "name": "TESA1-the-town-boundary",
+    "file": "src/formats/arenaCityData.js",
+    "old": "  if (locationId < 16) return 'town';",
+    "new": "  if (locationId <= 16) return 'town';",
+    "tests": [
+      "test/tesa1_arena.test.js"
+    ]
+  },
+  {
+    "name": "TESA1-the-staff-order",
+    "file": "src/formats/arenaCityData.js",
+    "old": "  if (locationId === 32) return 'staff-dungeon';",
+    "new": "  if (locationId === 33) return 'staff-dungeon';",
+    "tests": [
+      "test/tesa1_arena.test.js"
+    ]
+  },
+  {
+    "name": "TESA1-the-truncation",
+    "file": "src/formats/arenaCityData.js",
+    "old": "    x: Math.trunc((x * Math.trunc((rect.w * 100) / 320)) / 100) + rect.x,",
+    "new": "    x: Math.trunc((x * ((rect.w * 100) / 320)) / 100) + rect.x,",
+    "tests": [
+      "test/tesa1_arena.test.js"
+    ]
+  },
+  {
+    "name": "TESA1-the-city-id-shift",
+    "file": "src/formats/arenaCityData.js",
+    "old": "(provinceId << 5) + localCityId",
+    "new": "(provinceId << 4) + localCityId",
+    "tests": [
+      "test/tesa1_arena.test.js"
+    ]
+  },
+  {
+    "name": "TESA1-the-visibility-bit",
+    "file": "src/formats/arenaCityData.js",
+    "old": "(visibility & 0x2) !== 0",
+    "new": "(visibility & 0x1) !== 0",
+    "tests": [
+      "test/tesa1_arena.test.js"
+    ]
+  },
+  {
+    "name": "TESA1-the-province-order",
+    "file": "src/world/arenaPlaces.js",
+    "old": "export const arenaProvinceKey = (p) => PROVINCE_OF_ID[p + 1] ?? null;",
+    "new": "export const arenaProvinceKey = (p) => PROVINCE_OF_ID[p] ?? null;",
+    "tests": [
+      "test/tesa1_arena.test.js"
+    ]
+  },
+  {
+    "name": "TESA1-no-spare",
+    "file": "src/world/arenaPlaces.js",
+    "old": "        if (on < most - spare) continue;",
+    "new": "        if (on < most) continue;",
+    "tests": [
+      "test/tesa1_arena.test.js"
+    ]
+  },
+  {
+    "name": "TESA1-the-most-moved",
+    "file": "src/world/arenaPlaces.js",
+    "old": "        if (move < best.move - 1e-9) best = { s, dx, dy, on, move };",
+    "new": "        if (move > best.move - 1e-9) best = { s, dx, dy, on, move };",
+    "tests": [
+      "test/tesa1_arena.test.js"
+    ]
+  },
+  {
+    "name": "TESA1-the-move-misread",
+    "file": "src/world/arenaPlaces.js",
+    "old": "        for (const p of pts) move += Math.hypot((p.x - cx) * (s - 1) + dx, (p.y - cy) * (s - 1) + dy);",
+    "new": "        for (const p of pts) move += Math.hypot((p.x - cx) * (s - 0.9) + dx, (p.y - cy) * (s - 0.9) + dy);",
+    "tests": [
+      "test/tesa1_arena.test.js"
+    ]
+  },
+  {
+    "name": "TESA1-no-inset",
+    "file": "src/world/arenaPlaces.js",
+    "old": "      const qx = Math.min(Math.max(x, px + SNAP_INSET), px + 1 - SNAP_INSET);",
+    "new": "      const qx = Math.min(Math.max(x, px), px + 1 - SNAP_INSET);",
+    "tests": [
+      "test/tesa1_arena.test.js"
+    ]
+  },
+  {
+    "name": "TESA1-a-longer-reach",
+    "file": "src/world/arenaPlaces.js",
+    "old": "  let best = null, bd = reach + 1e-9;",
+    "new": "  let best = null, bd = reach + 1;",
+    "tests": [
+      "test/tesa1_arena.test.js"
+    ]
+  },
+  {
+    "name": "TESA1-the-empty-slot",
+    "file": "src/world/arenaPlaces.js",
+    "old": "    const locs = prov.locations.filter((l) => l.x || l.y);",
+    "new": "    const locs = prov.locations.filter((l) => l.x);",
+    "tests": [
+      "test/tesa1_arena.test.js"
+    ]
+  },
+  {
+    "name": "TESA1-the-lost-stood",
+    "file": "src/world/arenaPlaces.js",
+    "old": "      if (!at) { lost.push({ ...place, px: x, py: y }); return; }",
+    "new": "      if (!at) { places.push({ ...place, px: x, py: y, snapped: 0 }); return; }",
+    "tests": [
+      "test/tesa1_arena.test.js"
+    ]
+  },
+  {
+    "name": "TESA1-one-model-ever",
+    "file": "src/world/arenaPlaces.js",
+    "old": "  if (!_model || _model.land !== land) _model",
+    "new": "  if (!_model) _model",
+    "tests": [
+      "test/tesa1_arena.test.js"
+    ]
+  },
+  {
+    "name": "TESA1-no-trace-gate",
+    "file": "src/world/arenaPlaces.js",
+    "old": "  if (!_cityData || !trace) return null;",
+    "new": "  if (!_cityData) return null;",
+    "tests": [
+      "test/tesa1_arena.test.js"
+    ]
+  },
+  {
+    "name": "TESA1-the-bay-inked",
+    "file": "src/ui/tamrielInk.js",
+    "old": "    if (inBay(x, y)) continue;\n    out.push(",
+    "new": "    if (inBay(x, -1)) continue;\n    out.push(",
+    "tests": [
+      "test/tesa1_arena.test.js"
+    ]
+  },
+  {
+    "name": "TESA1-a-capital-by-name-alone",
+    "file": "src/ui/tamrielInk.js",
+    "old": "capital: capital.has(`${p.province}|${p.name}`)",
+    "new": "capital: capital.has(p.name)",
+    "tests": [
+      "test/tesa1_arena.test.js"
+    ]
+  },
+  {
+    "name": "TESA1-the-nameless-inked",
+    "file": "src/ui/tamrielInk.js",
+    "old": "    if (!p.name) continue;",
+    "new": "    if (p.name === null) continue;",
+    "tests": [
+      "test/tesa1_arena.test.js"
+    ]
+  },
+  {
+    "name": "TESA1-the-ink-stale",
+    "file": "src/ui/tamrielInk.js",
+    "old": "  const stale = (ink) => !ink || ink.version !== v || ink.arenaVersion !== a;",
+    "new": "  const stale = (ink) => !ink || ink.version !== v;",
+    "tests": [
+      "test/tesa1_arena.test.js"
+    ]
+  },
+  {
+    "name": "TESA1-the-hover-kindless",
+    "file": "src/ui/tamrielInk.js",
+    "old": "best.name, best.kind);",
+    "new": "best.name);",
+    "tests": [
+      "test/tesa1_arena.test.js"
+    ]
+  },
+  {
+    "name": "TESA1-the-filter-by-case",
+    "file": "src/scenes/dataSource.js",
+    "old": "export const isArenaFile = (name) => ARENA_FILES.includes(normalizeName(name));",
+    "new": "export const isArenaFile = (name) => ARENA_FILES.includes(String(name));",
+    "tests": [
+      "test/tesa1_arena.test.js"
+    ]
+  },
+  {
+    "name": "TESA1-no-store",
+    "file": "src/scenes/dataSource.js",
+    "old": "const ASSET_STORES = [MUSIC_STORE, TEXTURE_STORE, MW_STORE, DERIVED_STORE, ARENA_STORE];",
+    "new": "const ASSET_STORES = [MUSIC_STORE, TEXTURE_STORE, MW_STORE, DERIVED_STORE];",
+    "tests": [
+      "test/tesa1_arena.test.js"
+    ]
+  },
+  {
+    "name": "TESA1-the-old-version",
+    "file": "src/scenes/dataSource.js",
+    "old": "    const req = indexedDB.open(DB_NAME, 6);",
+    "new": "    const req = indexedDB.open(DB_NAME, 5);",
+    "tests": [
+      "test/tesa1_arena.test.js"
+    ]
+  },
+  {
+    "name": "TESA1-a-registration-installs-nothing",
+    "file": "src/scenes/dataSource.js",
+    "old": "  setArenaCityData(cityData);\n  _arenaRegistered = true;",
+    "new": "  void setArenaCityData;\n  _arenaRegistered = true;",
+    "tests": [
+      "test/tesa1_arena.test.js"
+    ]
+  },
+  {
+    "name": "TESA1-no-warm-on-the-trace",
+    "file": "src/scenes/world.js",
+    "old": "      arenaReady.then((n) => { if (n) arenaWarm(); });   // TESA1: the places onto the trace that just landed",
+    "new": "      void arenaReady;",
+    "tests": [
+      "test/tesa1_arena.test.js"
+    ]
+  },
+  {
+    "name": "TESA1-no-repaint",
+    "file": "src/ui/heldMap.js",
+    "old": "        arenaPlacesVersion(),   // TESA1: and Arena's places, attached or removed while it stands",
+    "new": "        0,",
+    "tests": [
+      "test/tesa1_arena.test.js"
+    ]
+  },
+  {
+    "name": "TESA1-the-door-ajar",
+    "file": "src/scenes/shared.js",
+    "old": "  return pageParam('arenaplaces', search) !== 'off';",
+    "new": "  return pageParam('arenaplaces', search) !== 'of';",
+    "tests": [
+      "test/tesa1_arena.test.js"
+    ]
+  },
+  {
+    "name": "TESA1-the-card-urges",
+    "file": "src/ui/enhancedMenu.js",
+    "old": "primary: !attached, onClick:",
+    "new": "primary: attached, onClick:",
+    "tests": [
+      "test/tesa1_arena.test.js"
+    ]
+  }
+]
