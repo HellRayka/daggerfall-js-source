@@ -268,8 +268,16 @@ the player READS and whose NAMES they hear, and never a region index.
 
 - **The provinces as regions of their own** - their own chat rooms, banks, law, prices and quest sites. The save's shape,
   the relay's whitelist and the account services' validators move together: the owner's call.
-- **The dungeons' names** - Arena's own roll (from A.EXE's tables) for the fourteen a province, so they stand too.
-- **Roads** between Arena's places, and their ports.
+- **The dungeons' names** - Arena's own roll for the fourteen a province, so they stand too. What is known (2026-10-12):
+  CITYDATA.65 leaves all fourteen nameless in every province (and the Imperial Province's staff and map dungeons too);
+  Arena names one when a rumour sets it visible (OpenTESArena's ProvinceDefinition: "they are renamed when set
+  visible"), TEMPLATE.DAT's quest text reads the name as `%tan`, and the unpacked A.EXE holds two noun lists beside the
+  NPC title table (Mines, Dungeon, Cavern, Labyrinth, Catacombs, Hole, Crypt, then Fortress or Cellar). The rule that
+  joins them and the seed it draws from are not in OpenTESArena or any reference this port has; reading them out of
+  A.EXE's code would be a guess no test could check against the game. Left until a reference exists - a nameless
+  dungeon stands nowhere, as Arena's own map shows none until it is found.
+- **Roads** between Arena's places, and their ports. The Bay's own network no longer bleeds past its edge
+  (`Roads.md` ROAD-BEYOND), which a network of the land past the Bay needed first.
 
 ## Pins
 
@@ -280,7 +288,7 @@ host by source (provinceAt's gates, the pin's exception, the loading screen, the
 every name site, the town talk told, the player's region index untouched, the land module free of characters/); with
 ARENA2_PATH, Winterhold's pixel Skyrim's, Mournhold's Morrowind's, Daggerfall none. Mutants `tools/mutants/tesa3.json`
 (13, all dead). PIN MOVED: `test/audit58_magic.test.js` (the talk's and the stranger's names through nameBankHere and
-getRandomFullNameOfBank).
+getRandomFullNameOfBank) and `test/macro6_talk.test.js` (the town talk's %fn/%mn through the province's bank first).
 
 `test/tesa2_online.test.js` (5, TESA-ONLINE): the print (SHA-256 in hex, every byte two digits, the one list, case
 held), the room (online only a known release stands; offline any copy; the switch's version), the registration and the

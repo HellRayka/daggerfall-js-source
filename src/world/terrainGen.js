@@ -101,12 +101,17 @@ export function generatePixelTerrain({ woods, px, py, stride = 1, tilemap, locat
   let paths = null;
   if (roads) {
     paths = new Uint8Array(tilemap.length);
+    // ROAD-BEYOND: the network is the Bay's 1000 x 500 - a pixel past its east or west edge (TAMRIEL2) carries none of
+    // it, where `py * MAP_W + px` read the next or last row's own Bay pixel (2712 of them in a 60-pixel strip either
+    // side); a row above or below the Bay reads off the arrays' ends, which is none already
+    const onGrid = px >= 0 && px < MAP_W;
     const i = py * MAP_W + px;
+    const at = (m) => (m && onGrid ? m[i] : 0);
     // ROADS 23: the mod's corners - a neighbour's diagonal brushes this
     // pixel's corner tile - and its water, off unless the network says.
     const c = (m) => (m ? pathCorners(m, px, py, MAP_W) : 0);
-    paintRoads(tileData, tilemap, roads.roads[i], roads.tracks[i], hasLocation ? locationRect : null, 129, {
-      river: roads.rivers ? roads.rivers[i] : 0, stream: roads.streams ? roads.streams[i] : 0, water: !!roads.water,
+    paintRoads(tileData, tilemap, at(roads.roads), at(roads.tracks), hasLocation ? locationRect : null, 129, {
+      river: at(roads.rivers), stream: at(roads.streams), water: !!roads.water,
       corners: { road: c(roads.roads), track: c(roads.tracks), river: c(roads.rivers), stream: c(roads.streams) },
       paths,   // GRASS-PATH1
     });
