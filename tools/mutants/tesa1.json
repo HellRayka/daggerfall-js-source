@@ -254,7 +254,7 @@
   {
     "name": "TESA1-a-registration-installs-nothing",
     "file": "src/scenes/dataSource.js",
-    "old": "  setArenaCityData(cityData);\n  _arenaRegistered = true;",
+    "old": "  setArenaCityData(cityData, { known });\n  _arenaRegistered = true;",
     "new": "  void setArenaCityData;\n  _arenaRegistered = true;",
     "tests": [
       "test/tesa1_arena.test.js"

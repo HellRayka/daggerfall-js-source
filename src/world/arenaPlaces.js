@@ -202,17 +202,46 @@ export function standArenaPixels(model, trace) {
 // ── THE INSTALLED SET ───────────────────────────────────────────
 
 let _cityData = null;
+let _known = false;
 let _version = 0;
 let _model = null;   // { land, model, fit, pixels }
 let _standing = false;
+let _online = false;
 
-/** Install the parsed city data (or null: none - TAMRIEL1's authored cities again). */
-export function setArenaCityData(cityData) {
+// ── TESA-ONLINE: ONE TAMRIEL A ROOM ─────────────────────────────
+
+/** THE RELEASES A ROOM KNOWS - the SHA-256 of CITYDATA.65 as Bethesda shipped it. Measured: the 2004 freeware (1.06) and
+ *  a 1996 install (another A.EXE) hold the file byte for byte. Online, a room's players stand the places only from a
+ *  file whose print is here, so every one of them stands the same Tamriel - a copy whose CITYDATA differs (a mod, a damaged
+ *  file) shows its places on its own map and stands none. A print is not game data: no byte of the file is in it. */
+export const ARENA_CITYDATA_PRINTS = Object.freeze(['db2dd184d96e7fb8df052d8e157b2bf2f15ccf6e37e53d8a943f0dd9a7ed5ab2']);
+/** A file's print: its SHA-256, lowercase hex (crypto.subtle - the page's and node's alike). */
+export async function arenaCityDataPrint(bytes) {
+  const d = new Uint8Array(await globalThis.crypto.subtle.digest('SHA-256', bytes));
+  let hex = '';
+  for (const b of d) hex += b.toString(16).padStart(2, '0');
+  return hex;
+}
+/** Is a print one a room knows? */
+export const isKnownArenaPrint = (print) => ARENA_CITYDATA_PRINTS.includes(String(print));
+
+/** Install the parsed city data (or null: none - TAMRIEL1's authored cities again). `known`: its file's print is one a
+ *  room knows (isKnownArenaPrint) - online, the only data the places stand from. */
+export function setArenaCityData(cityData, { known = false } = {}) {
   _cityData = cityData && Array.isArray(cityData.provinces) ? cityData : null;
+  _known = !!_cityData && !!known;
   _model = null;
   _version++;
 }
 export const arenaCityData = () => _cityData;
+export const arenaCityDataKnown = () => _known;
+/** TESA-ONLINE: is the host a room's (online) - its word at its mount. Online, only known data stands places. */
+export function setArenaRoom(online) {
+  if (!!online === _online) return;
+  _online = !!online;
+  _version++;
+}
+export const arenaRoom = () => _online;
 /** Moves on every install - the ink and the held map's static key read it beside the land's. */
 export const arenaPlacesVersion = () => _version;
 
@@ -227,8 +256,9 @@ export function arenaPlaces() {
 }
 
 /** TESA2: the installed set's pixels (standArenaPixels) on the trace and the Bay's fit as they stand now - remade when
- *  either moves - or null with no places. */
+ *  either moves - or null with no places; TESA-ONLINE: and null in a room whose data is not a known release. */
 export function arenaPixels() {
+  if (_online && !_known) return null;   // TESA-ONLINE: a room stands one Tamriel - a copy it does not know stands none
   const model = arenaPlaces();
   if (!model) return null;
   const fit = tamrielFit();

@@ -281,8 +281,8 @@ import { LPT_SCALE_MAX, lptVariety, buildTreeSet } from '../world/lowPolyTrees.j
 import { realForestsOn, FOREST_HIDDEN_LOCATION_TYPES, roadVergesOn, climateBlendOn } from './shared.js';   // FOREST1: the Real forests switch, and the places the woods hide; VERGE1: the clear roadsides' switch; ECOTONE1: the blended climates'
 import { landformsOn, tamrielLandOn, tamrielTraceOn, etherSeaOn, etherCrossOutOn, arenaPlacesOn } from './shared.js';   // LANDFORM1-3: the Landforms switch; TAMRIEL2: the land beyond the Bay's; TAMRIEL3: the trace's door; ETHER-SEA: the Etheric Sea's
 import { preloadTamrielTrace } from '../ui/tamrielTrace.js';   // TAMRIEL3: Daggerfall's own map of Tamriel, off the player's two files
-import { arenaPlaces, arenaPixels, arenaPlaceOnPixel, setArenaCityData, setArenaStanding } from '../world/arenaPlaces.js';   // TESA1: Arena's places on it; TESA2: the pixels they stand on
-import { arenaTemplates, arenaTemplateOf, synthesizeArenaLocation, ARENA_LOAD_WAIT_MS } from '../world/arenaLocations.js';   // TESA2: the places stood, each a Daggerfall town or dungeon cloned
+import { arenaPlaces, arenaPixels, arenaPlaceOnPixel, setArenaCityData, setArenaStanding, setArenaRoom } from '../world/arenaPlaces.js';   // TESA1: Arena's places on it; TESA2: the pixels they stand on
+import { arenaTemplates, arenaTemplateOf, synthesizeArenaLocation, ARENA_LOAD_WAIT_MS, ARENA_PLACES_TEXT } from '../world/arenaLocations.js';   // TESA2: the places stood, each a Daggerfall town or dungeon cloned
 import { fitBayToPicture } from '../world/tamrielLand.js';   // TAMRIEL3: where the Bay stands on it
 import { groundWoods, groundClimateIndex } from '../world/tamrielGround.js';   // TAMRIEL2: the continent's ground round the Bay, for the kernels and the far ring
 import { etherWoods, etherClimateIndex, etherPoliticIndex, etherFrame, inEther, inEtherLaw, isleAt, islesNear, veilhaven, ETHER_HARBOUR_REACH, ETHER_SEA_NAME, CROSS_X, CROSS_LAND_PX, etherLight, ETHER_KEY_TINT } from '../world/ethericSea.js';   // ETHER-SEA: the Etheric Sea's ground and its box
@@ -1335,10 +1335,12 @@ export async function bootWorld(canvas, renderer, params, status) {
     maps.getClimateIndex = groundClimateIndex(maps.getClimateIndex.bind(maps));
   }
   StreamingWorldState.frame = tamrielLand ? tamrielFrameInBay() : null;
-  // TESA2 (bible/03-World/Arena-Provinces.md): ARENA'S PLACES STAND on the land beyond the Bay - offline alone: they are
-  // the player's own copy of Arena's, which another player in the room may not have, and a town one client stands and
-  // its peer does not is a wall nobody else can see. The map still shows them online (TESA1).
-  const arenaStands = tamrielLand && arenaPlacesOn() && !params.has('online');
+  // TESA2 (bible/03-World/Arena-Provinces.md): ARENA'S PLACES STAND on the land beyond the Bay. TESA-ONLINE: online too, from
+  // a CITYDATA.65 the room knows (world/arenaPlaces.js ARENA_CITYDATA_PRINTS - the release as Bethesda shipped it), so every
+  // player in a room who has Arena stands the same Tamriel; the file is each player's own, and nothing of it crosses the
+  // wire. A player without it is told what they are missing the first time they set foot on the land past the Bay.
+  const arenaStands = tamrielLand && arenaPlacesOn();
+  setArenaRoom(params.has('online'));
   setArenaStanding(arenaStands);
   // ETHER-SEA (bible/03-World/Etheric-Sea.md): THE ETHERIC SEA'S GROUND - its isles and its open water, composed over
   // whatever the world grows past the Bay (world/ethericSea.js: its own box, far north of the continent's frame; the
@@ -2475,6 +2477,16 @@ export async function bootWorld(canvas, renderer, params, status) {
     _locIndexGen += 1;
     locationIndex.set(key, loc);
     return loc;
+  }
+  /** TESA-ONLINE: THE NOTICE - online, a player who stands no Arena place (no Arena attached, or a copy the room does not
+   *  know) is told once a session, as they first cross onto the land past the Bay, that the players beside them may see
+   *  Arena's cities there, and where their own copy attaches. Never at sea, never on the Bay, never past the Veil. */
+  let _arenaNoticed = false;
+  function arenaBeyondNotice(x, y) {
+    if (_arenaNoticed || !_arenaTemplates || !params.has('online') || onTheBay(x, y) || (etherSea && inEther(x, y))) return;
+    if (arenaPixels() || maps.getClimateIndex(x, y) === CLIMATES.Ocean) return;
+    _arenaNoticed = true;
+    tvSay(ARENA_PLACES_TEXT.beyondWithout, 8);
   }
   /** AUDIT OW4 D4: THE CLONE a pixel's spawn IS - the template its hash picks, dressed as where it stands (region, politic,
    *  climate, elite). Pure in the salt, the pixel and the map files, so the one answer serves spawnedDungeonAt (which stands
@@ -34119,7 +34131,8 @@ const _pixelOrder = [];   // NEAR-FIRST: the frame's pixel walk, nearest first -
         clearSceneCache(playerEntity.sceneCache, { start: false });
       }
       queue.push(...r.load);
-      announceNearbySpawns(r.current.x, r.current.y, walkMode ? player.pos : cam.pos);   // SPAWNED-DUNGEONS2: said on ENTERING the pixel, not when it is rolled (that is three pixels ahead); SPAWNED-DUNGEONS3: from where the player stands, in metres
+      announceNearbySpawns(r.current.x, r.current.y, walkMode ? player.pos : cam.pos);
+      arenaBeyondNotice(r.current.x, r.current.y);   // TESA-ONLINE: online, the land past the Bay without Arena's places, said once   // SPAWNED-DUNGEONS2: said on ENTERING the pixel, not when it is rolled (that is three pixels ahead); SPAWNED-DUNGEONS3: from where the player stands, in metres
       if (dwDecor) dwDecor.onMapPixelChanged(r.current);   // DW-E2: PlayerGPS.OnMapPixelChanged -> HandleMapPixelChanged
       ohAbyss?.onMapPixelChanged();   // OH-D: PlayerGPS.OnMapPixelChanged -> OceanHoles.OnMapPixelChanged (the rename held for its own pixel)
       // WOD5: PlayerGPS raises OnRegionIndexChanged on the frame the

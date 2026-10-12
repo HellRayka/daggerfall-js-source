@@ -267,7 +267,7 @@ test('TESA1 the doors: the world host reads the store at its boot behind `?arena
   globalThis.document = { createElement: mk };
   try {
     for (const [attached, data, buttons, primary] of [[false, 'none attached', ['Attach data'], ['Attach data']], [true, 'CITYDATA.65 attached', ['Attach data', 'Remove data'], []]]) {
-      const card = arenaCard({ attached });
+      const card = arenaCard({ attached, known: attached });   // PIN MOVED (TESA-ONLINE): the reading names the release - the known one here (tesa2_online holds the other)
       assert.equal(kids(card, 'h3')[0].textContent, 'The Elder Scrolls: Arena');
       assert.deepEqual(kids(card, 'p').map((p) => p.textContent), [ARENA_CARD_LINE]);
       const [dl] = kids(card, 'dl');

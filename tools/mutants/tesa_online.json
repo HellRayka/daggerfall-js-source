@@ -1,0 +1,110 @@
+[
+  {
+    "name": "TESA-ONLINE-another-print",
+    "file": "src/world/arenaPlaces.js",
+    "old": "['db2dd184d96e7fb8df052d8e157b2bf2f15ccf6e37e53d8a943f0dd9a7ed5ab2']",
+    "new": "['db2dd184d96e7fb8df052d8e157b2bf2f15ccf6e37e53d8a943f0dd9a7ed5ab3']",
+    "tests": [
+      "test/tesa2_online.test.js"
+    ]
+  },
+  {
+    "name": "TESA-ONLINE-the-hex-unpadded",
+    "file": "src/world/arenaPlaces.js",
+    "old": "  for (const b of d) hex += b.toString(16).padStart(2, '0');",
+    "new": "  for (const b of d) hex += b.toString(16);",
+    "tests": [
+      "test/tesa2_online.test.js"
+    ]
+  },
+  {
+    "name": "TESA-ONLINE-a-print-any-case",
+    "file": "src/world/arenaPlaces.js",
+    "old": "export const isKnownArenaPrint = (print) => ARENA_CITYDATA_PRINTS.includes(String(print));",
+    "new": "export const isKnownArenaPrint = (print) => ARENA_CITYDATA_PRINTS.includes(String(print).toLowerCase());",
+    "tests": [
+      "test/tesa2_online.test.js"
+    ]
+  },
+  {
+    "name": "TESA-ONLINE-any-copy-online",
+    "file": "src/world/arenaPlaces.js",
+    "old": "  if (_online && !_known) return null;   // TESA-ONLINE",
+    "new": "  // TESA-ONLINE",
+    "tests": [
+      "test/tesa2_online.test.js"
+    ]
+  },
+  {
+    "name": "TESA-ONLINE-nothing-known",
+    "file": "src/world/arenaPlaces.js",
+    "old": "  _known = !!_cityData && !!known;",
+    "new": "  _known = !!known;",
+    "tests": [
+      "test/tesa2_online.test.js"
+    ]
+  },
+  {
+    "name": "TESA-ONLINE-the-room-always-moves",
+    "file": "src/world/arenaPlaces.js",
+    "old": "  if (!!online === _online) return;\n",
+    "new": "\n",
+    "tests": [
+      "test/tesa2_online.test.js"
+    ]
+  },
+  {
+    "name": "TESA-ONLINE-known-unread",
+    "file": "src/scenes/dataSource.js",
+    "old": "  const known = cityData ? isKnownArenaPrint(await arenaCityDataPrint(bytes)) : false;",
+    "new": "  const known = !!cityData;",
+    "tests": [
+      "test/tesa2_online.test.js"
+    ]
+  },
+  {
+    "name": "TESA-ONLINE-the-card-swapped",
+    "file": "src/ui/enhancedMenu.js",
+    "old": "!attached ? ARENA_DATA_WORDS.none : known ? ARENA_DATA_WORDS.known : ARENA_DATA_WORDS.unknown",
+    "new": "!attached ? ARENA_DATA_WORDS.none : known ? ARENA_DATA_WORDS.unknown : ARENA_DATA_WORDS.known",
+    "tests": [
+      "test/tesa2_online.test.js"
+    ]
+  },
+  {
+    "name": "TESA-ONLINE-told-offline",
+    "file": "src/scenes/world.js",
+    "old": "if (_arenaNoticed || !_arenaTemplates || !params.has('online') || onTheBay(x, y)",
+    "new": "if (_arenaNoticed || !_arenaTemplates || onTheBay(x, y)",
+    "tests": [
+      "test/tesa2_online.test.js"
+    ]
+  },
+  {
+    "name": "TESA-ONLINE-told-at-sea",
+    "file": "src/scenes/world.js",
+    "old": "    if (arenaPixels() || maps.getClimateIndex(x, y) === CLIMATES.Ocean) return;",
+    "new": "    if (arenaPixels()) return;",
+    "tests": [
+      "test/tesa2_online.test.js"
+    ]
+  },
+  {
+    "name": "TESA-ONLINE-told-every-crossing",
+    "file": "src/scenes/world.js",
+    "old": "    _arenaNoticed = true;\n    tvSay(ARENA_PLACES_TEXT.beyondWithout, 8);",
+    "new": "    tvSay(ARENA_PLACES_TEXT.beyondWithout, 8);",
+    "tests": [
+      "test/tesa2_online.test.js"
+    ]
+  },
+  {
+    "name": "TESA-ONLINE-no-room",
+    "file": "src/scenes/world.js",
+    "old": "  setArenaRoom(params.has('online'));",
+    "new": "  setArenaRoom(false);",
+    "tests": [
+      "test/tesa2_online.test.js"
+    ]
+  }
+]

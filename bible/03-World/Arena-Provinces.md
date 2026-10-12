@@ -1,4 +1,4 @@
-# The Arena provinces - The Elder Scrolls: Arena on Daggerfall's Tamriel (TESA1, TESA2)
+# The Arena provinces - The Elder Scrolls: Arena on Daggerfall's Tamriel (TESA1, TESA2, TESA-ONLINE)
 
 Opened 2026-10-12. The owner: *"I think I want to begin implementing Elder Scrolls arena into our world of tamriel"*.
 Asked how, they chose **Arena's map, our engine** (Arena's cities, towns, villages and named dungeons stand on the
@@ -168,10 +168,9 @@ into, a dungeon to go down - and the held map takes the player there.
   plus the place's ordinal (province x 48 + slot) in the low 20 - past every Bay pixel id, so no Arena place shares an id
   with a spawn under any salt, an isle's place or a place of the Bay. The location index counts down from
   -ARENA_INDEX_BASE (-1,000,000), past the isles' (-1000 to -403,194: 806 x 499 cells).
-- **The host** (`scenes/world.js`): `arenaStands` - the land beyond the Bay streamed (TAMRIEL2), `?arenaplaces` open, and
-  OFFLINE: the places are the player's own copy of Arena's, which another player in the room may not have, and a town
-  one client stands and its peer does not is a wall nobody else can see. Online the map still shows them (TESA1); a
-  press there picks nothing. `_arenaTemplates` is made off the game's rows before they go; `_locationToBuild` asks
+- **The host** (`scenes/world.js`): `arenaStands` - the land beyond the Bay streamed (TAMRIEL2) and `?arenaplaces` open.
+  TESA2 stood them offline alone; TESA-ONLINE (below) stands them online too, from a release the room knows.
+  `_arenaTemplates` is made off the game's rows before they go; `_locationToBuild` asks
   `arenaLocationAt` of every pixel past the Bay, which stands the clone in the index once (and takes an Arena place's
   clone out of the index when its place has gone); the built pixel keeps its Arena slot (its entry's
   `arenaSlot` - beside the colosseum's own `arena`, ARENA2).
@@ -196,6 +195,34 @@ into, a dungeon to go down - and the held map takes the player there.
   as any clone's) run in the world host's page over the same index; `worldModes.js` keeps the house rule above.
   `scenes/exterior.js`, the single-town bench, streams no land beyond the Bay: no place stands there.
 
+## TESA-ONLINE - one Tamriel a room (2026-10-12)
+
+The owner: *"yes online support for everything"*; asked how a room should agree on Arena's places when the places are
+each player's own copy's, *"Whatever is best and doesnt get us in legal trouble"*. Three ways were weighed: committing
+the place list (401 names and points out of CITYDATA.65 - Arena's data in the repo, a render of game data under the
+doctrine: refused), keeping a player without Arena off the land past the Bay online (no wall exists to keep them, and
+the open Abecean and the Etheric Sea's crossing lie past the Bay's west edge: refused), and the one taken: **each player's
+own copy, and a room that agrees which copy**.
+
+- **The print** (`world/arenaPlaces.js` ARENA_CITYDATA_PRINTS, arenaCityDataPrint, isKnownArenaPrint): CITYDATA.65's
+  SHA-256 as Bethesda shipped it. Measured: the 2004 freeware (1.06) and a 1996 install (another A.EXE, 170,871 bytes
+  against 174,021) hold the file byte for byte, so one print covers the releases seen. A print is not game data - no
+  byte of the file is in it, and nothing can be made back from it. `registerArenaData` prints the stored file and
+  installs the data with `known`.
+- **The room** (`setArenaRoom`, the world host's word at its mount): online, `arenaPixels` answers null unless the data
+  is a known release - so every player in a room who has Arena stands the same places, on the same pixels, with the same
+  ids, and their towns' and dungeons' rooms on the relay are one room (`net/wire.js` WORLD_ROOM admits an Arena
+  place's `dungeon:m<id>` and `interior:m<id>.<n>`, nine digits). A copy the room does not know (a mod's, a damaged
+  file) keeps its places on its own map and stands none online; offline it stands them as before. The Arena card says
+  which: "CITYDATA.65 attached", or "... - not a release a room knows: its places stand offline alone".
+- **Nothing of Arena crosses the wire.** No name, no point and no pixel is sent: a player's places are their own file's.
+- **A player without Arena**, online, is told once a session as they first cross onto the land past the Bay (never at
+  sea, on the Bay or past the Veil; `arenaBeyondNotice`, on the frame's crossing): "Players with The Elder Scrolls: Arena
+  attached see its cities and dungeons in these lands. Attach your own copy (free from Bethesda) in Mods & files."
+  Recorded reading: where they walk through an Arena town, the players who stand it see them pass through its walls,
+  on ground the town's own flattening has moved a little; the town's people, its shops and its dungeons are the
+  holders' alone, as every room's are.
+
 ## The arc - what comes next
 
 - **TESA3 - the provinces as regions.** Past the Bay the region still reads as `getRegionIndexAt`'s clamp, the Alik'r
@@ -205,13 +232,22 @@ into, a dungeon to go down - and the held map takes the player there.
 
 ## Pins
 
+`test/tesa2_online.test.js` (5, TESA-ONLINE): the print (SHA-256 in hex, every byte two digits, the one list, case
+held), the room (online only a known release stands; offline any copy; the switch's version), the registration and the
+card's three readings, the host by source (online and off, the room's word, the notice's gates and its once, on the
+crossing) and the relay's rooms for an Arena dungeon and building; with ARENA_PATH, the freeware's file is the release
+the room knows. Mutants `tools/mutants/tesa_online.json` (12, all dead). PIN MOVED: `test/tesa2_arena.test.js` (the
+host stands them online too) and `test/tesa1_arena.test.js` (the card's reading names the release); TESA2's
+TESA2-online-too record retired with the law it held; `tools/mutants/tesa1.json`'s TESA1-a-registration-installs-nothing
+re-aimed by content (the install now carries `known`), judged dead again.
+
 `test/tesa2_arena.test.js` (8, TESA2): the pixel (under the point, the centre's land deciding where the corner's would not,
 the next nearest free one for a pixel taken, the reach in rings, the Bay's ground and a nameless dungeon none); the
 installed pixels (once a trace and a fit, again when the fit moves, the switch moving the version once); the id (the lane,
 the base, all 432 slots apart, never a spawn's under the same salt, past the isles' indices); the templates (the five
 kinds' types, the dungeon test, the exclusions, map-id order, the province's own hash, and a spawn never cloning an Arena
 place); the clone (every id field, the pixel, the region handed, no harbour, the template untouched); the map (the pixel
-carried only where a host stands them, the hit, the press's arm by source); the host by source (offline, the arm, one
+carried only where a host stands them, the hit, the press's arm by source); the host by source (online and off since TESA-ONLINE, the arm, one
 clone a pixel, the key, the sweep, the load's wait, /tp, no house); and, where ARENA_PATH and ARENA2_PATH name the data,
 all 248 stood under their own points, MAPS.BSA's five template counts and Winterhold's 6 x 7 city. Mutants
 `tools/mutants/tesa2.json` (28, all dead). PIN MOVED: `test/tamriel.test.js` (a press beyond the Bay picks an Arena place

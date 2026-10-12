@@ -27,6 +27,10 @@ export const ARENA_PLACE_SALT = 0xa7;
 export const ARENA_PLACE_BASE = 500000;
 /** The places' location indices count down from here. */
 export const ARENA_INDEX_BASE = 1000000;
+/** TESA-ONLINE: the words. */
+export const ARENA_PLACES_TEXT = Object.freeze({
+  beyondWithout: 'Players with The Elder Scrolls: Arena attached see its cities and dungeons in these lands. Attach your own copy (free from Bethesda) in Mods & files.',
+});
 /** How long, at most, a boot's load waits for Arena's places to stand (the data and the trace landing) - a save made in an
  *  Arena town loads into it; a trace that never lands costs this and no more. */
 export const ARENA_LOAD_WAIT_MS = 8000;

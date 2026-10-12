@@ -221,7 +221,7 @@ test('TESA2 the map: where a host stands the places, each inked place carries th
 
 test('TESA2 the host: offline on the land beyond the Bay it stands the places - the templates off the game\'s rows, the build asking Arena past the Bay, one clone a pixel in the index taken out when its place goes, the region and the climate the pixel\'s; the built pixel keeps its place for the sweep, which builds again what moved; a boot\'s load waits for the places; no house is sold in an Arena town; /tp names them (mutant: online, an arm, the wait)', () => {
   const w = read('src/scenes/world.js');
-  assert.match(w, /const arenaStands = tamrielLand && arenaPlacesOn\(\) && !params\.has\('online'\);\n\s+setArenaStanding\(arenaStands\);/);
+  assert.match(w, /const arenaStands = tamrielLand && arenaPlacesOn\(\);\n\s+setArenaRoom\(params\.has\('online'\)\);\n\s+setArenaStanding\(arenaStands\);/, 'PIN MOVED (TESA-ONLINE): online too, from a release the room knows (tesa2_online)');
   assert.match(w, /const _arenaTemplates = arenaStands \? arenaTemplates\(_classicRows \?\? _hubRows\.map\(classicRow\)\.filter\(Boolean\), isMainStoryDungeon\) : null;/, 'the game\'s rows');
   assert.ok(w.indexOf('const _arenaTemplates = arenaStands') < w.indexOf('  _classicRows = null;   // read, let go'), 'before they go');
   assert.match(w, /if \(etherSea && inEther\(px, py\)\) return etherPlaceAt\(px, py\);[^\n]*\n\s+if \(_arenaTemplates && !onTheBay\(px, py\)\) return arenaLocationAt\(px, py\);/);

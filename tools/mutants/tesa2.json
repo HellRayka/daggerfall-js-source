@@ -171,15 +171,6 @@
     ]
   },
   {
-    "name": "TESA2-online-too",
-    "file": "src/scenes/world.js",
-    "old": "  const arenaStands = tamrielLand && arenaPlacesOn() && !params.has('online');",
-    "new": "  const arenaStands = tamrielLand && arenaPlacesOn();",
-    "tests": [
-      "test/tesa2_arena.test.js"
-    ]
-  },
-  {
     "name": "TESA2-no-arm",
     "file": "src/scenes/world.js",
     "old": "    if (_arenaTemplates && !onTheBay(px, py)) return arenaLocationAt(px, py);   // TESA2: past the Bay, Arena's place or none\n",

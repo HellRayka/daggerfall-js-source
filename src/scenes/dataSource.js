@@ -932,22 +932,28 @@ export const loadArenaFile = (fileName) => assetBytes(ARENA_STORE, fileName);
 
 let _arenaRegistered = false;
 let _arenaPlacesInstalled = false;
+let _arenaKnown = false;
 /** Has a registration read the store this page? */
 export const arenaDataRegistered = () => _arenaRegistered;
 /** Did it find a CITYDATA the reader took? The Arena card's reading. */
 export const arenaDataAttached = () => _arenaPlacesInstalled;
+/** TESA-ONLINE: is it a release a room knows (its print)? The Arena card's reading. */
+export const arenaDataKnown = () => _arenaKnown;
 
 /** THE ONE REGISTRATION (the texture store's law, AUDIT VE R2): the stored CITYDATA read, parsed and installed for every
  *  reader (world/arenaPlaces.js) - by the world host at its boot, by a pick, by the card. A missing or malformed file
  *  installs nothing, and TAMRIEL1's authored cities stand. Answers 1 when Arena's places are installed, else 0. */
 export async function registerArenaData() {
-  const [{ parseArenaCityData }, { setArenaCityData }] = await Promise.all([import('../formats/arenaCityData.js'), import('../world/arenaPlaces.js')]);
+  const [{ parseArenaCityData }, { setArenaCityData, arenaCityDataPrint, isKnownArenaPrint }] = await Promise.all([import('../formats/arenaCityData.js'), import('../world/arenaPlaces.js')]);
   let bytes = null;
   try { bytes = await loadArenaFile(ARENA_CITYDATA); } catch { bytes = null; }   // no IndexedDB (private mode): no Arena
   const cityData = bytes ? parseArenaCityData(bytes) : null;
-  setArenaCityData(cityData);
+  // TESA-ONLINE: the file's print, so a room stands its places only from a release it knows (world/arenaPlaces.js)
+  const known = cityData ? isKnownArenaPrint(await arenaCityDataPrint(bytes)) : false;
+  setArenaCityData(cityData, { known });
   _arenaRegistered = true;
   _arenaPlacesInstalled = !!cityData;
+  _arenaKnown = known;
   return cityData ? 1 : 0;
 }
 
@@ -958,6 +964,7 @@ export async function clearStoredArena() {
   setArenaCityData(null);
   _arenaRegistered = true;
   _arenaPlacesInstalled = false;
+  _arenaKnown = false;
 }
 
 export async function pickArenaFolder() {
