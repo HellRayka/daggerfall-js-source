@@ -264,6 +264,64 @@ the player READS and whose NAMES they hear, and never a region index.
 - **Online**: names are drawn on each client, as every talk name is - nothing crosses the wire; the province is read off
   each player's own trace of Daggerfall's picture.
 
+## TESA4 - the roads between Arena's places (2026-10-12)
+
+The owner: *"Continue"*. The arc's third item. The places stood with no way between them; past the Bay the land carried
+no road at all (and, until ROAD-BEYOND, fragments of the Bay's own - `Roads.md`).
+
+**OUR LAW ON ARENA'S MAP.** `world/arenaRoads.js` runs the port's own road builder (`roadNetwork.js` buildRoadNetwork,
+ROADS 1-21, the dials untouched) over Arena's places and draws what it routes onto the Bay pixels the painter paints:
+
+- **The grade is the clone's** (`arenaLocations.js` arenaRoadTowns): a city-state stands as a city and a town as a
+  hamlet - road nodes; a village as a village - a track node; a dungeon gets none (ROADS 1: a road to a labyrinth tells
+  the player where it is). The node is the place's own pixel.
+- **The window.** The builder's grid is the Bay's 1000 x 500. It is laid over the places' extent and ARENA_ROAD_MARGIN
+  (40) Bay pixels round it at the least integer scale that fits - five Bay pixels a cell on the freeware's places. A
+  cell's ground is the ground at its centre, read once (the continent's, `tamrielGround.js`, on the trace and the fit);
+  the beach line is the Bay's (`roadsProducer.js` WATER_BYTE); the Bay's own cells are water to it, so no Arena road
+  crosses the Bay's land, whose network is its own. Two places in one cell: the first is its node. The dials are the
+  Bay's, kept: measured, Arena's road towns stand a median 25 cells from their nearest (Daggerfall's 1,610 stand 5.4
+  pixels from theirs), inside the road reach (70), so each still takes its nearest; but a village farther than the track
+  reach (20 cells, 100 Bay pixels) from a town gets no track - 56 tracks for 115 villages, where the Bay's web reaches
+  most of its own. Recorded, not tuned: a dial moved for Arena would be a second law.
+- **The drawing.** Each step the network takes, cell to cell, is the straight run of Bay pixels from centre to centre,
+  every pixel step's compass bit on both its ends (ROADS 1's layout); each place's pixel is joined to its cell's centre
+  in the grade its cell carries. The layer is a sparse map of Bay pixel to byte, roads and tracks, holding no pixel of
+  the Bay.
+- **Who reads it.** The painter, at the kernel's seam, for any pixel off the Bay - east, west, north and south of it -
+  each byte and its corners (`terrainGen.js:"const arena = !inBay(px, py);"`), the kernel saying whether Arena's roads
+  reached its paint; and the verge, which keeps the wild's flats and the Low Poly crowns off a road
+  (`roadVerge.js` roadRoom). What follows the painter follows it: the grass keeps off the tiles it wrote (GRASS-PATH1),
+  the Low Poly crowns off its tiles (LPT-FIT). Not read: the landforms do not cut the land along it (`landforms.js`
+  armsAbout asks the Bay's pixels alone), Snowfall's tracks are Basic Roads' alone, the Bay's travel map draws the Bay.
+- **Where it is built.** On the terrain worker, on its own ground, synchronously in its message loop - the jobs' answers
+  keep their order. The client asks the roads' cache first (`roadsCache.js`, keyed by the generator's version and dials,
+  this layer's own version, the towns, the window, WOODS.WLD's length, the fit and the trace's land): a hit's network
+  goes over to be drawn, a miss's towns to be built - about two seconds on the freeware's places, once. The worker
+  installs the layer for its jobs and posts it back packed; this thread installs its own copy (the verge, the fallback
+  kernel). With no worker, or one that died before it answered, this thread builds it.
+- **When it lands.** Each ask is an epoch. Every job posted from the ask on is built with its layer, and the host stamps
+  the epoch on the pixel it posts; when a layer lands, every built pixel off the Bay posted under an older one - whose
+  paint Arena's roads reached, or which the new layer reaches on it or beside it - is built again, and a pixel in flight
+  is asked as it publishes (`world.js` arenaRoadsLanded, sweepArenaRoads: sweepSdLate's shape). The towns go over each
+  time the places that stand move - the trace or the data landing, the Arena card's Attach or Remove, the room's word -
+  on the frame, building or not (`world.js` handArenaRoads): the build is the worker's, and gated on a gap between
+  builds it waited as long as the stream did (measured headless: never, while the queue kept streaming).
+- **Measured in the game** (headless Chromium, the freeware's data): the layer landed 10-12 s after the places stood,
+  24,530 pixels as the node build's; a straight stretch north-east of Winterhold (2155, -308) built under it painted 256
+  road tiles - two wide across the pixel - seen from above. The probe surface: `window.__tesaPlace`'s `roads` (the
+  epoch a pixel was painted under, whether Arena's roads reached it, the tiles the painter wrote).
+- **A mount starts with none** on this thread (`world.js`: the last world's layer is not this one's); the next ask
+  installs it.
+- **Online** (TESA-ONLINE's law): the roads are drawn from each player's own places - none where a room does not know
+  their copy - and the same for every player with the same release. Nothing crosses the wire.
+- **The four hosts**: `world.js` streams the land past the Bay and is the one wired; `exterior.js` runs no tile pipeline
+  (`Roads.md`), and `worldModes.js` and `dungeonContext.js` paint no terrain.
+
+On the freeware: 233 towns and villages, 150 roads and 56 tracks routed (four pairs not - Vvardenfell's, an island), 19,563
+road pixels and 5,813 track pixels, none on the Bay. Recorded: the roads stop at the Bay's edge and at the coast - no
+road joins the Bay's network yet, and no port.
+
 ## The arc - what comes next
 
 - **The provinces as regions of their own** - their own chat rooms, banks, law, prices and quest sites. The save's shape,
@@ -276,10 +334,27 @@ the player READS and whose NAMES they hear, and never a region index.
   joins them and the seed it draws from are not in OpenTESArena or any reference this port has; reading them out of
   A.EXE's code would be a guess no test could check against the game. Left until a reference exists - a nameless
   dungeon stands nowhere, as Arena's own map shows none until it is found.
-- **Roads** between Arena's places, and their ports. The Bay's own network no longer bleeds past its edge
-  (`Roads.md` ROAD-BEYOND), which a network of the land past the Bay needed first.
+- **Roads, the rest** - TESA4 stands the roads between Arena's places. Still to come: joining them to the Bay's
+  network where it meets the Bay's edge, their ports (A.EXE's coastal city list, as OpenTESArena reads it), the
+  landforms' cut along them, and the held map's ink of them.
 
 ## Pins
+
+`test/tesa4_roads.test.js` (13, TESA4): the grade (the clone's, a dungeon none); the window (the margin, the extent's
+last pixel, the least scale, the taller way, a cell and its centre); the drawing (each step once, both ends, the spur in
+its cell's grade, none on the Bay); the network (two towns joined and walked, the Bay's cells water, the ground at a
+cell's centre, two towns a cell); the installed layer (a byte, the corners as the mod's, the touch's reach, the version,
+packed and back); the cache's key (each term, the installed fit and trace); the painter past the Bay on all four sides
+(a road, a track, a corner each way, the flag; a Bay pixel never reads it); the verge (on the line, beside it, from the
+next pixel, none without a layer, the Bay's own network alone on the Bay); the client with no worker (a miss built and
+kept, a hit drawn, a superseded ask dropped) and with one (the post and its epoch, a stale answer dropped, the network
+kept, a copy across, a death answered here); the real worker (built and installed for its jobs, cleared, a held network
+not built again, a failure its own message); the host by source (the hand-over, on the frame building or not, the epoch read as the job is posted,
+the stale law, a pixel in flight, the sweep, the mount's clear); with ARENA2_PATH and ARENA_PATH, the freeware's counts. Mutants
+`tools/mutants/tesa4.json` (49, all dead). PIN MOVED: `test/terrainworker.test.js` (the worker's imports take `arenaRoads.js`),
+`test/disc20.test.js` (DISC20-C's window 10200 -> 10400, the entry's `arenaRoadsEpoch` line);
+`tools/mutants/verge1.json`'s VERGE1-north-the-row-below re-aimed by content (the row is read on its own line now),
+judged dead again.
 
 `test/tesa3_provinces.test.js` (5, TESA3): the province past the Bay (the centre's, none on the Bay's own ground with
 land under it or at sea, the authored shape without a trace); the people's banks for all nine (GetNameBank's, the

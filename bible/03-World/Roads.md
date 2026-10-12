@@ -896,3 +896,12 @@ none of the road, track, river or stream its wrap named while that
 Bay pixel paints its own, and the sea west of the Bay; on all-land
 ground, past either edge, above and below. Mutants
 `tools/mutants/road_beyond.json` (6).
+
+## TESA4 - Arena's roads past the Bay (2026-10-12)
+
+The painter's seam and the verge read a second layer off the Bay: the
+roads between Arena's places (`Arena-Provinces.md` TESA4,
+`world/arenaRoads.js`), built by this network's own builder on a
+window over them and drawn back onto the Bay pixels. On the Bay
+nothing moves - the layer holds no Bay pixel, and a Bay pixel never
+reads it.

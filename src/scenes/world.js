@@ -282,7 +282,8 @@ import { realForestsOn, FOREST_HIDDEN_LOCATION_TYPES, roadVergesOn, climateBlend
 import { landformsOn, tamrielLandOn, tamrielTraceOn, etherSeaOn, etherCrossOutOn, arenaPlacesOn } from './shared.js';   // LANDFORM1-3: the Landforms switch; TAMRIEL2: the land beyond the Bay's; TAMRIEL3: the trace's door; ETHER-SEA: the Etheric Sea's
 import { preloadTamrielTrace } from '../ui/tamrielTrace.js';   // TAMRIEL3: Daggerfall's own map of Tamriel, off the player's two files
 import { arenaPlaces, arenaPixels, arenaPlaceOnPixel, setArenaCityData, setArenaStanding, setArenaRoom } from '../world/arenaPlaces.js';   // TESA1: Arena's places on it; TESA2: the pixels they stand on
-import { arenaTemplates, arenaTemplateOf, synthesizeArenaLocation, ARENA_LOAD_WAIT_MS, ARENA_PLACES_TEXT } from '../world/arenaLocations.js';   // TESA2: the places stood, each a Daggerfall town or dungeon cloned
+import { arenaRoadsLayer, layerTouches, setArenaRoads } from '../world/arenaRoads.js';   // TESA4: the roads between them
+import { arenaTemplates, arenaTemplateOf, synthesizeArenaLocation, ARENA_LOAD_WAIT_MS, ARENA_PLACES_TEXT, arenaRoadTowns } from '../world/arenaLocations.js';   // TESA2: the places stood, each a Daggerfall town or dungeon cloned
 import { fitBayToPicture } from '../world/tamrielLand.js';   // TAMRIEL3: where the Bay stands on it
 import { provinceKeyBeyondBay } from '../world/tamrielLand.js';   // TESA3: the province a pixel past the Bay stands on
 import { provinceByKey } from '../world/tamrielGeography.js';   // TESA3: its name and race
@@ -1345,6 +1346,7 @@ export async function bootWorld(canvas, renderer, params, status) {
   const arenaStands = tamrielLand && arenaPlacesOn();
   setArenaRoom(params.has('online'));
   setArenaStanding(arenaStands);
+  setArenaRoads(null);   // TESA4: a mount starts with no Arena roads on this thread - the last world's are not this one's (handArenaRoads asks)
   // ETHER-SEA (bible/03-World/Etheric-Sea.md): THE ETHERIC SEA'S GROUND - its isles and its open water, composed over
   // whatever the world grows past the Bay (world/ethericSea.js: its own box, far north of the continent's frame; the
   // worker composes its copy the same way), its climate read beside it, and its box a frame the world streams over
@@ -1566,6 +1568,38 @@ export async function bootWorld(canvas, renderer, params, status) {
     for (const k of again) destroyPixel(k.px, k.py, { collectLoose: false });
     queue.push(...again.sort(nearestFirstFrom(state.current)));
     console.log(`[arena] ${again.length} pixel(s) beyond the Bay built again for Arena's places`);
+  }
+  /** TESA4: ARENA'S ROADS - the towns to the kernels whenever the places that stand move (a trace, a fit, a data set, the
+   *  room's word), on the frame and not between builds alone: the build is the worker's, and the pixels built meanwhile
+   *  are painted again when it lands (below). */
+  let _arenaRoadsFor = null;
+  function handArenaRoads() {
+    const now = arenaPixels();
+    if (now === _arenaRoadsFor) return;
+    _arenaRoadsFor = now;
+    terrainGen.setArenaRoads(arenaRoadTowns(now), arenaRoadsLanded);
+  }
+  /** TESA4: ARENA'S ROADS LANDED (world/terrainGenClient.js setArenaRoads) - each built pixel off the Bay posted under an
+   *  older layer, whose paint Arena's roads reached or which the new layer reaches, is built again (sweepSdLate's shape);
+   *  a pixel still in flight is asked as it publishes (arenaRoadsStale). */
+  const _arenaRoadsStale = new Set();
+  const arenaRoadsStale = (p, epoch, layer) => !onTheBay(p.px, p.py) && p.arenaRoadsEpoch < epoch && (p.arenaRoadsPainted || layerTouches(layer, p.px, p.py));
+  function arenaRoadsLanded(epoch, layer) {
+    for (const [k, p] of built) if (arenaRoadsStale(p, epoch, layer)) _arenaRoadsStale.add(k);
+    console.log(`[arena] the roads past the Bay landed: ${layer ? layer.roads.size + layer.tracks.size : 0} path pixels, ${_arenaRoadsStale.size} built pixel(s) to paint again`);
+  }
+  function sweepArenaRoads() {
+    const again = [];
+    for (const k of _arenaRoadsStale) {
+      const p = built.get(k);
+      if (p) { again.push({ px: p.px, py: p.py }); _arenaRoadsStale.delete(k); }
+      else if (!inFlight.has(k)) _arenaRoadsStale.delete(k);   // not standing: it builds with the layer as it is now
+    }
+    if (!again.length) return;
+    const under = `${state.current.x},${state.current.y}`;
+    if (walkMode && playerSpawned && again.some((k) => `${k.px},${k.py}` === under)) _seasonHoldKey = under;
+    for (const k of again) destroyPixel(k.px, k.py, { collectLoose: false });
+    queue.push(...again.sort(nearestFirstFrom(state.current)));
   }
   // LocationLoader.cs:146-151 asks the Basic Roads MOD for the pixel's
   // road|track mask - so only Hazelnut's own arrays answer; the port's
@@ -5718,7 +5752,8 @@ export async function bootWorld(canvas, renderer, params, status) {
     // EV4: the far ring builds strided with its skirt; the kernel's
     // ghost rows keep edge normals central differences either way.
     const stride = strideFor(px, py);
-    const { samples, tilemap, positions, normals, bed: carved, tilemapBytes, avg, nature, withRoads, paths, wodAverages, beach } = await terrainGen.generate({
+    const arenaRoadsAt = terrainGen.arenaRoadsEpoch;   // TESA4: the Arena roads' layer this job is built with
+    const { samples, tilemap, positions, normals, bed: carved, tilemapBytes, avg, nature, withRoads, paths, wodAverages, beach, arenaRoads } = await terrainGen.generate({
       px, py, stride, tilemap: seedTilemap, locationRect, hasLocation: !!dfLocation, climateType: climateBase,
       bed: waterOn,   // AUDIT WATER-NEXT P1: the bed under the water, carved on the worker with the grid
       // WOD2: the smoothing arms run in the kernel; FOREST1: and whether each pick is a SITE the woods close round (a camp, a
@@ -6724,6 +6759,7 @@ export async function bootWorld(canvas, renderer, params, status) {
       placeHold: pipeline,
       location: dfLocation ? dfLocation.name : null,
       arenaSlot: dfLocation?.arena ?? null,
+      arenaRoadsEpoch: arenaRoadsAt, arenaRoadsPainted: !!arenaRoads,   // TESA4: the layer it was painted with, and whether its roads reached it
       centerHeight: samples[64 * HEIGHTMAP_DIMENSION + 64] * worldHeight,
       avgY: dfLocation ? avg * worldHeight : 0,
     });
@@ -6771,6 +6807,7 @@ export async function bootWorld(canvas, renderer, params, status) {
       const t = state.pixelTranslation(px, py);
       hccGroundMoved(t[0], t[2], t[0] + TERRAIN_SIZE, t[2] + TERRAIN_SIZE);
     }
+    if (built.has(key) && arenaRoadsStale(built.get(key), terrainGen.arenaRoadsLanded, arenaRoadsLayer())) _arenaRoadsStale.add(key);   // TESA4: posted before a layer that landed while it built
     // AUDIT LANDFORMS II G1/G2: A REBUILD CARRIES WHAT LIES ON ITS GROUND. The road network's landing (ROADS 25) cuts the
     // landforms' roads and channels metres into a pixel built before it - 14% of the network's samples move, up to 30 m
     // on the Menevia escarpment - and a late World of Daggerfall pack or the gate's clearing flattens one. The pools'
@@ -19147,7 +19184,9 @@ export async function bootWorld(canvas, renderer, params, status) {
       const b = built.get(`${x},${y}`), loc = locationIndex.get(`${x},${y}`);
       return { built: !!b, location: b?.location ?? null, arenaKey: b?.arenaSlot ? `${b.arenaSlot.provinceIndex}|${b.arenaSlot.id}` : null, name: loc?.name ?? null, arena: loc?.arena ?? null,
         mapId: loc?.mapTableData?.mapId ?? null, blocks: loc ? [loc.exterior?.exteriorData?.width, loc.exterior?.exteriorData?.height] : null,
-        buildings: loc?.exterior?.buildings?.length ?? null, region: loc?.regionName ?? null };
+        buildings: loc?.exterior?.buildings?.length ?? null, region: loc?.regionName ?? null,
+        // TESA4: the Arena roads' layer it was painted with, whether they reached it, and the tiles the painter wrote
+        roads: b ? { epoch: b.arenaRoadsEpoch, painted: b.arenaRoadsPainted, tiles: b.paths ? b.paths.reduce((n, t) => n + (t ? 1 : 0), 0) : null } : null };
     };
     // ARENA2 probe surface (tools/arenaProbe.mjs): the city floor's sand and the Herald's place, the bout standing (its
     // phase, its fighters' health, the crowd's mood and how many sit), and the Herald's three doors pressed as his choice
@@ -34339,7 +34378,9 @@ const _pixelOrder = [];   // NEAR-FIRST: the frame's pixel walk, nearest first -
     if (_wodLate.size && !building) sweepWodLate();   // WOD6: a late region's pixels, the same way
     if (!building) sweepGateClear();   // GATE-CLEAR: the gate the clock is about turned - its clearing in, the last one's rock back
     if (_sdLate.size && !building) sweepSdLate();   // SD2b: the Hollow's pixel, the same way
+    if (_arenaTemplates) handArenaRoads();   // TESA4: their roads to the terrain worker, as the places that stand move
     if (_arenaTemplates && !building) sweepArenaPixels();   // TESA2: Arena's places landed or changed - their pixels, the same way
+    if (_arenaRoadsStale.size && !building) sweepArenaRoads();   // TESA4: and their roads
     if (seasonsActive) seasons.tick();   // SIB1: RefreshSeasonAfterLoad's second half, the frame after a load
     refreshHomeLooks();   // HOME-LOOK: a look landed or changed repaints the home where it stands
     // W1/S41: the DRAIN ticks on the exterior frame, which is

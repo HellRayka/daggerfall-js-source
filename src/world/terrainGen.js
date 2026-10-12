@@ -27,6 +27,8 @@ import { assignTiles, blendLocationTerrain, calcAvgMaxHeight, generateTileData }
 import { layoutNature } from './terrainNature.js';
 import { paintRoads, smoothRoadHeights, pathCorners } from './roadPainter.js';
 import { MAP_W } from './roadNetwork.js';
+import { arenaRoadByte, arenaRoadCorners } from './arenaRoads.js';   // TESA4: Arena's roads past the Bay
+import { inBay } from './tamrielFrame.js';
 import { applyPicks } from './wodLocationLoader.js';   // WOD2: World of Daggerfall's smoothing arms
 import { createLandforms } from './landforms.js';   // LANDFORM1-3: the port's own terrain, inside the kernel
 import { waterBedOf, bedHalo, bedNearEdge } from './waterBed.js';   // AUDIT WATER-NEXT P1: the bed under the water, carved with the grid; F2: across its seams
@@ -99,6 +101,7 @@ export function generatePixelTerrain({ woods, px, py, stride = 1, tilemap, locat
   // GRASS-PATH1: the painter's own record of which tiles it wrote, so
   // the grass placer can keep off a path it cannot name by record.
   let paths = null;
+  let arenaPainted = false;   // TESA4: whether Arena's roads reached this pixel's paint - the host's sweep asks
   if (roads) {
     paths = new Uint8Array(tilemap.length);
     // ROAD-BEYOND: the network is the Bay's 1000 x 500 - a pixel past its east or west edge (TAMRIEL2) carries none of
@@ -107,12 +110,18 @@ export function generatePixelTerrain({ woods, px, py, stride = 1, tilemap, locat
     const onGrid = px >= 0 && px < MAP_W;
     const i = py * MAP_W + px;
     const at = (m) => (m && onGrid ? m[i] : 0);
+    // TESA4: past the Bay - north and south of it too - Arena's roads (world/arenaRoads.js), each byte and corner its
+    // layer's; none on the Bay, whose network is its own
+    const arena = !inBay(px, py);
+    const road = at(roads.roads) | (arena ? arenaRoadByte('roads', px, py) : 0), track = at(roads.tracks) | (arena ? arenaRoadByte('tracks', px, py) : 0);
+    const arenaCorners = (kind) => (arena ? arenaRoadCorners(kind, px, py) : 0);
+    arenaPainted = !!(arena && (road || track || arenaCorners('roads') || arenaCorners('tracks')));
     // ROADS 23: the mod's corners - a neighbour's diagonal brushes this
     // pixel's corner tile - and its water, off unless the network says.
     const c = (m) => (m ? pathCorners(m, px, py, MAP_W) : 0);
-    paintRoads(tileData, tilemap, at(roads.roads), at(roads.tracks), hasLocation ? locationRect : null, 129, {
+    paintRoads(tileData, tilemap, road, track, hasLocation ? locationRect : null, 129, {
       river: at(roads.rivers), stream: at(roads.streams), water: !!roads.water,
-      corners: { road: c(roads.roads), track: c(roads.tracks), river: c(roads.rivers), stream: c(roads.streams) },
+      corners: { road: c(roads.roads) | arenaCorners('roads'), track: c(roads.tracks) | arenaCorners('tracks'), river: c(roads.rivers), stream: c(roads.streams) },
       paths,   // GRASS-PATH1
     });
     // ROADS 10: the ground under the road is smoothed - after the paint,
@@ -177,6 +186,7 @@ export function generatePixelTerrain({ woods, px, py, stride = 1, tilemap, locat
     // once, so the first pixels can be painted with none - and were then
     // kept, roadless, while the map (rebuilt on arrival) showed the roads.
     withRoads: !!roads,
+    arenaRoads: arenaPainted,   // TESA4: Arena's roads reached its paint - painted again when their layer moves
     wodAverages: wodResult ? wodResult.averages : null,   // WOD2: per pick, the normalized average its objects stand on
     beach: classic,   // AUDIT LANDFORMS II H2: DFU's own blend in a location's pixel (null else) - the gathering nodes' beach line
   };

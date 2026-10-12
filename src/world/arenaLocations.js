@@ -21,6 +21,7 @@
 import { mapPixelToLongitudeLatitude, LOCATION_TYPES } from '../formats/mapsFile.js';
 import { hash32 } from './spawnedDungeons.js';
 import { LOCATIONS_PER_PROVINCE } from '../formats/arenaCityData.js';
+import { ROAD_TYPES, TRACK_TYPES } from './roadNetwork.js';
 
 /** The places' lane in the id's high 12 bits, and the first low number a place takes. */
 export const ARENA_PLACE_SALT = 0xa7;
@@ -43,6 +44,21 @@ export const ARENA_TEMPLATE_KINDS = Object.freeze({
   'staff-dungeon': Object.freeze({ type: LOCATION_TYPES.DungeonLabyrinth, dungeon: true }),
   'map-dungeon': Object.freeze({ type: LOCATION_TYPES.DungeonKeep, dungeon: true }),
 });
+
+/**
+ * TESA4 (world/arenaRoads.js): the places a road reaches - each stood place whose clone's type is a road or a track grade
+ * (world/roadNetwork.js ROAD_TYPES, TRACK_TYPES), at its own pixel. Null for none.
+ * @param {?{ stood: Array<{ kind: string, bx: number, by: number }> }} pixels arenaPixels()'s
+ * @returns {?Array<{ x: number, y: number, type: number }>}
+ */
+export function arenaRoadTowns(pixels) {
+  const towns = [];
+  for (const p of pixels?.stood ?? []) {
+    const type = ARENA_TEMPLATE_KINDS[p.kind]?.type;
+    if (ROAD_TYPES.has(type) || TRACK_TYPES.has(type)) towns.push({ x: p.bx, y: p.by, type });
+  }
+  return towns.length ? towns : null;
+}
 
 /** A place's own number in the lane: its province's 48 slots, then its slot. */
 const ordinal = (place) => place.provinceIndex * LOCATIONS_PER_PROVINCE + place.id;

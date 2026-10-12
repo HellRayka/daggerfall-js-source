@@ -243,7 +243,9 @@ test('EV7: the worker shell imports only pure modules and spells the Worker URL 
   // when the API is absent, and nothing else in its closure is a global.
   // PIN MOVED (ETHER-SEA, bible/03-World/Etheric-Sea.md): and the Etheric Sea's ground (world/ethericSea.js - pure: it
   // imports formats/ alone)
-  assert.deepEqual(imports, ['../formats/woodsFile.js', './ethericSea.js', './roadsCache.js', './roadsProducer.js', './tamrielFrame.js', './tamrielGround.js', './tamrielLand.js', './terrainGen.js'],
+  // PIN MOVED (TESA4, bible/03-World/Arena-Provinces.md): and Arena's roads past the Bay (world/arenaRoads.js - pure: the
+  // road generator, the frame, the land and the cache's key law)
+  assert.deepEqual(imports, ['../formats/woodsFile.js', './arenaRoads.js', './ethericSea.js', './roadsCache.js', './roadsProducer.js', './tamrielFrame.js', './tamrielGround.js', './tamrielLand.js', './terrainGen.js'],
     'the import graph is exactly the reader, the road cache, the producer, the kernel, the continent\'s ground (TAMRIEL2 - pure: the authored geography and the frame) and the Etheric Sea\'s');
   const code = shell.replace(/\/\/[^\n]*/g, '').replace(/\/\*[^]*?\*\//g, '');
   assert.ok(!/\bdocument\b/.test(code) && !/new Worker/.test(code), 'no DOM, no nested workers');

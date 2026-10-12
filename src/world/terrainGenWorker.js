@@ -19,8 +19,9 @@ import { etherWoods } from './ethericSea.js';   // ETHER-SEA: the Etheric Sea's 
 import { setTamrielTrace } from './tamrielLand.js';   // TAMRIEL3: the picture's own land
 import { setTamrielFit } from './tamrielFrame.js';
 import { generatePixelTerrain, restrideGrid } from './terrainGen.js';   // PERF-EXT26: and a built pixel's grid at another stride
-import { buildRoadsFromSettlements } from './roadsProducer.js';   // AUDIT ROADS F2
+import { buildRoadsFromSettlements, WATER_BYTE } from './roadsProducer.js';   // AUDIT ROADS F2; TESA4: the beach line Arena's roads refuse
 import { cachedNetwork, roadsCacheKey } from './roadsCache.js';   // ROADS 19
+import { buildArenaNetwork, rasterArenaRoads, setArenaRoads, packArenaRoads } from './arenaRoads.js';   // TESA4: Arena's roads past the Bay
 
 let woods = null;
 
@@ -84,6 +85,9 @@ function handle(m) {
       }
       return;
     }
+    // TESA4: Arena's roads past the Bay - synchronous, so no job posted after it is answered before it, and none posted
+    // before it waits for it (the host asked the roads' cache before it posted: the jobs' order is the FIFO's)
+    if (m.t === 'arena-roads') { answerArenaRoads(m); return; }
     // PERF-EXT26: a promotion's grid needs no network, so it never waits
     // behind one, and it answers by its id - never through the jobs' FIFO.
     // LANDFORM1-3: unless it is the landforms' grid - its ghost rows are cut
@@ -107,6 +111,29 @@ function handle(m) {
     globalThis.postMessage({ t: 'done', ...out }, transfer);
   } catch (e) {
     globalThis.postMessage({ t: 'error', message: e?.message ?? String(e) });
+  }
+}
+
+/** TESA4: ARENA'S ROADS (world/arenaRoads.js) - the host's towns and window, with the network the roads' cache held for
+ *  them or none (then built here, on this worker's own ground: its woods, the trace and the fit), drawn onto the Bay
+ *  pixels and installed for every job from now on. The layer goes back packed under the ask's epoch, with the network
+ *  when this worker built it (the host keeps it in the cache). Null towns clear it. A failure answers its own message,
+ *  never the jobs' FIFO, and installs none. */
+function answerArenaRoads(m) {
+  try {
+    const { towns = null, window = null, epoch } = m;
+    let net = m.net ?? null;
+    const built = !!(towns && window && !net && woods);
+    if (built) net = buildArenaNetwork({ towns, window, heightAt: (x, y) => woods.getHeightMapValue(x, y), isWater: (_x, _y, h) => h <= WATER_BYTE });
+    const layer = net && towns && window ? rasterArenaRoads(net, window, towns) : null;
+    setArenaRoads(layer);
+    const packed = layer ? packArenaRoads(layer) : null;
+    const back = built && net ? { roads: net.roads, tracks: net.tracks } : null;
+    const xfer = [...(packed ? [packed.keys.buffer, packed.roads.buffer, packed.tracks.buffer] : []), ...(back ? [back.roads.buffer, back.tracks.buffer] : [])];
+    globalThis.postMessage({ t: 'arena-roads', epoch, layer: packed, net: back, stats: net?.stats ?? null }, xfer);
+  } catch (e) {
+    setArenaRoads(null);
+    globalThis.postMessage({ t: 'arena-roads', epoch: m.epoch, layer: null, net: null, error: e?.message ?? String(e) });
   }
 }
 
