@@ -31,6 +31,7 @@ import { EOTB_FOOT_SET_COUNT } from '../player/classSkins.js';   // PEERFX3: a c
 import { spriteFor, eotbSpriteUrl, spriteSize, spriteOffset, flipRows, worldOrderColors, lookedPixels } from '../player/eotbSprite.js';
 import { decodePng } from '../systems/textureReplacement.js';
 import { POSE_RIDE } from './wire.js';
+import { PAPERDOLL_SKIN, peerDoll, isDollKey, dollFramePixels, onDollRetired, isRetiredTex, isRetiredKey } from '../player/dollSkin.js';   // DOLL-SKIN: a peer wearing their paperdoll
 import {
   isRearView, createLanternArt, loadLanternArt, createSpriteLantern, stepSpriteLantern, spriteStride, hangSpriteLantern,
   mintSpriteLantern, dropSpriteLantern,
@@ -54,6 +55,7 @@ export const RIDER_LOOKS_KEPT = 12;
 export const RIDER_LOOK_IDLE_MS = 2000;
 
 async function decodeUrl(url) {
+  if (isDollKey(url)) return dollFramePixels(url);   // DOLL-SKIN: a doll's frame is drawn, not fetched
   const res = await fetch(url);
   if (!res.ok) throw new Error(`${url}: ${res.status}`);
   return worldOrderColors(await decodePng(new Uint8Array(await res.arrayBuffer())), { owned: true });   // PERF-PEERS5: the decode is this door's alone - turned in its own bytes
@@ -89,6 +91,12 @@ export function createEotbArt({ renderer = null, urlFor = eotbSpriteUrl, decode 
       for (const key of x.keys) { tex.delete(key); renderer?.evictTexture?.(key.replace(':', '_')); }   // the cache's `archive:rec` is the renderer's `archive_rec`
     }
   }
+  // DOLL-SKIN: a peer's outfit outgrown (or their doll let go for another's): its frames go from the store and the
+  // renderer. The store lives with the page, as its listener does
+  onDollRetired((archive, gen) => {
+    for (const k of [...tex.keys()]) if (isRetiredTex(k, archive, gen)) { tex.delete(k); renderer?.evictTexture?.(k.replace(':', '_')); }
+    for (const k of [...pixels.keys()]) if (isRetiredKey(k, archive, gen)) pixels.delete(k);
+  });
   function ensure(s) {
     const k = `${s.archive}:${s.rec}`;
     noteLook(s, k);
@@ -391,6 +399,10 @@ export function createPeerWalkers({ renderer = null, urlFor = eotbSpriteUrl, dec
       const pose = peer?.shown;
       const set = peer?.look?.eo;
       if (!pose || !Number.isInteger(set) || pose.rd || pose.wb || pose.dd || skip(peer.id)) continue;
+      // DOLL-SKIN: a peer wearing their paperdoll stands as it once it is composed here, off their look (dollSkin.js
+      // peerDoll) - until then, as they stood before (the class sprite, the flat doll)
+      const doll = set === PAPERDOLL_SKIN ? peerDoll(peer.look) : null;
+      if (set === PAPERDOLL_SKIN && !doll) continue;
       seen.add(peer.id);
       let r = walkers.get(peer.id);
       if (!r) { r = { table: null, frame: 0, clock: 0, shot: null, last: null, batch: null, batchKey: null, size: null, xml: null, mirror: false, lantern: null, pace: 0, paceFeet: null, veil: null }; walkers.set(peer.id, r); }
@@ -428,8 +440,8 @@ export function createPeerWalkers({ renderer = null, urlFor = eotbSpriteUrl, dec
       // PEERFX3: A CLASS SKIN STRUCK SHOWS ITS HURT POSE for a moment - Daggerfall's own one-frame flinch (records
       // 10-14, the table class skins read for Death, player/classSkins.js). Eye Of The Beholder's sets carry no hurt
       // table (their Death is the fall), so they flinch by the red flash alone.
-      const flinch = set >= EOTB_FOOT_SET_COUNT && hurt(peer.id);
-      const s = spriteFor(flinch ? 'Death' : r.table, view, flinch ? 0 : r.frame, { onFoot: set });
+      const flinch = set >= EOTB_FOOT_SET_COUNT && set !== PAPERDOLL_SKIN && hurt(peer.id);   // DOLL-SKIN: the doll flinches by the flash alone, as the mod's sets do
+      const s = spriteFor(flinch ? 'Death' : r.table, view, flinch ? 0 : r.frame, { onFoot: set, doll, air: pose.jp | 0 });   // DOLL-SKIN: and in the air, as the pose says (`jp`)
       if (!s) continue;
       faceDrawn(r, view, yaw, feet, eye);   // SPRITE-FACE: the way it is drawn facing, for an aura on it
       const g = grow ? grow(feet) : 1;   // OW-PEERS: grown under the Overworld, as the traveller is

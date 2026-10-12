@@ -30,6 +30,7 @@ import { classSkinOf, classRecord, classFrame, classRecordScale } from './classS
 import { toColor32, toColor32OrderInPlace } from '../formats/color32Order.js';   // EOTB-FLIP: the ONE row-order door a PNG crosses on its way to a world billboard
 import { horseLookCode, horseLookOfCode, lookSuffix, recolorHorse } from '../systems/horseCoats.js';   // COATS1: the mount's look
 import spriteInfo from '../../vendor/eye-of-the-beholder/spriteInfo.json' with { type: 'json' };
+import { PAPERDOLL_SKIN, dollSprite, isDollArchive, isDollKey, dollScale } from './dollSkin.js';   // DOLL-SKIN: the player's own paperdoll, posed
 
 const IN_BROWSER = typeof window !== 'undefined';
 const URLS = IN_BROWSER
@@ -50,7 +51,7 @@ const BY_KEY = Object.fromEntries(
 // duplicate-declaration ratchet caught the collision - ONE DFU
 // MEMBER, ONE EXPORT - and these two are genuinely different things,
 // so the answer is a distinct name rather than a shared home.
-export const eotbSpriteUrl = (key) => BY_KEY[key] ?? null;
+export const eotbSpriteUrl = (key) => (isDollKey(key) ? key : BY_KEY[key] ?? null);   // DOLL-SKIN: a doll's frame is its own key - the decode door draws it
 /** How many sprites the build actually carries - for the probes, and
  *  so "the art is wired" is a number rather than a hope. AUDIT 68
  *  S15-eotb-spritecount-hot: counted once - the table never changes, and
@@ -81,6 +82,8 @@ export const sizeMod = ({ riding = false, transformed = false, scale = 1 } = {})
  * `get_scaleOffset` has no caller in the assembly.
  */
 export function spriteOffset(archive, record) {
+  // DOLL-SKIN: a doll's frame is drawn about its centre line on its own floor, at its own scale (dollSkin.js dollScale)
+  if (isDollArchive(archive)) return { scale: dollScale(archive), x: 0, y: 0 };
   const o = spriteInfo.offsets[`${archive}_${record}-0`];
   const d = spriteInfo.default;
   const xml = o ? { scale: o.scale ?? 1, x: o.x ?? 0, y: o.y ?? 0 } : { scale: d.scale ?? 1, x: d.x ?? 0, y: d.y ?? 0 };
@@ -110,6 +113,12 @@ export function spriteSize(w, h, state, xmlScale = 1) {
  * the pixels, not the state.
  */
 export function spriteFor(table, orientation, frame, look = {}, { flip = false } = {}) {
+  // DOLL-SKIN: the paperdoll on foot - the wearer's own doll (`look.doll`, dollSkin.js) posed for the table, jumping
+  // (`look.air`) or not; until it is composed, the mod's first set stands in. The saddle and the beast keep the mod's.
+  if (look.onFoot === PAPERDOLL_SKIN && !table.endsWith('Horse') && !table.endsWith('Lycan')) {
+    if (look.doll) return dollSprite(table, orientation, frame, look.doll, { flip, air: look.air });
+    look = { ...look, onFoot: 0 };
+  }
   const st = stateFor(table, orientation);
   if (!st) return null;
   const mirror = st.mirror !== !!flip;

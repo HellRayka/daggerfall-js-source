@@ -56,7 +56,7 @@ test('SKIN2: the twenty class sheets are vendored, and the manifest counts every
 test('SKIN2: an index past the mod\'s sixteen is a class skin; the tables read the class sheet\'s groups, the bow where there is one', () => {
   assert.equal(EOTB_FOOT_SET_COUNT, 16);
   assert.equal(FOOT_SKIN_COUNT, 36);
-  assert.equal(FOOT_SKINS, FOOT_SKIN_COUNT, 'the wire\'s literal (the relay imports no skin table) is the skin count');
+  assert.equal(FOOT_SKINS, FOOT_SKIN_COUNT + 1, 'the wire\'s literal (the relay imports no skin table) is the skin count, and the paperdoll after them');   // PIN MOVED: DOLL-SKIN, the paperdoll the last set
   assert.equal(classSkinOf(15), null, 'the mod\'s own last set');
   assert.equal(classSkinOf(16), CLASS_SKINS[0]);
   assert.equal(classSkinOf(35), CLASS_SKINS[19]);
@@ -119,8 +119,8 @@ test('SKIN2: spriteFor draws a class skin through the one door - the wheel and t
 test('SKIN2: the setting offers them, the look sends them, the relay keeps them, and a peer in one is drawn in it', async () => {
   _resetModSettings();
   const foot = MOD_SETTINGS[V].keys['Graphics.OnFoot'];
-  assert.equal(foot.max, FOOT_SKIN_COUNT - 1);
-  assert.deepEqual(foot.labels.slice(EOTB_FOOT_SET_COUNT), CLASS_SKINS.map(classSkinLabel));
+  assert.equal(foot.max, FOOT_SKIN_COUNT);   // PIN MOVED: DOLL-SKIN, the paperdoll the last set
+  assert.deepEqual(foot.labels.slice(EOTB_FOOT_SET_COUNT), [...CLASS_SKINS.map(classSkinLabel), 'Your paperdoll']);
   const sorc = indexOf(skin('Sorcerer', 'female'));
   setModSetting(V, 'Graphics.OnFoot', sorc);
   assert.equal(modSetting(V, 'Graphics.OnFoot'), sorc, 'the store keeps an index past the mod\'s range');
@@ -208,7 +208,7 @@ const text = (n) => n.textContent;
 test('SKIN2: the card is two panels, closed to the skin worn - one opens at a time, and a choice wears it and closes', () => {
   _resetModSettings();
   const sets = skinSets();
-  assert.equal(sets.foot.length, FOOT_SKIN_COUNT);
+  assert.equal(sets.foot.length, FOOT_SKIN_COUNT + 1);   // PIN MOVED: DOLL-SKIN, and the paperdoll
   assert.equal(sets.foot[16].key, '1523_15-0', 'a class skin\'s picture is its own front-on idle');
   const card = skinCard(doc);
   const panels = () => find(card.root, 'skinpanel');
@@ -224,10 +224,10 @@ test('SKIN2: the card is two panels, closed to the skin worn - one opens at a ti
   heads()[0].onclick();
   assert.deepEqual(heads().map((h) => h.attrs['aria-expanded']), ['true', 'false']);
   assert.ok(panels()[0].className.includes('open') && !panels()[1].className.includes('open'));
-  assert.equal(tiles().length, FOOT_SKIN_COUNT, 'every on-foot skin');
+  assert.equal(tiles().length, FOOT_SKIN_COUNT + 1, 'every on-foot skin, and the paperdoll');   // PIN MOVED: DOLL-SKIN
   assert.deepEqual(find(card.root, 'skingroup').map(text), FOOT_GROUPS.map((g) => g.label));
   const grids = find(card.root, 'skingrid');
-  assert.deepEqual(grids.map((g) => g.children.length), [EOTB_FOOT_SET_COUNT, CLASS_SKINS.length]);
+  assert.deepEqual(grids.map((g) => g.children.length), [EOTB_FOOT_SET_COUNT, CLASS_SKINS.length, 1]);   // PIN MOVED: DOLL-SKIN, the paperdoll's own shelf
   assert.equal(grids[1].attrs['aria-label'], 'Original classes');   // PIN MOVED: BR5, the original game's classes, not its name
   assert.ok(grids.every((g) => g.parent === grids[0].parent && panelOf(heads()[0]) === grids[0].parent.parent), 'inside the panel it opened');
   // open mounted: on foot closes - one at a time

@@ -52,6 +52,8 @@ import {
 } from './eotbBillboard.js';
 import { spriteFor, eotbSpriteUrl, spriteCount, spriteSize, spriteOffset, flipRows, worldOrderColors, lookedPixels } from './eotbSprite.js';
 import { decodePng } from '../systems/textureReplacement.js';   // EOTB-FLIP: the one PNG decoder the world's other PNG billboards take
+import { PAPERDOLL_SKIN, localDoll, dollFramePixels, isDollKey, onDollRetired, isRetiredTex, isRetiredKey } from './dollSkin.js';   // DOLL-SKIN: the player's own paperdoll as the set worn
+import { createAirClock } from './motor.js';   // DOLL-SKIN: the jump the doll poses
 import { horseLookCode, horseLookOfCode, lookSuffix } from '../systems/horseCoats.js';   // COATS1: the ridden horse's look
 import { getMeleeWeaponAnimTime } from '../characters/weaponStates.js';   // [IL] GetMeleeAnimTickTime reads FormulaHelper's own
 import { setPlayerTorchOffsetOverride, setPlayerWaistLightOverride } from '../systems/playerTorch.js';   // [IL] TorchOffset writes PlayerTorch's position; HT-WAIST: and the lantern at the waist lights from where it hangs
@@ -197,6 +199,7 @@ export function bodyState(s = {}) {
  * that fails answers a rejection, as the Image's onerror did.
  */
 export async function decodeSprite(url) {
+  if (isDollKey(url)) return dollFramePixels(url);   // DOLL-SKIN: a doll's frame is drawn, not fetched
   const res = await fetch(url);
   if (!res.ok) throw new Error(`${url}: ${res.status}`);
   return worldOrderColors(await decodePng(new Uint8Array(await res.arrayBuffer())), { owned: true });   // PERF-PEERS5: the decode is this door's alone - turned in its own bytes
@@ -278,6 +281,15 @@ export function createEotbBody({ count = spriteCount, urlFor = eotbSpriteUrl, de
   let facingDrawn = null;   // SPRITE-FACE: the frame last drawn's facing, as an aura reads it - { yaw, turn } (facing(), below)
   /** The one sprite that decides whether this lane may open at all. See `ready()`. */
   let firstUp = false;
+  // DOLL-SKIN: the player's own doll while the paperdoll is the set worn ({ archive, gen }, dollSkin.js localDoll), the
+  // generation last fetched whole, and the jump (0 on the ground, 1 rising, 2 falling) its frames are posed in
+  let dollNow = null, preloadedDoll = 0, air = 0, bodyMs = 0;
+  const airClock = createAirClock();
+  // an outfit outgrown: its frames go from this body's store and the renderer (EVERY ALLOCATION HAS AN OWNER)
+  onDollRetired((archive, gen) => {
+    for (const k of [...tex.keys()]) if (isRetiredTex(k, archive, gen)) { tex.delete(k); renderer?.evictTexture?.(k.replace(':', '_')); }
+    for (const k of [...decoded.keys()]) if (isRetiredKey(k, archive, gen)) decoded.delete(k);
+  });
 
   // ── HT-WAIST: the lantern at the waist (see the head above) ───────
   const lantern = createSpriteLantern();   // HT-WAIST-BACK: its swing, its batch, its placement - player/eotbLantern.js
@@ -399,7 +411,7 @@ export function createEotbBody({ count = spriteCount, urlFor = eotbSpriteUrl, de
    *  spriteFor here asked for the werewolf, and a wereboar saw the wolf
    *  on themselves while the others (net/peerRiders.js, off the pose's
    *  `wb`) draw the boar. The look is the settings plus the live form. */
-  const lookNow = () => ({ ...cfg, lycanthropyType: last.lycanthropyType, horse: last.horseLook ?? 0 });   // COATS1: and the horse's look, off the rig's record
+  const lookNow = () => ({ ...cfg, lycanthropyType: last.lycanthropyType, horse: last.horseLook ?? 0, doll: dollNow, air });   // COATS1: and the horse's look, off the rig's record; DOLL-SKIN: and the doll and its jump
   /** PR-WW1: the form the lycan tables were last fetched for */
   let preloadedForm = null;
   /** COATS1: the look the mounted tables were last fetched in */
@@ -937,6 +949,12 @@ export function createEotbBody({ count = spriteCount, urlFor = eotbSpriteUrl, de
      */
     tick(dt, state = {}) {
       last = bodyState(state);
+      // DOLL-SKIN: the jump, off the motor's own bag; and the doll, recomposed when the gear changes - a new one fetched
+      // whole, as a set chosen is (reload's PROFILE2 law)
+      bodyMs += Math.max(0, dt || 0) * 1000;
+      air = last.riding || last.transformed || last.died ? 0 : airClock(state.motion ?? {}, bodyMs);
+      dollNow = cfg.onFoot === PAPERDOLL_SKIN ? localDoll(state.entity ?? null) : null;
+      if (renderer && dollNow && dollNow.gen !== preloadedDoll) { preloadedDoll = dollNow.gen; preload(); }
       if (renderer && last.lycanthropyType !== preloadedForm) preload(true);   // PR-WW1: a curse caught (or changed) fetches its own beast
       if (renderer && last.horseLook !== preloadedLook) preloadHorse();   // COATS1: a look chosen fetches its mounted tables whole, as a set chosen does
       stepHorseQueue();   // AUDIT COATS3D A6: a few a frame

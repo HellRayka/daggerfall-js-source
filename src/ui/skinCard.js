@@ -45,6 +45,7 @@
 import { MOD_SETTINGS, modSetting, setModSetting, storedModSetting } from '../systems/modSettings.js';
 import { spriteFor, eotbSpriteUrl } from '../player/eotbSprite.js';
 import { EOTB_FOOT_SET_COUNT } from '../player/classSkins.js';
+import { PAPERDOLL_SKIN, dollPreview } from '../player/dollSkin.js';   // DOLL-SKIN: the player's own paperdoll, the last set
 
 const VENDOR = 'eye-of-the-beholder';
 const FOOT = 'Graphics.OnFoot';
@@ -63,6 +64,9 @@ const FRONT = 0;
 export function skinSets() {
   const keys = MOD_SETTINGS[VENDOR]?.keys ?? {};
   const of = (key, table, look) => (keys[key]?.labels ?? []).map((name, index) => {
+    // DOLL-SKIN: the paperdoll's picture is the player's own doll standing front-on, once it is composed (it is, the first
+    // time the body wears it) - until then the tile says its name alone
+    if (key === FOOT && index === PAPERDOLL_SKIN) return { index, name, key: null, url: dollPreviewUrl() };
     const s = spriteFor(table, FRONT, 0, look(index));
     return { index, name, key: s?.key ?? null, url: s ? eotbSpriteUrl(s.key) : null };
   });
@@ -79,11 +83,29 @@ export function wornSkin() {
   };
 }
 
-/** SKIN2: the on-foot picker's two shelves - the mod's own sets, then Daggerfall's classes. */
+/** SKIN2: the on-foot picker's shelves - the mod's own sets, then Daggerfall's classes; DOLL-SKIN: then the player's
+ *  own paperdoll. */
 export const FOOT_GROUPS = Object.freeze([
   Object.freeze({ label: 'Eye of the Beholder', from: 0, to: EOTB_FOOT_SET_COUNT }),
-  Object.freeze({ label: 'Original classes', from: EOTB_FOOT_SET_COUNT, to: Infinity }),
+  Object.freeze({ label: 'Original classes', from: EOTB_FOOT_SET_COUNT, to: PAPERDOLL_SKIN }),
+  Object.freeze({ label: 'Your paperdoll', from: PAPERDOLL_SKIN, to: Infinity }),
 ]);
+
+/** DOLL-SKIN: the paperdoll tile's picture - the player's doll front-on as a data URL, or null (no doll yet, or no
+ *  canvas to draw it with: node, a test). Made in the browser only; nothing is kept. */
+export function dollPreviewUrl() {
+  const img = dollPreview();
+  const doc = globalThis.document;
+  if (!img || !doc?.createElement) return null;
+  try {
+    const c = doc.createElement('canvas');
+    c.width = img.width; c.height = img.height;
+    const g = c.getContext?.('2d');
+    if (!g || typeof ImageData === 'undefined') return null;
+    g.putImageData(new ImageData(new Uint8ClampedArray(img.rgba.buffer.slice(0)), img.width, img.height), 0, 0);
+    return c.toDataURL('image/png');
+  } catch { return null; }
+}
 
 /**
  * The card. `doc` the document (the pins hand a fake); the card repaints itself on every press. SKIN2: two panels,

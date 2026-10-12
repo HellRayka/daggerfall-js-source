@@ -1157,3 +1157,11 @@ DEPARTURE from the assembly, the sixth, recorded in the Ledger row.
 (the body's clip is one stroke under Mixed, alternating, by the rig's count where it names one, at five-thirds of the
 weapon's tick), `test/disc23b_eotb_sprites.test.js` (a peer's stroke by `an`); `tools/mutants/onestroke.json`.
 `tools/mutants/disc23b.json`'s clip-never-ends record re-aimed at the shot's own frames. Not verified in a browser.
+
+## DOLL-SKIN (2026-10-11): the paperdoll, a set past the classes
+
+`Graphics.OnFoot`'s last index (`player/dollSkin.js` PAPERDOLL_SKIN, 36) is the player's own paperdoll, cut into a
+puppet and drawn through this body's own tables, wheel and clip lengths - the one door (`eotbSprite.js spriteFor`)
+answers a doll's frame for it, as SKIN2's classes go through it. The body, its state machine and its clips are
+unchanged: it asks for the frame it always asked for, and the frame is drawn, not fetched. The jump the doll poses is
+the port's own (this mod has no jump table). See `06-Systems/Doll-Skin.md`.

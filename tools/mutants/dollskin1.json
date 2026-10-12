@@ -1,0 +1,322 @@
+[
+  {
+    "name": "DS-1-a-layer-unmarked",
+    "file": "src/ui/paperDoll.js",
+    "old": "    blit(out, art.nude, art.palette, { S });\n    mark(DOLL_LAYER.body);\n",
+    "new": "    blit(out, art.nude, art.palette, { S });\n",
+    "tests": [
+      "test/dollskin1.test.js"
+    ],
+    "note": "The body's pixels are left unlabelled: the rig finds no figure under the head."
+  },
+  {
+    "name": "DS-2-the-helm-as-the-face",
+    "file": "src/characters/dollPuppet.js",
+    "old": "  if (slot === EQUIP_SLOTS.Head) return DOLL_LAYER.helm;",
+    "new": "  if (slot === EQUIP_SLOTS.Head) return DOLL_LAYER.head;",
+    "tests": [
+      "test/dollskin1.test.js"
+    ],
+    "note": "A helm is recoloured as hair from behind - a steel helm turns brown on the back of the head."
+  },
+  {
+    "name": "DS-3-the-lining-not-kept-whole",
+    "file": "src/ui/paperDoll.js",
+    "old": "      if (labels) lining = out.slice();   // DOLL-SKIN: the lining whole, before the body covers it - the cloak's back, seen from behind\n",
+    "new": "",
+    "tests": [
+      "test/dollskin1.test.js"
+    ],
+    "note": "From behind the cloak is only the rim the body left: the tunic shows through the back."
+  },
+  {
+    "name": "DS-4-the-crotch-from-the-top",
+    "file": "src/characters/dollPuppet.js",
+    "old": "  } else crotchY = yTop + Hf * P.crotch;",
+    "new": "  } else crotchY = yTop + Hf * P.neck;",
+    "tests": [
+      "test/dollskin1.test.js"
+    ],
+    "note": "A robe's figure is cut at the neck's height: the legs swing from the chest."
+  },
+  {
+    "name": "DS-5-the-weapon-side-fixed",
+    "file": "src/characters/dollPuppet.js",
+    "old": "  const weaponSide = itemSum[DOLL_LAYER.right][1] ? itemSide[DOLL_LAYER.right] : -1;",
+    "new": "  const weaponSide = 1;",
+    "tests": [
+      "test/dollskin1.test.js"
+    ],
+    "note": "The stroke swings the empty hand while the sword hangs."
+  },
+  {
+    "name": "DS-6-an-arm-abducted-at-rest",
+    "file": "src/characters/dollPuppet.js",
+    "old": "const arm = (sh = 0, el = 0, ab = 0) => ({ sh, el, ab });",
+    "new": "const arm = (sh = 0, el = 0, ab = 4) => ({ sh, el, ab });",
+    "tests": [
+      "test/dollskin1.test.js"
+    ],
+    "note": "The stand from the front is no longer the doll as drawn."
+  },
+  {
+    "name": "DS-7-the-frame-off-its-centre",
+    "file": "src/characters/dollPuppet.js",
+    "old": "  const ox = rig.cx - hw, oy = rig.yBot + 1 - height;",
+    "new": "  const ox = rig.cx - hw + 3, oy = rig.yBot + 1 - height;",
+    "tests": [
+      "test/dollskin1.test.js"
+    ],
+    "note": "The figure stands three pixels off the billboard's centre - it slides as frames change width."
+  },
+  {
+    "name": "DS-8-the-back-unmirrored",
+    "file": "src/characters/dollPuppet.js",
+    "old": "    const wk = (back ? -1 : 1) * (depthK + (1 - depthK) * Math.abs(cphi));",
+    "new": "    const wk = (depthK + (1 - depthK) * Math.abs(cphi));",
+    "tests": [
+      "test/dollskin1.test.js"
+    ],
+    "note": "From behind each part is drawn as seen from the front - the sword in the wrong hand's picture."
+  },
+  {
+    "name": "DS-9-the-face-kept-from-behind",
+    "file": "src/characters/dollPuppet.js",
+    "old": "    const src = p.back && p.name === 'head' && part.back ? part.back : part.rgba;",
+    "new": "    const src = part.rgba;",
+    "tests": [
+      "test/dollskin1.test.js"
+    ],
+    "note": "The face looks back out of the back of the head."
+  },
+  {
+    "name": "DS-10-the-cloak-under-the-body-from-behind",
+    "file": "src/characters/dollPuppet.js",
+    "old": "  put('cape', segment(J.pelvis, J.neck, pts.pelvis, pts.neck, PART_DEPTH.cape), back ? 8 : -8);",
+    "new": "  put('cape', segment(J.pelvis, J.neck, pts.pelvis, pts.neck, PART_DEPTH.cape), -8);",
+    "tests": [
+      "test/dollskin1.test.js"
+    ],
+    "note": "From behind the body is drawn over its cloak."
+  },
+  {
+    "name": "DS-11-the-side-facing-right",
+    "file": "src/characters/dollPuppet.js",
+    "old": "  const project = (v) => [cx + v[0] * cphi - v[2] * sphi, cy + v[1], v[0] * sphi + v[2] * cphi];",
+    "new": "  const project = (v) => [cx + v[0] * cphi + v[2] * sphi, cy + v[1], v[0] * sphi + v[2] * cphi];",
+    "tests": [
+      "test/dollskin1.test.js"
+    ],
+    "note": "The unmirrored side views face right where the wheel draws them facing left - every turned view backwards."
+  },
+  {
+    "name": "DS-12-a-walk-frame-skipped",
+    "file": "src/characters/dollPuppet.js",
+    "old": "const walkStep = (f, n) => WALK[Math.round((f / Math.max(1, n)) * 4) % 4];",
+    "new": "const walkStep = (f, n) => WALK[Math.round((f / Math.max(1, n)) * 2) % 4];",
+    "tests": [
+      "test/dollskin1.test.js"
+    ],
+    "note": "Two of the four steps are the same picture."
+  },
+  {
+    "name": "DS-13-the-jump-not-laid-over",
+    "file": "src/characters/dollPuppet.js",
+    "old": "  if (air && table !== 'Death') {",
+    "new": "  if (air && table === 'Idle') {",
+    "tests": [
+      "test/dollskin1.test.js"
+    ],
+    "note": "A jump with a weapon ready never tucks the legs."
+  },
+  {
+    "name": "DS-14-the-fall-standing",
+    "file": "src/characters/dollPuppet.js",
+    "old": "      else { pose.leg[w] = leg(5, 10); pose.leg[o] = leg(0, 15); pose.rot = 90;",
+    "new": "      else { pose.leg[w] = leg(5, 10); pose.leg[o] = leg(0, 15); pose.rot = 0;",
+    "tests": [
+      "test/dollskin1.test.js"
+    ],
+    "note": "The dead stand upright."
+  },
+  {
+    "name": "DS-15-the-doll-ignored",
+    "file": "src/player/eotbSprite.js",
+    "old": "    if (look.doll) return dollSprite(table, orientation, frame, look.doll, { flip, air: look.air });",
+    "new": "    if (false) return dollSprite(table, orientation, frame, look.doll, { flip, air: look.air });",
+    "tests": [
+      "test/dollskin1.test.js"
+    ],
+    "note": "The paperdoll chosen draws the mod's first set for ever."
+  },
+  {
+    "name": "DS-16-the-generation-out-of-the-record",
+    "file": "src/player/dollSkin.js",
+    "old": "    rec: `${table}.${view}-${frame}${mirror ? 'm' : ''}${a ? `j${a}` : ''}g${doll.gen}`,",
+    "new": "    rec: `${table}.${view}-${frame}${mirror ? 'm' : ''}${a ? `j${a}` : ''}`,",
+    "tests": [
+      "test/dollskin1.test.js"
+    ],
+    "note": "A new outfit's frames take the old one's textures - the cache answers the old clothes."
+  },
+  {
+    "name": "DS-17-the-recipe-blind-to-the-gear",
+    "file": "src/player/dollSkin.js",
+    "old": "    items.push([slot, ...LOOK_ITEM_FIELDS.map((k) => it[k] ?? null)]);",
+    "new": "    void it;",
+    "tests": [
+      "test/dollskin1.test.js"
+    ],
+    "note": "Changing clothes never recomposes the doll."
+  },
+  {
+    "name": "DS-18-the-retire-told-at-once",
+    "file": "src/player/dollSkin.js",
+    "old": "  later(() => { for (const fn of [...listeners])",
+    "new": "  ((f) => f())(() => { for (const fn of [...listeners])",
+    "tests": [
+      "test/dollskin1.test.js"
+    ],
+    "note": "The old outfit's textures go before the new ones are up - the figure blinks out."
+  },
+  {
+    "name": "DS-19-the-rows-not-turned",
+    "file": "src/player/dollSkin.js",
+    "old": "  const { width, height, colors } = toColor32({ width: img.width, height: img.height, data: img.rgba });",
+    "new": "  const { width, height, colors } = { width: img.width, height: img.height, colors: new Uint8ClampedArray(img.rgba.buffer) };",
+    "tests": [
+      "test/dollskin1.test.js"
+    ],
+    "note": "The doll stands on its head - EOTB-FLIP's bug, a fifth time."
+  },
+  {
+    "name": "DS-20-a-slot-per-call",
+    "file": "src/player/dollSkin.js",
+    "old": "  for (const x of slots.values()) if (x.archive !== DOLL_ARCHIVE && (x.recipe === recipe || x.composing === recipe)) { s = x; break; }",
+    "new": "",
+    "tests": [
+      "test/dollskin1.test.js"
+    ],
+    "note": "Every frame asks a new compose and a new slot for the same peer."
+  },
+  {
+    "name": "DS-21-no-slot-let-go",
+    "file": "src/player/dollSkin.js",
+    "old": "      if (old.gen > 0) retire(archive, old.gen);",
+    "new": "",
+    "tests": [
+      "test/dollskin1.test.js"
+    ],
+    "note": "A peer's doll let go for another keeps its textures for ever."
+  },
+  {
+    "name": "DS-22-a-doll-key-fetched",
+    "file": "src/player/eotbBody.js",
+    "old": "  if (isDollKey(url)) return dollFramePixels(url);   // DOLL-SKIN: a doll's frame is drawn, not fetched\n",
+    "new": "",
+    "tests": [
+      "test/dollskin1.test.js"
+    ],
+    "note": "The body fetches `doll:...` as a URL and never draws a frame."
+  },
+  {
+    "name": "DS-23-the-fall-drawn-at-once",
+    "file": "src/player/motor.js",
+    "old": "    return rose || now - since >= AIR_FALL_MS ? raw : 0;",
+    "new": "    return raw;",
+    "tests": [
+      "test/dollskin1.test.js"
+    ],
+    "note": "Every step down a stair flashes the jump."
+  },
+  {
+    "name": "DS-24-a-rise-held-back",
+    "file": "src/player/motor.js",
+    "old": "    if (raw === 1) rose = true;",
+    "new": "",
+    "tests": [
+      "test/dollskin1.test.js"
+    ],
+    "note": "A jump's own fall is held back as a kerb's is - the jump lands before its fall is drawn."
+  },
+  {
+    "name": "DS-25-jp-dropped",
+    "file": "src/net/wire.js",
+    "old": "    ...(uint(jp, 2) ? { jp: uint(jp, 2) } : {}),",
+    "new": "",
+    "tests": [
+      "test/dollskin1.test.js"
+    ],
+    "note": "The relay strips the jump: nobody sees anyone else jump."
+  },
+  {
+    "name": "DS-26-jp-unbounded",
+    "file": "src/net/wire.js",
+    "old": "    ...(uint(jp, 2) ? { jp: uint(jp, 2) } : {}),",
+    "new": "    ...(jp ? { jp } : {}),",
+    "tests": [
+      "test/dollskin1.test.js"
+    ],
+    "note": "Relay data passed raw to every reader - a pose's `jp` anything a modified client says."
+  },
+  {
+    "name": "DS-27-the-change-not-news",
+    "file": "src/net/wire.js",
+    "old": "    || (a.jp | 0) !== (b.jp | 0)   // DOLL-SKIN: a jump begun, topped or landed goes out at once, as a step does\n",
+    "new": "",
+    "tests": [
+      "test/dollskin1.test.js"
+    ],
+    "note": "A jump waits for the heartbeat: the others see it land before it rises."
+  },
+  {
+    "name": "DS-28-the-entity-not-handed",
+    "file": "src/combat/weaponRig.js",
+    "old": "    entity,   // DOLL-SKIN: whose paperdoll the body wears when the paperdoll is the set (player/dollSkin.js localDoll)\n",
+    "new": "",
+    "tests": [
+      "test/dollskin1.test.js"
+    ],
+    "note": "The body never composes the player's doll - the mod's first set stands in for ever."
+  },
+  {
+    "name": "DS-29-the-jump-not-in-the-look",
+    "file": "src/player/eotbBody.js",
+    "old": "  const lookNow = () => ({ ...cfg, lycanthropyType: last.lycanthropyType, horse: last.horseLook ?? 0, doll: dollNow, air });",
+    "new": "  const lookNow = () => ({ ...cfg, lycanthropyType: last.lycanthropyType, horse: last.horseLook ?? 0, doll: dollNow, air: 0 });",
+    "tests": [
+      "test/dollskin1.test.js"
+    ],
+    "note": "The player's own doll never jumps."
+  },
+  {
+    "name": "DS-30-a-peer-drawn-as-the-mods-set",
+    "file": "src/net/peerRiders.js",
+    "old": "      const s = spriteFor(flinch ? 'Death' : r.table, view, flinch ? 0 : r.frame, { onFoot: set, doll, air: pose.jp | 0 });",
+    "new": "      const s = spriteFor(flinch ? 'Death' : r.table, view, flinch ? 0 : r.frame, { onFoot: set, air: pose.jp | 0 });",
+    "tests": [
+      "test/dollskin1.test.js"
+    ],
+    "note": "A peer in their paperdoll is drawn as the mod's first set."
+  },
+  {
+    "name": "DS-31-the-poses-jump-ignored",
+    "file": "src/net/peerRiders.js",
+    "old": "{ onFoot: set, doll, air: pose.jp | 0 });",
+    "new": "{ onFoot: set, doll, air: 0 });",
+    "tests": [
+      "test/dollskin1.test.js"
+    ],
+    "note": "Others in their paperdoll never jump."
+  },
+  {
+    "name": "DS-32-a-flinch-as-the-dolls-fall",
+    "file": "src/net/peerRiders.js",
+    "old": "      const flinch = set >= EOTB_FOOT_SET_COUNT && set !== PAPERDOLL_SKIN && hurt(peer.id);",
+    "new": "      const flinch = set >= EOTB_FOOT_SET_COUNT && hurt(peer.id);",
+    "tests": [
+      "test/dollskin1.test.js"
+    ],
+    "note": "A struck peer in their paperdoll drops into the fall's first frame for every blow."
+  }
+]

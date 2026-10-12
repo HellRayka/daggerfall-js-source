@@ -102,8 +102,8 @@
   {
     "name": "PRWW1-local-body-on-the-settings-alone",
     "file": "src/player/eotbBody.js",
-    "old": "  const lookNow = () => ({ ...cfg, lycanthropyType: last.lycanthropyType, horse: last.horseLook ?? 0 });",
-    "new": "  const lookNow = () => ({ ...cfg, horse: last.horseLook ?? 0 });",
+    "old": "  const lookNow = () => ({ ...cfg, lycanthropyType: last.lycanthropyType, horse: last.horseLook ?? 0, doll: dollNow, air });",
+    "new": "  const lookNow = () => ({ ...cfg, horse: last.horseLook ?? 0, doll: dollNow, air });",
     "tests": [
       "test/prww1_werewolf.test.js"
     ]

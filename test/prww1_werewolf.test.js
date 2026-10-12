@@ -249,7 +249,7 @@ test('PR-WW1 the local body: the lycan sprite is the LIVE form\'s - a wereboar s
     // fetched on the first tick that names it - a walk it has not drawn yet included - not a sprite at a time
     assert.ok(r.uploads.includes(`${archive}:${STATE_TABLES.MoveLycan.base + 2}-3`), `form ${form}: the preload re-run for its own archive`);
   }
-  assert.match(rd('src/player/eotbBody.js'), /const lookNow = \(\) => \(\{ \.\.\.cfg, lycanthropyType: last\.lycanthropyType, horse: last\.horseLook \?\? 0 \}\);/);
+  assert.match(rd('src/player/eotbBody.js'), /const lookNow = \(\) => \(\{ \.\.\.cfg, lycanthropyType: last\.lycanthropyType, horse: last\.horseLook \?\? 0, doll: dollNow, air \}\);/);   // PIN MOVED: DOLL-SKIN, the look carries the paperdoll's doll and its jump too
   assert.doesNotMatch(rd('src/player/eotbBody.js'), /spriteFor\([^)]*, cfg[,)]/, 'no spriteFor on the settings alone');
 });
 

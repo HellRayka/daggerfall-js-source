@@ -959,12 +959,14 @@ export const MOD_SETTINGS = Object.freeze({
       // the fighters by their helms and boots (green-booted women, cyan-booted men - the on-foot sets' own colours).
       // SKIN2 (2026-09-25, Mac: "Implement these as new skin options"): Daggerfall's own classes follow the mod's
       // sixteen as 16 onwards (player/classSkins.js) - the mod's range kept as its own, the port's past it.
-      'Graphics.OnFoot': Object.freeze({ default: 0, min: 0, max: FOOT_SKIN_COUNT - 1, description: 'Sprite when on foot',
+      // DOLL-SKIN (2026-10-11): and the player's own paperdoll last, posed (player/dollSkin.js PAPERDOLL_SKIN - the set
+      // after every one the build carries, FOOT_SKIN_COUNT: a literal here, since this store is every module's leaf)
+      'Graphics.OnFoot': Object.freeze({ default: 0, min: 0, max: FOOT_SKIN_COUNT, description: 'Sprite when on foot',
         labels: Object.freeze(['Light Fighter (female)', 'Light Fighter (male)', 'Medium Fighter (female)', 'Medium Fighter (male)',
           'Heavy Fighter (female)', 'Heavy Fighter (male)', 'Mage (female)', 'Mage (male)',
           'Thief Mage (female)', 'Thief Mage (male)', 'Fighter Mage (female)', 'Fighter Mage (male)',
           'Thief (female)', 'Thief (male)', 'Fighter Thief (female)', 'Fighter Thief (male)',
-          ...CLASS_SKINS.map(classSkinLabel)]) }),
+          ...CLASS_SKINS.map(classSkinLabel), 'Your paperdoll']) }),
       'Graphics.OnHorse': Object.freeze({ default: 0, min: 0, max: 4, description: 'Sprite when riding a horse',
         labels: Object.freeze(['Light Fighter (female)', 'Medium Fighter (male)', 'Medium Fighter (female)', 'Heavy Fighter (male)', 'Heavy Fighter (female)']) }),
       'Graphics.ReadyStance': Object.freeze({ default: 2, options: Object.freeze(['Never', 'When Idle', 'When Idle or Moving']), description: 'Whether the sprite will change states when readying a weapon or spell' }),

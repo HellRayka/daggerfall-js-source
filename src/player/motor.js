@@ -101,7 +101,42 @@ export function motionBagOf(player) {
     // AUDIT PRE-MERGE 0929 D1/D2: and the yaw the motor moved by (its own, beside forward and strafe; NaN before a
     // step) - the collision-trigger pass turns forward/strafe into the direction the body presses (actionContact)
     yaw: Number.isFinite(player.moveYaw) ? player.moveYaw : NaN,
+    // DOLL-SKIN: the body's vertical speed (m/s, up positive) - a jump rising or a fall, for the doll's jump (airClock)
+    velY: Number.isFinite(player.velY) ? player.velY : 0,
   };
+}
+
+/** DOLL-SKIN (2026-10-11): THE JUMP, as a sprite draws it - 0 on the ground (or swimming, levitating, riding, on a wall),
+ *  1 rising, 2 falling, off one motion bag (motionBagOf). The port's own: Eye Of The Beholder has no jump table, and the
+ *  paperdoll skin (characters/dollPuppet.js posePuppet) poses one. A rise is drawn at once (a jump leaves the ground
+ *  rising), and so is the fall that follows it; a fall that began on its own only once it has lasted AIR_FALL_MS, so a
+ *  step down off a kerb or a stair is never a jump. */
+export const AIR_RISE = 0.5;
+export const AIR_FALL_MS = 150;
+export function airOf(bag = {}) {
+  if (bag.grounded !== false || bag.swimming || bag.levitating || bag.riding || bag.climbing) return 0;
+  return (bag.velY || 0) > AIR_RISE ? 1 : 2;
+}
+/** One body's jump over time: `step(bag, nowMs)` -> 0, 1 or 2 (airOf, the fall held back AIR_FALL_MS). */
+export function createAirClock() {
+  let since = null, rose = false;
+  return (bag, now) => {
+    const raw = airOf(bag);
+    if (!raw) { since = null; rose = false; return 0; }
+    if (since === null) since = now;
+    if (raw === 1) rose = true;
+    return rose || now - since >= AIR_FALL_MS ? raw : 0;
+  };
+}
+const _airClocks = new WeakMap();
+/** DOLL-SKIN: THE JUMP ON THE WIRE - `jp` 1 rising, 2 falling, so the others' paperdoll sprites jump as the jumper's own
+ *  does (net/wire.js validPose). Empty on the ground: the wire omits it, and a pose on the ground keeps its bytes. */
+export function airPoseOf(player, now) {
+  if (!player) return {};
+  let clockOf = _airClocks.get(player);
+  if (!clockOf) { clockOf = createAirClock(); _airClocks.set(player, clockOf); }
+  const jp = clockOf(motionBagOf(player), now);
+  return jp ? { jp } : {};
 }
 /** CLIMB5 (the Enhanced Climbing arc - bible/03-World/Parkour-Arc.md): THE CLIMB ON THE WIRE - `cl` 1 hanging from a
  *  lip, 2 climbing a face (the classic climb too), 3 a move in flight (a mantle, a vault, a lower, a leap, a corner);

@@ -667,6 +667,7 @@ export function createWeaponRig({ renderer, canvas, fetchBytes, palette, audio, 
     animCtx: playerWeapon.animCtx(),
     concealment: entity ? concealmentFlags(entity) : null,
     hipLantern: !!entity && lanternAtWaist(entity.lightSource),   // HT-WAIST: the lit lantern hangs at the sprite's hip, and swings as it walks
+    entity,   // DOLL-SKIN: whose paperdoll the body wears when the paperdoll is the set (player/dollSkin.js localDoll)
   });
   const bindBody = () => eotbBody.attach(renderer, eotbState);
   bindBody();
