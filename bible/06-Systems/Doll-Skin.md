@@ -177,7 +177,7 @@ drawn only once it has lasted `AIR_FALL_MS` (150 ms), so stepping off a kerb or 
 looked at every `DOLL_RECIPE_MS`, 500 ms, by the look's own item fields (`LOOK_ITEM_FIELDS`). The last doll stands
 while the next composes. A generation outgrown is told to every art store `DOLL_RETIRE_MS` (3 s) later, and they let
 its textures go (EVERY ALLOCATION HAS AN OWNER). A doll that could not be composed (no art yet) is asked again after
-`DOLL_RETRY_MS`.
+`DOLL_SKIN_RETRY_MS`.
 
 **The sprite door** (`eotbSprite.js spriteFor`):
 - A paperdoll look with its doll (`look.doll`) answers the doll's archive and the wheel's record and mirror.

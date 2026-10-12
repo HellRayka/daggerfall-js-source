@@ -41,7 +41,7 @@ export const DOLL_RETIRE_MS = 3000;
 /** How often the player's gear is looked at for a change (ms). */
 export const DOLL_RECIPE_MS = 500;
 /** A doll that could not be composed (no ARENA2 art yet, a record missing) is asked again after this (ms). */
-export const DOLL_RETRY_MS = 5000;
+export const DOLL_SKIN_RETRY_MS = 5000;
 
 const KEY_PREFIX = 'doll:';
 export const isDollArchive = (a) => Number.isInteger(a) && a >= DOLL_ARCHIVE && a <= DOLL_ARCHIVE + DOLL_PEER_SLOTS;
@@ -127,7 +127,7 @@ export function localDoll(entity) {
     s.checked = now;
     const recipe = dollRecipe(entity);
     // settled: this outfit is the one drawn, or it failed a moment ago (no art yet) and is not asked again until later
-    const settled = recipe === s.recipe && (s.rig ? !s.failedAt : now - s.failedAt <= DOLL_RETRY_MS);
+    const settled = recipe === s.recipe && (s.rig ? !s.failedAt : now - s.failedAt <= DOLL_SKIN_RETRY_MS);
     if (!settled && recipe !== s.composing) compose(s, entity, recipe);
   }
   return handle(s);
@@ -153,7 +153,7 @@ export function peerDoll(look) {
     } else s = { archive, gen: 0, rig: null, scale: 1, recipe: null, composing: null, used: 0, failedAt: 0 };
     slots.set(archive, s);
     compose(s, peerEntity(look), recipe);
-  } else if (s.failedAt && !s.rig && clock() - s.failedAt > DOLL_RETRY_MS && !s.composing) compose(s, peerEntity(look), recipe);
+  } else if (s.failedAt && !s.rig && clock() - s.failedAt > DOLL_SKIN_RETRY_MS && !s.composing) compose(s, peerEntity(look), recipe);
   s.used = clock();
   return handle(s);
 }
