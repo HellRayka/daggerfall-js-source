@@ -566,10 +566,52 @@ Imperial City is the first; Solitude (its arch over the water, the Blue Palace, 
   stands the Imperial City - 8 x 8 blocks, 45 named buildings (the Mages Guild, the Fighters Guild and a temple among
   them), its port blocks resolving at their indices (TESALAKE 900200, TESAWGT0 900202); 7170 water tiles in its tilemap
   (the lake ring's 28 blocks). Not yet seen rendered in the game; the landmarks render in a stand-in view.
-- **Known fault**: Daggerfall's block rows run from the SOUTH (DFU lays a location's blocks at Unity +z, north, by the
-  row; the port keeps +z north), and the plan's rows are written north to south - so the city stands mirrored north to
-  south of its plan's names, and its +z gate and bridge face north. The next change flips the plan's rows into the grid
-  and mirrors the landmarks to match.
+- **Fixed in TESA10b**: Daggerfall's block rows run from the SOUTH (DFU lays a location's block row y at Unity +z,
+  north; the port keeps +z north) and the plan's rows are written north to south, so the city first stood mirrored north
+  to south of its plan's names; TESA10b lays the plan's rows into the grid from its last and turns the landmarks north.
+
+
+## TESA10b - Solitude, and the capitals' pixel law (2026-10-13)
+
+The owner: "skyrims solitude". The second capital, and the laws the next ones need.
+
+- **The pixel law** (capitalPixel): a capital stands on the nearest pixel to its picture point's centre - ring by ring out
+  to CAPITAL_REACH (320), in each ring the nearest centre - whose centre is its OWN province's land past the Bay
+  (`world/tamrielLand.js` provinceKeyBeyondBay: the trace's, or the authored shape's where none is set), and, for a
+  capital on the shore (`shore`), one of whose eight is the sea (the Bay is no sea); none where none is in reach.
+  TAMRIEL1's points are drawn from memory of the lore map and the trace is the player's own picture: Solitude's point
+  is at sea (the shore three picture rows south), Torval's on Valenwood's land. The Imperial City's own point is
+  Imperial land: it stands where TESA10 stood it. Kept a fit and a land (`tamrielLandVersion`), and the host sweeps when
+  either moves. On the freeware with its trace: Solitude (1565, -434), the sea to its north and west.
+- **A plan reads as a map** (capitalBlockNames): its first row the north; the grid's row y is the plan's row
+  (height - 1 - y). The landmarks are drawn as the map reads (+z south) and turned into the world's frame where they
+  are installed (`world/capitalModels.js` northward: every z and normal's z negated, every face's winding turned back).
+- **A capital's own blocks** (`blocks`, by the plan's cell; capitalPortBlocks): the port's own blocks whose ground,
+  trees and closed cells are laws of the metres from the capital's ANCHOR (a column and a row of the plan's lines; x
+  east, z south - anchorMetres), the first of them whose square has the anchor on it (capitalCarrier) carrying its
+  models there. The lake and the garden stay every capital's; the Imperial City's grounds are its own blocks now, their
+  indices unmoved (900202-900205), Solitude's after them (900206-900214).
+- **Solitude** (SOLITUDE_PLAN, SOLITUDE): the Sea of Ghosts along the grid's north row and the Karth down its west two
+  columns; the city walled on the land between them, fields south of its wall. In the river's mouth a sea stack
+  (30 m) with the Blue Palace on it - its long hall under a gable of blue slate, the wing across its east end with its
+  door, a square tower with a blue spire and a gilt finial, round turrets at its corners; the great arch from the stack
+  to a terrace inside the city's west wall, its deck falling from the stack's top to the terrace's (14 m), its opening
+  over the river (14 m at its crown), rough rock flaring to its foot, a parapet either side, and the terrace's ramp down
+  to the street. The walls dark stone with square towers - the north gate down to the docks, the main gate south, the
+  west side open where the arch meets it. Castle Dour in the east: a square curtain with corner towers and its gate to
+  the city, the keep under a slate gable, the Emperor's Tower (46 m) in its yard. The docks on the quay below the north
+  wall: its kerb, two timber piers out over the sea, the trading company's warehouse. Twenty of Daggerfall's city
+  blocks in its districts: the Avenues (the shops, the Winking Skeever's tavern), the Bards College (a library), the
+  Castle Dour District (the temple beside the castle), the Hall of the Dead (a graveyard), the Well District (houses,
+  the guilds, the bank). The walkers' navgrid closed under the terrace and its ramp, the north and east walls, the
+  warehouse, the curtain (its gate open), its towers, its keep and the Emperor's Tower. Its pictures the port's own
+  again (rock, blue slate, timber, dark stone). No game data; never another game's level design or mesh.
+- **Measured** (the freeware, its trace, the fit (38, 57) x15.5, node and a stand-in view): Solitude's port blocks
+  resolve; its landmarks draw in the stand-in view as laid. Not yet seen in the game.
+- **Arena's coastal place pinned beside the sea stays a port** (standArenaPixels: A.EXE's list, and the sea among the
+  pinned pixel's eight): Solitude's place is a port on its docks. The capital's own harbour byte stays 0 - its ships
+  are not yet.
+- **Not yet**: Mournhold, Alinor, Falinesti, Torval and Helstrom.
 
 ## The arc - what comes next
 

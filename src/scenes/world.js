@@ -292,7 +292,7 @@ import { capitalOnPixel, capitalBase, cityBlockNames, synthesizeCapitalLocation 
 import { tamrielFit } from '../world/tamrielFrame.js';   // TESA10: the fit the capitals stand by - its move sweeps them
 import { lairTemplates, lairPools, lairPick, lairCellOf, lairSite, lairLayout, lairName, lairNameSeed, synthesizeLairLocation, lairPlaceId, LAIR_TYPES } from '../world/tamrielDungeons.js';   // TESA8: the lairs past the Bay
 import { arenaPathsAt } from '../world/arenaRoads.js';   // TESA7: no country place on an Arena road
-import { provinceKeyBeyondBay } from '../world/tamrielLand.js';   // TESA3: the province a pixel past the Bay stands on
+import { provinceKeyBeyondBay, tamrielLandVersion } from '../world/tamrielLand.js';   // TESA3: the province a pixel past the Bay stands on
 import { provinceByKey } from '../world/tamrielGeography.js';   // TESA3: its name and race
 import { provinceNameBank } from '../world/tamrielPeople.js';   // TESA3: its people's names
 import { groundWoods, groundClimateIndex } from '../world/tamrielGround.js';   // TAMRIEL2: the continent's ground round the Bay, for the kernels and the far ring
@@ -1576,14 +1576,15 @@ export async function bootWorld(canvas, renderer, params, status) {
     queue.push(...again.sort(nearestFirstFrom(state.current)));
     console.log(`[arena] ${again.length} pixel(s) beyond the Bay built again for Arena's places`);
   }
-  /** TESA10: THE CAPITALS' SWEEP (sweepArenaPixels' shape) - on the frame, when the fit moves (the trace landing after a
-   *  pixel built: a capital's pixel is the fit's), every built pixel past the Bay where a capital stands now and none
-   *  stood as it built, or the reverse, is built again. */
-  let _capitalSwept = null;
+  /** TESA10: THE CAPITALS' SWEEP (sweepArenaPixels' shape) - on the frame, when the fit or the land moves (the trace
+   *  landing after a pixel built: a capital's pixel is the fit's and its province's land's), every built pixel past the
+   *  Bay where a capital stands now and none stood as it built, or the reverse, is built again. */
+  let _capitalSwept = null, _capitalSweptLand = -1;
   function sweepCapitalPixels() {
-    const fit = tamrielFit();
-    if (fit === _capitalSwept) return;
+    const fit = tamrielFit(), land = tamrielLandVersion();
+    if (fit === _capitalSwept && land === _capitalSweptLand) return;
     _capitalSwept = fit;
+    _capitalSweptLand = land;
     const again = [];
     for (const [, p] of built) {
       if (onTheBay(p.px, p.py)) continue;
@@ -34545,7 +34546,7 @@ const _pixelOrder = [];   // NEAR-FIRST: the frame's pixel walk, nearest first -
     if (_sdLate.size && !building) sweepSdLate();   // SD2b: the Hollow's pixel, the same way
     if (_arenaTemplates) handArenaRoads();   // TESA4: their roads to the terrain worker, as the places that stand move
     if (_arenaTemplates && !building) sweepArenaPixels();   // TESA2: Arena's places landed or changed - their pixels, the same way
-    if (_capitalBase && !building) sweepCapitalPixels();   // TESA10: the fit moved - the capitals' pixels, the same way
+    if (_capitalBase && !building) sweepCapitalPixels();   // TESA10: the fit or the land moved - the capitals' pixels, the same way
     if (_arenaRoadsStale.size && !building) sweepArenaRoads();   // TESA4: and their roads
     if (seasonsActive) seasons.tick();   // SIB1: RefreshSeasonAfterLoad's second half, the frame after a load
     refreshHomeLooks();   // HOME-LOOK: a look landed or changed repaints the home where it stands

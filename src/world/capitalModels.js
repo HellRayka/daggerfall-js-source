@@ -14,75 +14,11 @@ import { MeshBuilder } from './detStandIns.js';
 import { registerPortBlock, installWorldDataReplacement } from '../formats/worldDataReplacement.js';
 import { addVendorTextures } from '../systems/textureReplacement.js';
 import { CAPITAL_MODELS, capitalPortBlocks, BLOCK_M } from './tamrielCapitals.js';
+import { CAPITAL_ARCHIVE, CAPITAL_ART, art, taper, ring, ledge, wallRun, merlons, roundTower } from './capitalShapes.js';
+import { buildSolitudeArch, buildBluePalace, buildSolitudeWall, buildCastleDour, buildSolitudeDocks } from './capitalSolitude.js';
 
-/** The pictures' pseudo-archive, past every classic one and the port's other art (LeFay's 38211, the galleon's 38131). */
-export const CAPITAL_ARCHIVE = 38400;
-export const CAPITAL_ART = Object.freeze({ marble: 0, gold: 1, wallStone: 2, roof: 3, bridgeStone: 4, dark: 5 });
-const T = (record) => [CAPITAL_ARCHIVE, record];
-const MARBLE = T(CAPITAL_ART.marble), GOLD = T(CAPITAL_ART.gold), STONE = T(CAPITAL_ART.wallStone), ROOF = T(CAPITAL_ART.roof), BRIDGE = T(CAPITAL_ART.bridgeStone), DARK = T(CAPITAL_ART.dark);
-
-// ---------------------------------------------------------------- shapes
-
-/** An n-gon's corner at angle index i, radius r, height y (the first corner at angle `phase`). */
-const corner = (n, i, r, y, phase = 0) => { const a = phase + (i / n) * Math.PI * 2; return [Math.cos(a) * r, y, Math.sin(a) * r]; };
-/** A taper: a frustum of n sides from (r0, y0) to (r1, y1), its sides only; `vRepeat` metres a picture. */
-export function taper(mb, tex, n, r0, y0, r1, y1, { phase = 0, vRepeat = 8, uRepeat = 1 } = {}) {
-  for (let i = 0; i < n; i++) {
-    const a = corner(n, i, r0, y0, phase), b = corner(n, i + 1, r0, y0, phase), c = corner(n, i + 1, r1, y1, phase), d = corner(n, i, r1, y1, phase);
-    const am = phase + ((i + 0.5) / n) * Math.PI * 2, slope = (r0 - r1) / Math.max(1e-6, y1 - y0);
-    const nl = Math.hypot(1, slope), nrm = [Math.cos(am) / nl, slope / nl, Math.sin(am) / nl];
-    const v = -(y1 - y0) / vRepeat;
-    mb.quad(tex, a, b, c, d, nrm, [[0, 0], [uRepeat, 0], [uRepeat, v], [0, v]]);
-  }
-}
-/** A flat n-gon cap at height y, radius r, facing `up` (1) or down (-1). */
-export function cap(mb, tex, n, r, y, up = 1, phase = 0) {
-  for (let i = 0; i < n; i++) {
-    const a = corner(n, i, r, y, phase), b = corner(n, i + 1, r, y, phase);
-    mb.tri(tex, [0, y, 0], a, b, [0, up, 0], [0.5, -0.5], [0.5 + a[0] / (2 * r), -0.5 - a[2] / (2 * r)], [0.5 + b[0] / (2 * r), -0.5 - b[2] / (2 * r)]);
-  }
-}
-/** An annulus at height y between radii rIn and rOut (a ledge's top). */
-export function ring(mb, tex, n, rIn, rOut, y, phase = 0) {
-  for (let i = 0; i < n; i++) mb.quad(tex, corner(n, i, rIn, y, phase), corner(n, i + 1, rIn, y, phase), corner(n, i + 1, rOut, y, phase), corner(n, i, rOut, y, phase), [0, 1, 0]);
-}
-/** A ledge: a short n-gon band between y0 and y1 at radius r, its top a ledge back to rIn. */
-export function ledge(mb, tex, n, r, rIn, y0, y1, phase = 0) {
-  taper(mb, tex, n, r, y0, r, y1, { phase, vRepeat: Math.max(0.5, y1 - y0) });
-  ring(mb, tex, n, rIn, r, y1, phase);
-  ring(mb, tex, n, rIn, r, y0, phase);
-}
-/** A straight wall from p to q on the ground (xz), `thick` across and `h` high, its foot sunk `sink` - its two long faces,
- *  its top and its two ends. */
-export function wallRun(mb, tex, p, q, thick, h, sink = 3, vRepeat = 6) {
-  const dx = q[0] - p[0], dz = q[1] - p[1], len = Math.hypot(dx, dz);
-  if (len < 1e-3) return;
-  const ux = dx / len, uz = dz / len, nx = -uz, nz = ux, t = thick / 2;
-  const P = (s, side, y) => [p[0] + ux * s + nx * t * side, y, p[1] + uz * s + nz * t * side];
-  const u = len / vRepeat, v = -(h + sink) / vRepeat;
-  for (const side of [1, -1]) mb.quad(tex, P(0, side, -sink), P(len, side, -sink), P(len, side, h), P(0, side, h), [nx * side, 0, nz * side], [[0, 0], [u, 0], [u, v], [0, v]]);
-  mb.quad(tex, P(0, 1, h), P(len, 1, h), P(len, -1, h), P(0, -1, h), [0, 1, 0], [[0, 0], [u, 0], [u, -thick / vRepeat], [0, -thick / vRepeat]]);
-  for (const [s, sign] of [[0, -1], [len, 1]]) mb.quad(tex, P(s, 1, -sink), P(s, -1, -sink), P(s, -1, h), P(s, 1, h), [ux * sign, 0, uz * sign], [[0, 0], [thick / vRepeat, 0], [thick / vRepeat, v], [0, v]]);
-}
-/** The merlons along a run: blocks `w` wide every `pitch` on its outer edge (the side the normal points). */
-export function merlons(mb, tex, p, q, thick, h, w = 1.6, pitch = 3.6, mh = 1.6) {
-  const dx = q[0] - p[0], dz = q[1] - p[1], len = Math.hypot(dx, dz);
-  if (len < pitch) return;
-  const ux = dx / len, uz = dz / len, nx = -uz, nz = ux;
-  for (let s = pitch / 2; s + w / 2 < len; s += pitch) {
-    const cx = p[0] + ux * s + nx * (thick / 2 - 0.4), cz = p[1] + uz * s + nz * (thick / 2 - 0.4);
-    mb.box(tex, [cx, h + mh / 2, cz], [Math.abs(ux) * w + Math.abs(nx) * 0.8 + 0.01, mh, Math.abs(uz) * w + Math.abs(nz) * 0.8 + 0.01], 0.4);
-  }
-}
-/** A round tower at (x, z): its drum, its crenel band, its conical roof. */
-export function roundTower(mb, x, z, r, h, { roofH = r * 1.4, sides = 16 } = {}) {
-  const at = (fn) => { const before = new Map([...mb.groups].map(([k, g]) => [k, g.positions.length])); fn(); for (const [k, g] of mb.groups) { const from = before.get(k) ?? 0; for (let i = from; i < g.positions.length; i += 3) { g.positions[i] += x; g.positions[i + 2] += z; } } };
-  at(() => {
-    taper(mb, STONE, sides, r, -3, r, h, { vRepeat: 6, uRepeat: 2 });
-    ledge(mb, STONE, sides, r + 0.6, r - 0.2, h, h + 1.8);
-    taper(mb, ROOF, sides, r + 0.4, h + 1.8, 0.01, h + 1.8 + roofH, { vRepeat: 4, uRepeat: 2 });
-  });
-}
+export { CAPITAL_ARCHIVE, CAPITAL_ART };
+const MARBLE = art(CAPITAL_ART.marble), GOLD = art(CAPITAL_ART.gold), STONE = art(CAPITAL_ART.wallStone), BRIDGE = art(CAPITAL_ART.bridgeStone), DARK = art(CAPITAL_ART.dark);
 
 // ---------------------------------------------------------------- the White-Gold Tower
 
@@ -149,7 +85,7 @@ export function imperialWallCorners(W = IMPERIAL_WALL) {
 export function buildImperialWall(W = IMPERIAL_WALL) {
   const mb = new MeshBuilder(), C = imperialWallCorners(W), g = W.gate / 2;
   const runs = [];
-  for (let i = 0; i < C.length; i++) runs.push([C[i], C[(i + 1) % C.length]]);
+  for (let i = 0; i < C.length; i++) runs.push([C[(i + 1) % C.length], C[i]]);   // each run against the corners' turn: its merlons outward
   for (const [p, q] of runs) {
     const gateOn = p[0] === W.apothem && q[0] === W.apothem ? 'x' : p[1] === W.apothem && q[1] === W.apothem ? 'z' : null;
     if (!gateOn) { wallRun(mb, STONE, p, q, W.thick, W.h); merlons(mb, STONE, p, q, W.thick, W.h); continue; }
@@ -275,7 +211,25 @@ export function capitalArt() {
   out.set(CAPITAL_ART.roof, picture((x, y) => (y % 6 === 0 ? [44, 50, 58] : mix([62, 72, 84], [92, 102, 112], slate(x, y) + ((x + (Math.floor(y / 6) % 2) * 4) % 8 === 0 ? -0.4 : 0)))));
   out.set(CAPITAL_ART.bridgeStone, ashlar(0x3b22, [150, 142, 128], [84, 78, 70], 16, 32, 0.4));
   out.set(CAPITAL_ART.dark, picture(() => [22, 20, 18]));
+  const crag = noise(0x7a01, 5), fine = noise(0x7a02, 16), seam = noise(0x7a03, 4);
+  out.set(CAPITAL_ART.rock, picture((x, y) => (Math.abs(seam(x, y) - 0.5) < 0.025 ? [70, 66, 60] : mix([112, 106, 96], [168, 160, 146], crag(x, y) * 0.7 + fine(x, y) * 0.3))));
+  const blue = noise(0x7b01, 8);
+  out.set(CAPITAL_ART.blueSlate, picture((x, y) => (y % 6 === 0 ? [30, 44, 70] : mix([44, 72, 118], [84, 116, 162], blue(x, y) + ((x + (Math.floor(y / 6) % 2) * 4) % 8 === 0 ? -0.45 : 0)))));
+  const grain = noise(0x7c01, 12);
+  out.set(CAPITAL_ART.timber, picture((x, y) => (y % 8 === 0 ? [52, 36, 24] : mix([90, 62, 38], [136, 98, 62], grain(x * 0.25, y * 2) * 0.8 + ((x + Math.floor(y / 8) * 23) % 32 === 0 ? -0.5 : 0)))));
+  out.set(CAPITAL_ART.nordStone, ashlar(0x3c33, [118, 118, 114], [58, 58, 56], 10, 20, 0.45));
   return out;
+}
+
+/**
+ * A model drawn as a map reads (+z south) turned into the world's frame (+z north - DFU's, Unity's, the block rows'):
+ * every z and every normal's z negated, every triangle's winding turned back to face along its normal.
+ */
+export function northward(m) {
+  const positions = m.positions.slice(), normals = m.normals.slice(), indices = m.indices.slice();
+  for (let i = 2; i < positions.length; i += 3) { positions[i] = -positions[i]; normals[i] = -normals[i]; }
+  for (let t = 0; t < indices.length; t += 3) { const b = indices[t + 1]; indices[t + 1] = indices[t + 2]; indices[t + 2] = b; }
+  return { ...m, positions, normals, indices };
 }
 
 let _installed = false;
@@ -293,11 +247,16 @@ export function installCapitals({ addTextures = addVendorTextures } = {}) {
     [CAPITAL_MODELS.imperialWall]: () => buildImperialWall(),
     [CAPITAL_MODELS.imperialInnerWall]: () => buildImperialInnerWall(),
     [CAPITAL_MODELS.imperialBridges]: () => buildImperialBridges(),
+    [CAPITAL_MODELS.solitudeArch]: () => buildSolitudeArch(),
+    [CAPITAL_MODELS.bluePalace]: () => buildBluePalace(),
+    [CAPITAL_MODELS.solitudeWall]: () => buildSolitudeWall(),
+    [CAPITAL_MODELS.castleDour]: () => buildCastleDour(),
+    [CAPITAL_MODELS.solitudeDocks]: () => buildSolitudeDocks(),
   };
-  for (const [id, build] of Object.entries(builds)) registerCustomModel(Number(id), build, () => true, { climateFree: true });
+  for (const [id, build] of Object.entries(builds)) registerCustomModel(Number(id), () => northward(build()), () => true, { climateFree: true });
   let made = null;
-  const art = (record) => (made ??= capitalArt()).get(record) ?? null;
-  addTextures(Object.values(CAPITAL_ART).map((record) => ({ archive: CAPITAL_ARCHIVE, record, frame: 0, standIn: true, fileName: `capital-${CAPITAL_ARCHIVE}_${record}`, build: async () => art(record) })));
+  const pictureOf = (record) => (made ??= capitalArt()).get(record) ?? null;
+  addTextures(Object.values(CAPITAL_ART).map((record) => ({ archive: CAPITAL_ARCHIVE, record, frame: 0, standIn: true, fileName: `capital-${CAPITAL_ARCHIVE}_${record}`, build: async () => pictureOf(record) })));
   return true;
 }
 /** Test seam. */

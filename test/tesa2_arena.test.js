@@ -95,7 +95,8 @@ test('TESA2 the installed pixels: made once a trace and a fit, made again when e
   setTamrielFit(FIT);
   setTamrielTrace(rectTrace([[3, 110, 20, 210, 50]]));
   assert.equal(arenaPixels(), null);
-  setArenaCityData(parseArenaCityData(mintCityData([null, null, { name: 'Skyrim', rect: { x: 112, y: 22, w: 94, h: 53 }, places: { 0: { name: 'Solitude', x: 112, y: 8 } } }])));
+  // a city of no capital's name (TESA10b: Solitude's place stands on the capital the port built)
+  setArenaCityData(parseArenaCityData(mintCityData([null, null, { name: 'Skyrim', rect: { x: 112, y: 22, w: 94, h: 53 }, places: { 0: { name: 'Dawnstar', x: 112, y: 8 } } }])));
   const a = arenaPixels();
   assert.equal(a.stood.length, 1);
   assert.equal(arenaPixels(), a, 'once');

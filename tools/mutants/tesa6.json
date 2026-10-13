@@ -110,8 +110,8 @@
   {
     "name": "TESA6-a-dungeon-a-port",
     "file": "src/world/arenaPlaces.js",
-    "old": "    const port = p.id < 32 && coast.has(",
-    "new": "    const port = coast.has(",
+    "old": "    const port = p.id < 32 && coast.has(arenaGlobalCityId(p.id, p.provinceIndex));",
+    "new": "    const port = coast.has(arenaGlobalCityId(p.id, p.provinceIndex));",
     "tests": [
       "test/tesa6_ports.test.js"
     ]

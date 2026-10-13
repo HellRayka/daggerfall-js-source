@@ -47,7 +47,7 @@
   {
     "name": "TESA10-pixel-stale-fit",
     "file": "src/world/tamrielCapitals.js",
-    "old": "  if (_onPixel.fit !== fit) {",
+    "old": "  if (_onPixel.fit !== fit || _onPixel.land !== land) {",
     "new": "  if (!_onPixel.fit) {",
     "tests": [
       "test/tesa10_capitals.test.js"
@@ -56,8 +56,8 @@
   {
     "name": "TESA10-pin-any-province",
     "file": "src/world/tamrielCapitals.js",
-    "old": "  const cap = CAPITALS.find((c) => c.name === place?.name && c.province === place?.province);",
-    "new": "  const cap = CAPITALS.find((c) => c.name === place?.name);",
+    "old": "  const k = CAPITALS.findIndex((c) => c.name === place?.name && c.province === place?.province);",
+    "new": "  const k = CAPITALS.findIndex((c) => c.name === place?.name);",
     "tests": [
       "test/tesa10_capitals.test.js"
     ]
@@ -101,7 +101,7 @@
   {
     "name": "TESA10-blocks-first",
     "file": "src/world/tamrielCapitals.js",
-    "old": "        out.push(list[hash32(CAPITAL_SALT, k, x, y) % list.length]);",
+    "old": "        out.push(list[hash32(CAPITAL_SALT, k, x, r) % list.length]);",
     "new": "        out.push(list[0]);",
     "tests": [
       "test/tesa10_capitals.test.js"
@@ -227,8 +227,8 @@
   {
     "name": "TESA10-models-every-block",
     "file": "src/world/tamrielCapitals.js",
-    "old": "    const models = q === 0 ? Object.values(CAPITAL_MODELS).map((id) => miscModelAt(id, ox, oz)) : [];",
-    "new": "    const models = Object.values(CAPITAL_MODELS).map((id) => miscModelAt(id, ox, oz));",
+    "old": "        models: cell === carrier ? cap.models.map((id) => miscModelAt(id, at[0], at[1])) : [],",
+    "new": "        models: cap.models.map((id) => miscModelAt(id, at[0], at[1])),",
     "tests": [
       "test/tesa10_capitals.test.js"
     ]
@@ -236,8 +236,8 @@
   {
     "name": "TESA10-heart-corner",
     "file": "src/world/tamrielCapitals.js",
-    "old": "    const qx = q % 2, qy = q >> 1, ox = BLOCK_M * (1 - qx), oz = BLOCK_M * (1 - qy);",
-    "new": "    const qx = q % 2, qy = q >> 1, ox = BLOCK_M * qx, oz = BLOCK_M * qy;",
+    "old": "      const at = [(cap.anchor[0] - cx) * BLOCK_M, (r + 1 - cap.anchor[1]) * BLOCK_M];",
+    "new": "      const at = [(cap.anchor[0] - cx) * BLOCK_M, (cap.anchor[1] - r) * BLOCK_M];",
     "tests": [
       "test/tesa10_capitals.test.js"
     ]
@@ -447,7 +447,9 @@
     "new": "    if (e <= s) continue;",
     "tests": [
       "test/tesa10_capitals.test.js"
-    ]
+    ],
+    "equivalent": true,
+    "why": "No run of the ring's 32 lies wholly inside a gate: a side spans 2*pi/32 (0.196 rad) and a gate 2*asin(4.25/96) (0.089), so `skip` is never set and the trim either side does the gate's work. Kept because a ring of more sides (a gate wider than a side) needs it."
   },
   {
     "name": "TESA10-inner-gates-narrow",
@@ -516,7 +518,7 @@
     "name": "TESA10-install-no-art",
     "file": "src/world/capitalModels.js",
     "old": "  addTextures(Object.values(CAPITAL_ART).map((record) =>",
-    "new": "  void art; [].map((record) =>",
+    "new": "  addTextures([].map((record) =>",
     "tests": [
       "test/tesa10_capitals.test.js"
     ]
@@ -524,7 +526,7 @@
   {
     "name": "TESA10-install-no-models",
     "file": "src/world/capitalModels.js",
-    "old": "  for (const [id, build] of Object.entries(builds)) registerCustomModel(Number(id), build, () => true, { climateFree: true });",
+    "old": "  for (const [id, build] of Object.entries(builds)) registerCustomModel(Number(id), () => northward(build()), () => true, { climateFree: true });",
     "new": "  void builds;",
     "tests": [
       "test/tesa10_capitals.test.js"
@@ -659,7 +661,7 @@
   {
     "name": "TESA10-sweep-every-frame",
     "file": "src/scenes/world.js",
-    "old": "    if (fit === _capitalSwept) return;\n    _capitalSwept = fit;",
+    "old": "    if (fit === _capitalSwept && land === _capitalSweptLand) return;\n    _capitalSwept = fit;",
     "new": "    _capitalSwept = fit;",
     "tests": [
       "test/tesa10_capitals.test.js"
@@ -681,6 +683,285 @@
     "new": "    console.log(`[capitals]",
     "tests": [
       "test/tesa10_capitals.test.js"
+    ]
+  },
+  {
+    "name": "TESA10b-pixel-any-land",
+    "file": "src/world/tamrielCapitals.js",
+    "old": "  const own = (bx, by) => !inBay(bx, by) && provinceKeyBeyondBay(bx, by) === cap.province;",
+    "new": "  const own = (bx, by) => !inBay(bx, by) && provinceKeyBeyondBay(bx, by) !== null;",
+    "tests": [
+      "test/tesa10_capitals.test.js"
+    ]
+  },
+  {
+    "name": "TESA10b-pixel-shore-ignored",
+    "file": "src/world/tamrielCapitals.js",
+    "old": "  const ok = cap.shore ? (bx, by) => own(bx, by) && RING8.some(([dx, dy]) => seaAt(bx + dx, by + dy)) : own;",
+    "new": "  const ok = own;",
+    "tests": [
+      "test/tesa10_capitals.test.js"
+    ]
+  },
+  {
+    "name": "TESA10b-pixel-point-skipped",
+    "file": "src/world/tamrielCapitals.js",
+    "old": "  if (ok(fx, fy)) return { px: fx, py: fy };\n",
+    "new": "",
+    "tests": [
+      "test/tesa10_capitals.test.js"
+    ]
+  },
+  {
+    "name": "TESA10b-pixel-first-found",
+    "file": "src/world/tamrielCapitals.js",
+    "old": "        if (d < bd && ok(fx + dx, fy + dy)) { bd = d; at = { px: fx + dx, py: fy + dy }; }",
+    "new": "        if (!at && ok(fx + dx, fy + dy)) { bd = d; at = { px: fx + dx, py: fy + dy }; }",
+    "tests": [
+      "test/tesa10_capitals.test.js"
+    ]
+  },
+  {
+    "name": "TESA10b-pixel-never-none",
+    "file": "src/world/tamrielCapitals.js",
+    "old": "    if (at) return at;\n  }\n  return null;\n}",
+    "new": "    if (at) return at;\n  }\n  return { px: fx, py: fy };\n}",
+    "tests": [
+      "test/tesa10_capitals.test.js"
+    ]
+  },
+  {
+    "name": "TESA10b-pixel-stale-land",
+    "file": "src/world/tamrielCapitals.js",
+    "old": "  if (_onPixel.fit !== fit || _onPixel.land !== land) {",
+    "new": "  if (_onPixel.fit !== fit) {",
+    "tests": [
+      "test/tesa10_capitals.test.js"
+    ]
+  },
+  {
+    "name": "TESA10b-sea-the-bay",
+    "file": "src/world/tamrielCapitals.js",
+    "old": "const seaAt = (bx, by) => !inBay(bx, by) && provinceKeyBeyondBay(bx, by) === null;",
+    "new": "const seaAt = (bx, by) => provinceKeyBeyondBay(bx, by) === null;",
+    "tests": [
+      "test/tesa10_capitals.test.js"
+    ]
+  },
+  {
+    "name": "TESA10b-rows-north-first",
+    "file": "src/world/tamrielCapitals.js",
+    "old": "  for (let r = plan.length - 1; r >= 0; r--) {",
+    "new": "  for (let r = 0; r < plan.length; r++) {",
+    "tests": [
+      "test/tesa10_capitals.test.js"
+    ]
+  },
+  {
+    "name": "TESA10b-own-blocks-none",
+    "file": "src/world/tamrielCapitals.js",
+    "old": "      else if (Object.hasOwn(own, cell)) out.push(own[cell].name);",
+    "new": "      else if (cell === '') out.push(own[cell].name);",
+    "tests": [
+      "test/tesa10_capitals.test.js"
+    ]
+  },
+  {
+    "name": "TESA10b-anchor-unflipped",
+    "file": "src/world/tamrielCapitals.js",
+    "old": "export const anchorMetres = (cap, cx, r, x, z) => [(cx - cap.anchor[0]) * BLOCK_M + x, (r + 1 - cap.anchor[1]) * BLOCK_M - z];",
+    "new": "export const anchorMetres = (cap, cx, r, x, z) => [(cx - cap.anchor[0]) * BLOCK_M + x, (r - cap.anchor[1]) * BLOCK_M + z];",
+    "tests": [
+      "test/tesa10_capitals.test.js"
+    ]
+  },
+  {
+    "name": "TESA10b-carrier-first-own",
+    "file": "src/world/tamrielCapitals.js",
+    "old": "      if (Object.hasOwn(cap.blocks, cell) && cx <= ax && ax <= cx + 1 && r <= ar && ar <= r + 1) return cell;",
+    "new": "      if (Object.hasOwn(cap.blocks, cell)) return cell;",
+    "tests": [
+      "test/tesa10_capitals.test.js"
+    ]
+  },
+  {
+    "name": "TESA10b-install-unturned",
+    "file": "src/world/capitalModels.js",
+    "old": "registerCustomModel(Number(id), () => northward(build()), () => true, { climateFree: true });",
+    "new": "registerCustomModel(Number(id), build, () => true, { climateFree: true });",
+    "tests": [
+      "test/tesa10_capitals.test.js"
+    ]
+  },
+  {
+    "name": "TESA10b-turn-no-winding",
+    "file": "src/world/capitalModels.js",
+    "old": "  for (let t = 0; t < indices.length; t += 3) { const b = indices[t + 1]; indices[t + 1] = indices[t + 2]; indices[t + 2] = b; }",
+    "new": "  void indices;",
+    "tests": [
+      "test/tesa10_capitals.test.js"
+    ]
+  },
+  {
+    "name": "TESA10b-turn-normals-kept",
+    "file": "src/world/capitalModels.js",
+    "old": "  for (let i = 2; i < positions.length; i += 3) { positions[i] = -positions[i]; normals[i] = -normals[i]; }",
+    "new": "  for (let i = 2; i < positions.length; i += 3) { positions[i] = -positions[i]; }",
+    "tests": [
+      "test/tesa10_capitals.test.js"
+    ]
+  },
+  {
+    "name": "TESA10b-merlons-inward",
+    "file": "src/world/capitalModels.js",
+    "old": "  for (let i = 0; i < C.length; i++) runs.push([C[(i + 1) % C.length], C[i]]);",
+    "new": "  for (let i = 0; i < C.length; i++) runs.push([C[i], C[(i + 1) % C.length]]);",
+    "tests": [
+      "test/tesa10_capitals.test.js"
+    ]
+  },
+  {
+    "name": "TESA10b-sweep-land-blind",
+    "file": "src/scenes/world.js",
+    "old": "    if (fit === _capitalSwept && land === _capitalSweptLand) return;",
+    "new": "    if (fit === _capitalSwept) return;",
+    "tests": [
+      "test/tesa10_capitals.test.js"
+    ]
+  },
+  {
+    "name": "TESA10b-quay-flipped",
+    "file": "src/world/tamrielCapitals.js",
+    "old": "const solitudeTile = (dx, dz) => (dz < SOLITUDE.docks.edge ? 0 : 3);",
+    "new": "const solitudeTile = (dx, dz) => (dz > SOLITUDE.docks.edge ? 0 : 3);",
+    "tests": [
+      "test/tesa10_capitals.test.js"
+    ]
+  },
+  {
+    "name": "TESA10b-terrace-open",
+    "file": "src/world/tamrielCapitals.js",
+    "old": "  if (dx >= 0 && dx < L.rampTo && Math.abs(dz) < L.w / 2) return true;",
+    "new": "  if (dx >= 0 && dx < 0 && Math.abs(dz) < L.w / 2) return true;",
+    "tests": [
+      "test/tesa10_capitals.test.js"
+    ]
+  },
+  {
+    "name": "TESA10b-north-gate-shut",
+    "file": "src/world/tamrielCapitals.js",
+    "old": "  if (Math.abs(dz - W.north) < half && Math.abs(dx - W.northGate) > W.gate / 2) return true;",
+    "new": "  if (Math.abs(dz - W.north) < half) return true;",
+    "tests": [
+      "test/tesa10_capitals.test.js"
+    ]
+  },
+  {
+    "name": "TESA10b-curtain-gate-shut",
+    "file": "src/world/tamrielCapitals.js",
+    "old": "  if (Math.abs(r - C.half) < C.thick / 2 + 0.5 && !(cx < 0 && Math.abs(cz) < C.gate / 2)) return true;",
+    "new": "  if (Math.abs(r - C.half) < C.thick / 2 + 0.5) return true;",
+    "tests": [
+      "test/tesa10_capitals.test.js"
+    ]
+  },
+  {
+    "name": "TESA10b-emperor-open",
+    "file": "src/world/tamrielCapitals.js",
+    "old": "  return Math.abs(cx - E.dx) < E.s / 2 && Math.abs(cz - E.dz) < E.s / 2;",
+    "new": "  return false;",
+    "tests": [
+      "test/tesa10_capitals.test.js"
+    ]
+  },
+  {
+    "name": "TESA10b-plan-kind-more",
+    "file": "src/world/tamrielCapitals.js",
+    "old": "  'L L P0 MAGE GENR TVRN RESI G',",
+    "new": "  'L L P0 MAGE GENR TVRN RESI RESI',",
+    "tests": [
+      "test/tesa10_capitals.test.js"
+    ]
+  },
+  {
+    "name": "TESA10b-anchor-moved",
+    "file": "src/world/tamrielCapitals.js",
+    "old": "    anchor: Object.freeze([2, 3]), blocks: SOLITUDE_BLOCKS,",
+    "new": "    anchor: Object.freeze([2, 2]), blocks: SOLITUDE_BLOCKS,",
+    "tests": [
+      "test/tesa10_capitals.test.js"
+    ]
+  },
+  {
+    "name": "TESA10b-solitude-inland",
+    "file": "src/world/tamrielCapitals.js",
+    "old": "at: Object.freeze([136, 26]), shore: true,",
+    "new": "at: Object.freeze([136, 26]), shore: false,",
+    "tests": [
+      "test/tesa10_capitals.test.js"
+    ]
+  },
+  {
+    "name": "TESA10b-arch-solid",
+    "file": "src/world/capitalSolitude.js",
+    "old": "  const foot = (x) => { const o = archOpening(x, A); return o > 0 ? o : -4; };",
+    "new": "  const foot = () => -4;",
+    "tests": [
+      "test/tesa10_capitals.test.js"
+    ]
+  },
+  {
+    "name": "TESA10b-north-gate-walled",
+    "file": "src/world/capitalSolitude.js",
+    "old": "  gatedRun(mb, NORD, ne, nw, W.thick, W.h, W.east - W.northGate, W.gate, W.gateH);",
+    "new": "  wallRun(mb, NORD, ne, nw, W.thick, W.h);",
+    "tests": [
+      "test/tesa10_capitals.test.js"
+    ]
+  },
+  {
+    "name": "TESA10b-arch-gap-walled",
+    "file": "src/world/capitalSolitude.js",
+    "old": "  const gapN = [W.west, -W.archGap], gapS = [W.west, W.archGap];",
+    "new": "  const gapN = [W.west, 0], gapS = [W.west, 0];",
+    "tests": [
+      "test/tesa10_capitals.test.js"
+    ]
+  },
+  {
+    "name": "TESA10b-castle-gate-walled",
+    "file": "src/world/capitalSolitude.js",
+    "old": "  gatedRun(mb, NORD, nw, sw, C.thick, C.h, h, C.gate, C.gateH);",
+    "new": "  wallRun(mb, NORD, nw, sw, C.thick, C.h);",
+    "tests": [
+      "test/tesa10_capitals.test.js"
+    ]
+  },
+  {
+    "name": "TESA10b-palace-on-water",
+    "file": "src/world/capitalSolitude.js",
+    "old": "  const mb = new MeshBuilder(), B = S.palace, y = S.stack.top;",
+    "new": "  const mb = new MeshBuilder(), B = S.palace, y = 0;",
+    "tests": [
+      "test/tesa10_capitals.test.js"
+    ]
+  },
+  {
+    "name": "TESA10b-piers-short",
+    "file": "src/world/capitalSolitude.js",
+    "old": "    const len = D.edge - D.pierTo, zc = (D.edge + D.pierTo) / 2;",
+    "new": "    const len = (D.edge - D.pierTo) / 2, zc = (D.edge + D.pierTo) / 2;",
+    "tests": [
+      "test/tesa10_capitals.test.js"
+    ]
+  },
+  {
+    "name": "TESA10b-pin-no-port",
+    "file": "src/world/arenaPlaces.js",
+    "old": "    const placed = { ...p, bx: at.px, by: at.py, pinned: true, ...(port ? { port: true } : {}) };",
+    "new": "    const placed = { ...p, bx: at.px, by: at.py, pinned: true };",
+    "tests": [
+      "test/tesa6_ports.test.js"
     ]
   }
 ]

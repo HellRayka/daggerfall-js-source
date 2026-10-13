@@ -228,7 +228,8 @@ function nearestPixel(x, y, reach, ok, from = 0) {
  *
  * TESA10: A CAPITAL'S PLACE STANDS ON THE CAPITAL. A place `pinned` names a pixel for (world/tamrielCapitals.js
  * capitalPin: the capital the port builds of its name) stands on that pixel exactly, before any other place takes it
- * (`pinned: true`) - so its roads, its ink and the journey lead to the city the port built there.
+ * (`pinned: true`) - so its roads, its ink and the journey lead to the city the port built there; a city of `coastal`
+ * pinned beside the picture's sea a port still (TESA10b).
  * @param {ReturnType<typeof placeArenaLocations>} model @param {import('./tamrielLand.js').TamrielTrace} trace
  * @param {?ArrayLike<number>} [coastal] @param {((place: any) => ({ px: number, py: number } | null)) | null} [pinned]
  */
@@ -239,7 +240,9 @@ export function standArenaPixels(model, trace, coastal = null, pinned = null) {
   for (const p of pinned ? model.places : []) {
     const at = p.name ? pinned(p) : null;
     if (!at || inBay(at.px, at.py) || byPixel.has(`${at.px},${at.py}`)) continue;
-    const placed = { ...p, bx: at.px, by: at.py, pinned: true };
+    // TESA10b: a coastal city pinned beside the sea is a port still (Solitude's docks)
+    const port = p.id < 32 && coast.has(arenaGlobalCityId(p.id, p.provinceIndex)) && RING8.some(([dx, dy]) => !inBay(at.px + dx, at.py + dy) && pictureSea(trace, at.px + dx, at.py + dy));
+    const placed = { ...p, bx: at.px, by: at.py, pinned: true, ...(port ? { port: true } : {}) };
     pins.set(p, placed);
     byPixel.set(`${at.px},${at.py}`, placed);
   }
