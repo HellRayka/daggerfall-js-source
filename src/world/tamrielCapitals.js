@@ -28,7 +28,7 @@
 // THE ID: its own lane (CAPITAL_LANE, after the lairs'), the capital's ordinal in the low 20 with 0x80000; its location
 // index its own negative, past the lairs'.
 import { mapPixelToLongitudeLatitude, LOCATION_TYPES } from '../formats/mapsFile.js';
-import { hash32 } from './spawnedDungeons.js';
+import { hash32, BLOCK_M } from './spawnedDungeons.js';
 import { pictureToBay, tamrielFit } from './tamrielFrame.js';
 
 /** The capitals' lane - after the country places' 64 (0x300-0x33f) and the lairs' (0x340). */
@@ -49,7 +49,7 @@ export const CAPITAL_BLOCKS = Object.freeze({
 export const CAPITAL_MODELS = Object.freeze({ whiteGoldTower: 910100, imperialWall: 910101, imperialInnerWall: 910102, imperialBridges: 910103 });
 /** RMB geometry: a block's side in its own units and in metres, its ground tiles, its automap cells. */
 export const RMB_UNITS = 4096;
-export const BLOCK_M = 102.4;
+export { BLOCK_M };   // a block's side, metres (world/spawnedDungeons.js's: the terrain's eighth)
 const TILE_M = 6.4, AUTO_M = 1.6;
 
 /** A plan's cells: 'L' the lake, 'G' a garden, 'C0'..'C3' the grounds at the heart, else a classic block's kind (its

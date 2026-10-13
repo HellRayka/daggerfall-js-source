@@ -25,8 +25,8 @@ const MARBLE = T(CAPITAL_ART.marble), GOLD = T(CAPITAL_ART.gold), STONE = T(CAPI
 
 /** An n-gon's corner at angle index i, radius r, height y (the first corner at angle `phase`). */
 const corner = (n, i, r, y, phase = 0) => { const a = phase + (i / n) * Math.PI * 2; return [Math.cos(a) * r, y, Math.sin(a) * r]; };
-/** A frustum of n sides from (r0, y0) to (r1, y1), its sides only; `vRepeat` metres a picture. */
-export function frustum(mb, tex, n, r0, y0, r1, y1, { phase = 0, vRepeat = 8, uRepeat = 1 } = {}) {
+/** A taper: a frustum of n sides from (r0, y0) to (r1, y1), its sides only; `vRepeat` metres a picture. */
+export function taper(mb, tex, n, r0, y0, r1, y1, { phase = 0, vRepeat = 8, uRepeat = 1 } = {}) {
   for (let i = 0; i < n; i++) {
     const a = corner(n, i, r0, y0, phase), b = corner(n, i + 1, r0, y0, phase), c = corner(n, i + 1, r1, y1, phase), d = corner(n, i, r1, y1, phase);
     const am = phase + ((i + 0.5) / n) * Math.PI * 2, slope = (r0 - r1) / Math.max(1e-6, y1 - y0);
@@ -46,9 +46,9 @@ export function cap(mb, tex, n, r, y, up = 1, phase = 0) {
 export function ring(mb, tex, n, rIn, rOut, y, phase = 0) {
   for (let i = 0; i < n; i++) mb.quad(tex, corner(n, i, rIn, y, phase), corner(n, i + 1, rIn, y, phase), corner(n, i + 1, rOut, y, phase), corner(n, i, rOut, y, phase), [0, 1, 0]);
 }
-/** A band: a short n-gon prism between y0 and y1 at radius r, its top a ledge back to rIn. */
-export function band(mb, tex, n, r, rIn, y0, y1, phase = 0) {
-  frustum(mb, tex, n, r, y0, r, y1, { phase, vRepeat: Math.max(0.5, y1 - y0) });
+/** A ledge: a short n-gon band between y0 and y1 at radius r, its top a ledge back to rIn. */
+export function ledge(mb, tex, n, r, rIn, y0, y1, phase = 0) {
+  taper(mb, tex, n, r, y0, r, y1, { phase, vRepeat: Math.max(0.5, y1 - y0) });
   ring(mb, tex, n, rIn, r, y1, phase);
   ring(mb, tex, n, rIn, r, y0, phase);
 }
@@ -78,9 +78,9 @@ export function merlons(mb, tex, p, q, thick, h, w = 1.6, pitch = 3.6, mh = 1.6)
 export function roundTower(mb, x, z, r, h, { roofH = r * 1.4, sides = 16 } = {}) {
   const at = (fn) => { const before = new Map([...mb.groups].map(([k, g]) => [k, g.positions.length])); fn(); for (const [k, g] of mb.groups) { const from = before.get(k) ?? 0; for (let i = from; i < g.positions.length; i += 3) { g.positions[i] += x; g.positions[i + 2] += z; } } };
   at(() => {
-    frustum(mb, STONE, sides, r, -3, r, h, { vRepeat: 6, uRepeat: 2 });
-    band(mb, STONE, sides, r + 0.6, r - 0.2, h, h + 1.8);
-    frustum(mb, ROOF, sides, r + 0.4, h + 1.8, 0.01, h + 1.8 + roofH, { vRepeat: 4, uRepeat: 2 });
+    taper(mb, STONE, sides, r, -3, r, h, { vRepeat: 6, uRepeat: 2 });
+    ledge(mb, STONE, sides, r + 0.6, r - 0.2, h, h + 1.8);
+    taper(mb, ROOF, sides, r + 0.4, h + 1.8, 0.01, h + 1.8 + roofH, { vRepeat: 4, uRepeat: 2 });
   });
 }
 
@@ -95,12 +95,12 @@ export const WHITE_GOLD = Object.freeze({ plinthR: 36, plinthH: 10, shaftR0: 25,
  */
 export function buildWhiteGoldTower() {
   const mb = new MeshBuilder(), W = WHITE_GOLD, n = 8, phase = Math.PI / 8;
-  frustum(mb, MARBLE, n, W.plinthR, -3, W.plinthR, W.plinthH, { phase, vRepeat: 6, uRepeat: 3 });
+  taper(mb, MARBLE, n, W.plinthR, -3, W.plinthR, W.plinthH, { phase, vRepeat: 6, uRepeat: 3 });
   ring(mb, MARBLE, n, W.shaftR0, W.plinthR, W.plinthH, phase);
-  frustum(mb, MARBLE, n, W.shaftR0, W.plinthH, W.shaftR1, W.shaftTop, { phase, vRepeat: 12, uRepeat: 2 });
+  taper(mb, MARBLE, n, W.shaftR0, W.plinthH, W.shaftR1, W.shaftTop, { phase, vRepeat: 12, uRepeat: 2 });
   for (let y = 40; y <= W.shaftTop; y += 40) {
     const r = W.shaftR0 + (W.shaftR1 - W.shaftR0) * ((y - W.plinthH) / (W.shaftTop - W.plinthH));
-    band(mb, GOLD, n, r + 0.5, r, y - 1.2, y, phase);
+    ledge(mb, GOLD, n, r + 0.5, r, y - 1.2, y, phase);
   }
   // the fins: at each corner of the shaft's octagon, a slab from the plinth's edge narrowing up the shaft
   for (let i = 0; i < n; i++) {
@@ -119,11 +119,11 @@ export function buildWhiteGoldTower() {
     mb.quad(MARBLE, off(outB, 1), off(outB, -1), off(outT, -1), off(outT, 1), outN, [[0, 0], [0.4, 0], [0.4, -12], [0, -12]]);
     mb.quad(GOLD, off(outT, 1), off(outT, -1), off(inT, -1), off(inT, 1), [0, 1, 0]);
   }
-  band(mb, MARBLE, n, W.galleryR, W.shaftR1, W.shaftTop, W.galleryTop, phase);
-  band(mb, GOLD, n, W.galleryR + 0.4, W.galleryR, W.galleryTop - 1, W.galleryTop + 0.2, phase);
-  frustum(mb, MARBLE, n, W.crownR0, W.galleryTop, W.crownR1, W.crownTop, { phase, vRepeat: 8 });
-  band(mb, GOLD, n, W.crownR1 + 0.6, W.crownR1, W.crownTop - 1.5, W.crownTop, phase);
-  frustum(mb, GOLD, n, W.crownR1, W.crownTop, 0.05, W.spireTop, { phase, vRepeat: 10 });
+  ledge(mb, MARBLE, n, W.galleryR, W.shaftR1, W.shaftTop, W.galleryTop, phase);
+  ledge(mb, GOLD, n, W.galleryR + 0.4, W.galleryR, W.galleryTop - 1, W.galleryTop + 0.2, phase);
+  taper(mb, MARBLE, n, W.crownR0, W.galleryTop, W.crownR1, W.crownTop, { phase, vRepeat: 8 });
+  ledge(mb, GOLD, n, W.crownR1 + 0.6, W.crownR1, W.crownTop - 1.5, W.crownTop, phase);
+  taper(mb, GOLD, n, W.crownR1, W.crownTop, 0.05, W.spireTop, { phase, vRepeat: 10 });
   // the door at its foot, facing east: a dark recess's face proud of the plinth by a hair
   const dx = W.plinthR * Math.cos(Math.PI / 8) + 0.05;
   mb.quad(DARK, [dx, 0, -2.6], [dx, 0, 2.6], [dx, 7.5, 2.6], [dx, 7.5, -2.6], [1, 0, 0]);

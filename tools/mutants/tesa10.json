@@ -353,8 +353,8 @@
   {
     "name": "TESA10-tower-no-spire",
     "file": "src/world/capitalModels.js",
-    "old": "  frustum(mb, GOLD, n, W.crownR1, W.crownTop, 0.05, W.spireTop, { phase, vRepeat: 10 });",
-    "new": "  frustum(mb, MARBLE, n, W.crownR1, W.crownTop, 0.05, W.spireTop, { phase, vRepeat: 10 });",
+    "old": "  taper(mb, GOLD, n, W.crownR1, W.crownTop, 0.05, W.spireTop, { phase, vRepeat: 10 });",
+    "new": "  taper(mb, MARBLE, n, W.crownR1, W.crownTop, 0.05, W.spireTop, { phase, vRepeat: 10 });",
     "tests": [
       "test/tesa10_capitals.test.js"
     ]
