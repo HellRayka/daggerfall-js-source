@@ -232,13 +232,23 @@ export function setSetting(settings, field, value, effectKey = null) {
 // ---- the record builder --------------------------------------------
 
 let _nextCustomIndex = -1;
+// AUDIT SCHOOLS (L3 F4): THE READY-MADE BANDS ARE NOBODY'S TO MINT. A ready-made record the shelf sells is known by its
+// index - RESURRECT1's Resurrection -45001, PARTY-MAP's Shared Cartography -46001, the paths' signature spells
+// -46101..-46115 - and a restore stepped the mint past it: a player who bought Shared Cartography minted their next made
+// spells at -46002, -46003 ... and the hundredth took Aegis Bolt's index (the quickslots, which key a spell by its index,
+// showed one of the two). THE RULE, one number and no registry (a page that never imports a seller still loads its
+// record from a save): every ready-made band stands at READY_MADE_INDEX_CEILING or below, and a made spell's index never
+// does - the seed steps past made spells alone, and a new ready-made record takes its index below the ceiling.
+export const READY_MADE_INDEX_CEILING = -45000;
+/** Is this index a ready-made band's (never a made spell's)? */
+export const isReadyMadeSpellIndex = (i) => Number.isInteger(i) && i <= READY_MADE_INDEX_CEILING;
 /** Mint the next custom index; a restore re-seeds this below the
  *  lowest loaded one so a session that loads then makes cannot
  *  collide with a spell the save already carried. */
 export function mintCustomSpellIndex() { return _nextCustomIndex--; }
 export function seedCustomSpellIndex(spells) {
   for (const sp of spells ?? []) {
-    if (typeof sp?.index === 'number' && sp.index <= _nextCustomIndex) _nextCustomIndex = sp.index - 1;
+    if (typeof sp?.index === 'number' && !isReadyMadeSpellIndex(sp.index) && sp.index <= _nextCustomIndex) _nextCustomIndex = sp.index - 1;
   }
 }
 export function _resetCustomIndexForTests() { _nextCustomIndex = -1; }

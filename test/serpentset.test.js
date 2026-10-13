@@ -346,7 +346,7 @@ test('SERPENT-SET the heal: one door for every power - the loot\'s leech and its
   assert.equal(healMine(f, 0.5), 1, 'the fraction carried to the next heal');
   assert.equal(f.health, 11);
   assert.doesNotMatch(strip(read('src/systems/lootPowers.js')), /export function healMine/, 'one heal, never two');
-  assert.match(strip(read('src/systems/lootPowers.js')), /import \{ healMine, _resetPlayerHealForTests \} from '\.\/playerHeal\.js';/);
+  assert.match(strip(read('src/systems/lootPowers.js')), /import \{ healMine, manaMine, _resetPlayerHealForTests \} from '\.\/playerHeal\.js';/);   // PIN MOVED (SCHOOLS3): and the one magicka gift beside the one heal
   assert.match(strip(read('src/systems/sigilSetPowers.js')), /import \{ healMine \} from '\.\/playerHeal\.js';/);
   assert.doesNotMatch(strip(read('src/systems/sigilSetPowers.js')), /from '\.\/lootPowers\.js'/, 'the set powers never import the loot\'s (it imports them)');
 });

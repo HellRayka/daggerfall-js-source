@@ -521,7 +521,7 @@ test('WB9c the seams, by source: the relay judges an `xhit` by applyCrystalHit a
   assert.match(dc, /const landOnCrystal = \(cr, damage, r\) => \{ damage \+= takeOwed\(cr\.entity\); return sdRemnant \? sdRemnant\.heartHit\(\{ c: cr\.crystal, d: damage, r \}\) : !!opts\.onCrystalHit\?\.\(\{ c: cr\.crystal, d: damage, r \}\); \};/);   // PIN MOVED (SD8c): a Heart's of the Reset in the Hour; PIN MOVED (FIELD BUGS 2026-10-12g OPEN-HAND): and the follow-up the blow owes
   assert.match(dc, /return landOnCrystal\(cr, dealt, HIT_KINDS\.Spell\);/);
   const hm = read('src/scenes/hostMagic.js');
-  assert.match(hm, /if \(mark\?\.crystal != null\) \{ try \{ return !!castAtCrystal\?\.\(sp, mark\.crystal\); \} catch \{ return false; \} \}/);
+  assert.match(hm, /if \(mark\?\.crystal != null\) \{ try \{ return !!castAtCrystal\?\.\(sp, mark\.crystal, caster\); \} catch \{ return false; \} \}/);   // PIN MOVED (AUDIT SCHOOLS L2 F4): and the cast's wrapper, for the paths' riders
   assert.match(hm, /if \(!crystalMarks \|\| !castAtCrystal \|\| !sp \|\| !duelSpellOf\(sp\)\) return \[\];/, 'a harmful spell alone');
   const gc = read('src/scenes/gateCourt.js');
   const crystalsFirst = gc.indexOf('crystalPass.draw(_crystalDraw, proj, view, eye, seconds, fog);'), tel = gc.indexOf('for (const ps of poolDraw) { pass.draw(ps');

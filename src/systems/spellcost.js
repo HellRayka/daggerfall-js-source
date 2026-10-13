@@ -30,6 +30,7 @@
 
 import { skillValue, SKILLS } from './skills.js';
 import { isOnlinePage } from './onlineLane.js';   // SPELL-COST-PAST: online, a skill past 100 never prices a spell under nothing
+import { pathCastSchool } from './arcanePaths.js';   // SCHOOLS3: a signature spell is cast in its path's two schools (a leaf)
 
 export const CAST_COST_FLOOR = 5;
 
@@ -149,6 +150,11 @@ const component = (c, starting, increase, per) =>
 export function effectSchool(e) {
   return EFFECT_COST_TABLE[`${e.type},${e.subType & 0xff}`]?.skill ?? 22;
 }
+/** SCHOOLS3 (bible/06-Systems/Arcane-Specialisations.md section 6): THE SCHOOL AN EFFECT OF `spell` IS CAST IN by
+ *  `entity` - its own (effectSchool), except in the caster's signature spell of their awake path, which is cast in that
+ *  path's two schools (arcanePaths.js pathCastSchool). The price below, the cast engine's tally (scenes/hostMagic.js
+ *  tallyCastSkills) and the school past 100 (systems/effects.js) all read it, so the three never disagree. */
+export const castSchool = (entity, spell, e) => pathCastSchool(entity, spell, effectSchool(e));
 
 export function effectCost(e, casterSkillOf, { online = isOnlinePage() } = {}) {
   // subType normalized to BYTE (DFU MakeClassicKey casts the sbyte;
@@ -191,7 +197,7 @@ export function registerSpellCostMod(name, fn) { if (typeof fn === 'function') _
 /** The full casting cost of a classic spell record for a caster:
  *  per-effect sums, target multiplier, the floor. SET2: and the port's cost modifiers, for a player's own cast. */
 export function calculateCastCost(spell, casterEntity, { portMods = true, online = isOnlinePage() } = {}) {
-  const skillOf = (id) => skillValue(casterEntity, id);
+  const skillOf = (id) => skillValue(casterEntity, pathCastSchool(casterEntity, spell, id));   // SCHOOLS3: the school it is cast in
   let gold = 0, sp = 0;
   for (const e of spell.effects) {
     if (e.type <= -1) continue;

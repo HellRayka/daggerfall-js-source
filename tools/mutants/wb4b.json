@@ -119,7 +119,7 @@
   {
     "name": "WB4b-no-spell-reaches-him",
     "file": "src/scenes/dungeonContext.js",
-    "old": "    castAtBoss: opts.gateBoss ? (sp) => spellOnBoss(sp) : null,",
+    "old": "    castAtBoss: opts.gateBoss ? (sp, caster) => spellOnBoss(sp, caster) : null,",
     "new": "    castAtBoss: null,",
     "tests": [
       "test/wb4b_gate_blows.test.js"
@@ -146,8 +146,8 @@
   {
     "name": "WB4b-the-touch-passes-him",
     "file": "src/scenes/hostMagic.js",
-    "old": "      else if (t?.boss) giveToBoss(t, sp);",
-    "new": "      else if (false) giveToBoss(t, sp);",
+    "old": "      else if (t?.boss) giveToBoss(t, sp, playerCaster(cast));",
+    "new": "      else if (false) giveToBoss(t, sp, playerCaster(cast));",
     "tests": [
       "test/wb4b_gate_blows.test.js"
     ]
@@ -155,8 +155,8 @@
   {
     "name": "WB4b-the-blast-misses-him",
     "file": "src/scenes/hostMagic.js",
-    "old": "    if (boss && caster?.entity === playerEntity) for (const t of sweepFoes(pos, EXPLOSION_RADIUS, bossMarksFor(spell))) giveToBoss(t, spell);",
-    "new": "    if (false) for (const t of sweepFoes(pos, EXPLOSION_RADIUS, bossMarksFor(spell))) giveToBoss(t, spell);",
+    "old": "    if (boss && caster?.entity === playerEntity) for (const t of sweepFoes(pos, EXPLOSION_RADIUS, bossMarksFor(spell))) giveToBoss(t, spell, caster);",
+    "new": "    if (false) for (const t of sweepFoes(pos, EXPLOSION_RADIUS, bossMarksFor(spell))) giveToBoss(t, spell, caster);",
     "tests": [
       "test/wb4b_gate_blows.test.js"
     ]

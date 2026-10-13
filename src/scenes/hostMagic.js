@@ -46,7 +46,9 @@ import {
 } from '../systems/spellcast.js';
 import { toBoxLocal } from '../systems/naval/navalBallistics.js';   // SERPENT4: a missile inside a box mark
 import { silenceBlocksCast, silencedText, pressButtonToFireSpellText, DOOR_SPELL_TEXT, SOUL_TRAP_TEXT } from '../systems/mysticism.js';
-import { calculateCastCost, effectSchool, EFFECT_COST_TABLE } from '../systems/spellcost.js';
+import { calculateCastCost, castSchool, EFFECT_COST_TABLE } from '../systems/spellcost.js';   // SCHOOLS3: castSchool - the school a signature spell teaches
+import { tellSpellLanded } from '../systems/spellPower.js';   // SCHOOLS3: my spell landed - the paths' riders answer it
+import '../systems/arcanePowers.js';   // AUDIT SCHOOLS L2 F8: what the paths DO, registered with THE ONE CAST ENGINE every page builds - the standalone dungeon page (scenes/dungeon.js) had their price and potency and none of their powers
 import { applySpell, spellReflectedText, hasActiveEffect, isSoulTrapEffect, spellSways } from '../systems/effects.js';   // WBX7: a soul trap meets the court's boss too
 import { localizedText } from '../systems/textManager.js';   // L10N3d: DFU's Internal_Strings, read in the player's language
 import { potionBundle } from '../systems/potions.js';   // U44: DrinkPotion's bundle
@@ -210,7 +212,14 @@ export function createPlayerMagic({
   mwMagicFx = null,
 }) {
   const mwFx = mwMagicFx ?? createMwMagicFx({ renderer });
-  const playerCaster = () => ({ entity: playerEntity, sinks: playerSinks });
+  // AUDIT SCHOOLS (L1 L1-L2, L2 F6-F7): `cast` - ONE CAST's token, minted at the release (`newCast`) and carried by every
+  // landing of it (a missile's, each foe an area sweeps, the court's boss): the paths' riders read the magicka it really
+  // took (`cost` - nothing for a free ready), and a passive that counts casts counts it once however many it struck
+  const playerCaster = (cast = null) => ({ entity: playerEntity, sinks: playerSinks, cast });
+  /** AUDIT SCHOOLS L1 M6: what a landing's damage could take - never past the health the body held before it. */
+  const tookOf = (r, before) => { const d = Number.isFinite(r?.damage) ? r.damage : 0; return Number.isFinite(before) ? Math.max(0, Math.min(d, before)) : d; };
+  /** AUDIT SCHOOLS: a release's token - `{ cost }`, the magicka the ready charged (0 for a free one). */
+  const newCast = (cost) => ({ cost: Number.isFinite(cost) && cost > 0 ? cost : 0 });
   /** GIFT-QUIET (systems/allyCast.js GIFT_LINE_QUIET_S): a gift's line - an armed ready's, a caster's - said at most once
    *  in the window (createGiftLineGate); `fresh` says it whatever the window. */
   const giftGate = createGiftLineGate(giftClockMs);
@@ -249,7 +258,7 @@ export function createPlayerMagic({
     foes: () => playerTargets().filter((t) => t && !t.dead && t.entity),
     feet: () => _doorFeet,
     hurtFoe: (t, n) => { if (t && !t.dead && n > 0) foeSinks(t, true)?.hurt?.(Math.round(n), { fromPlayer: true }); },
-    castOnPlayer: (bundle) => { if (bundle) applySpellToPlayer(bundle, effectiveLevel(playerEntity) ?? 1, null, { bypassSavingThrows: true, bypassChance: true }); },
+    castOnPlayer: (bundle, { power = false } = {}) => { if (bundle) applySpellToPlayer(bundle, effectiveLevel(playerEntity) ?? 1, null, { bypassSavingThrows: true, bypassChance: true, ...(power ? { powerCast: true } : {}) }); },   // AUDIT SCHOOLS: `power` - a path's rider: a merge with it takes the larger pool or chance (effects.js powerCast)
     player: () => playerEntity,
     clear: (a, b) => burstClear(collider, a, b),   // AUDIT SET M4
     say: (line) => say?.(line),   // RVN3: a line the scene's HUD speaks (a revenant's weakness found, on the classic skin)
@@ -399,10 +408,10 @@ export function createPlayerMagic({
   }
   /** WB4b: a spell met him: out through the court's door. Nothing lands here - the relay holds his health. WB9c: or one
    *  of the Reckoning's crystals, by its number; WB11c: or one of his host, by its number. */
-  function giveToBoss(mark, sp) {
-    if (mark?.crystal != null) { try { return !!castAtCrystal?.(sp, mark.crystal); } catch { return false; } }
-    if (mark?.host != null) { try { return !!castAtHost?.(sp, mark.host); } catch { return false; } }
-    try { return !!castAtBoss?.(sp); } catch { return false; }
+  function giveToBoss(mark, sp, caster = null) {   // AUDIT SCHOOLS L2 F4: and my cast's wrapper, for the paths' riders
+    if (mark?.crystal != null) { try { return !!castAtCrystal?.(sp, mark.crystal, caster); } catch { return false; } }
+    if (mark?.host != null) { try { return !!castAtHost?.(sp, mark.host, caster); } catch { return false; } }
+    try { return !!castAtBoss?.(sp, caster); } catch { return false; }
   }
   /** SERPENT4: the box marks (`{id, box}`) a missile of `sp` may meet - a harmful family's alone; [] otherwise. */
   function boxMarksFor(sp) {
@@ -699,8 +708,14 @@ export function createPlayerMagic({
       if (mine && !o?.round) noteFeudHarm(foe.entity, elementFeudClass(spell?.element), d);
       return sinks.hurt(d, { ...(o ?? {}), element: spell?.element ?? null });   // RVN3: the element rides to the door (its weakness's weight)
     } } : sinks;
+    const healthBefore = foe?.entity?.health;
     const r = applySpell(spell, casterLevel, foe.entity, landing, rolls, caster, ctx);
-    // MW-SPELLFX1: the hit, on the foe it landed on (playEffects) - not one it saved against or turned back
+    // SCHOOLS3 (bible/06-Systems/Arcane-Specialisations.md section 5): MY OWN cast landed on a foe - the paths' riders
+    // answer it (systems/arcanePowers.js). Never a peer's strike spell landed here (its caster is a stand-in), nor a foe's.
+    // AUDIT SCHOOLS L1 M6: `took` is what the foe could lose - a 3-point rat takes 3 of a 95-point bolt
+    if (caster?.entity === playerEntity && foe?.entity && r) {
+      tellSpellLanded({ caster: playerEntity, target: foe.entity, foe, spell, r, self: false, took: tookOf(r, healthBefore), cast: caster.cast ?? null });
+    }
     if (foe?.ai?.feet && !(r?.saved || r?.chanceFailed || r?.reflected)) mwFx.hit(spell, foe.ai.feet, { body: { height: foe.ai.height ?? CAPSULE_HEIGHT, radius: foe.ai.radius ?? PLAYER_BODY_RADIUS } });
     // STRIKE-SHARED (2026-09-29): ANOTHER PLAYER'S strike spell, landed here on the foe I own (`ctx.peerCaster` its id).
     // The trap's line is its caster's and not mine to speak, and a new trap is marked with whose it is - its soul goes
@@ -745,6 +760,9 @@ export function createPlayerMagic({
     if (caster?.entity && caster.entity !== playerEntity && !caster.entity.isPlayer) noteSkillChallenge(playerEntity, caster.entity);   // BAL9: a foe's spell on me is the fight's, as its blow is (formulas.js's both directions)
     if (caster?.entity && caster.entity !== playerEntity && !caster.entity.isPlayer) markPlayerHarm(caster.entity);   // REVENANT-HARM: before it lands - its burn may be the death
     const r = applySpell(spell, casterLevel, playerEntity, playerSinks, rolls, caster, ctx);
+    // SCHOOLS3: MY OWN cast landed on me (a self-cast, my area of gifts) - the paths' riders answer it; my spell a foe
+    // turned back at me is no self-cast (`reflected`), and a potion's bundle has no caster
+    if (caster?.entity === playerEntity && r) tellSpellLanded({ caster: playerEntity, target: playerEntity, spell, r, self: true, reflected: !!extraCtx?.reflectedCount, took: 0, cast: caster.cast ?? null });
     if (_doorFeet && !(r.saved || r.chanceFailed || r.reflected)) mwFx.hit(spell, _doorFeet);   // MW-SPELLFX1: the hit, about me
     if (r.paralyzed) say(localizedText('youAreParalyzed', 'You are paralyzed.'));   // Paralyze.cs:93
     // S19c: AssignBundle's failure messages, player hosts only -
@@ -820,7 +838,7 @@ export function createPlayerMagic({
   // (DoAreaOfEffect(position, true), DaggerfallMissile.cs:477-495).
   /** The caster wrapper a missile carries: the player's for the player's, the foe's (its entity and sinks) for an
    *  enemy's, none for an enemy missile whose caster is gone. */
-  const missileCaster = (m) => (m.fromPlayer === false ? (m.casterFoe ? { entity: m.casterFoe.entity, sinks: foeSinks(m.casterFoe), foe: m.casterFoe } : null) : playerCaster());
+  const missileCaster = (m) => (m.fromPlayer === false ? (m.casterFoe ? { entity: m.casterFoe.entity, sinks: foeSinks(m.casterFoe), foe: m.casterFoe } : null) : playerCaster(m.cast ?? null));
   /** DISC19-F (AUDIT DISC19): THE TOWN'S DEFENDERS TAKE NONE OF THE
    *  PLAYER'S SPELLS - not the blast, the area, the missile or the
    *  touch. The port's own rule, beside the swing's friendly protection
@@ -837,9 +855,9 @@ export function createPlayerMagic({
    *  bursts, or if it bursts nowhere - as a self-cast, never saved against (ALLY-CAST C1's law for a gift), once, at the
    *  cast: the burst passes its caster by (explodeAt). A spell with harm in it is DFU's: its caster only where its blast
    *  reaches them, and saved against. */
-  function giveAreaToCaster(sp) {
+  function giveAreaToCaster(sp, cast = null) {
     if (!allyCastable(sp)) return;
-    const r = applySpellToPlayer({ ...sp, rangeType: 0 }, effectiveLevel(playerEntity), playerCaster());
+    const r = applySpellToPlayer({ ...sp, rangeType: 0 }, effectiveLevel(playerEntity), playerCaster(cast));
     if (r.healed > 0) say(`You are healed ${r.healed} points.`);
   }
   function explodeAt(pos, spell, casterLevel, playerFeet, caster = null, { excludeFoe = null, playerHeight = CAPSULE_HEIGHT, allies = false, duel = false, boss = duel } = {}) {
@@ -861,7 +879,7 @@ export function createPlayerMagic({
     // DUEL1: and MY blast reaches my duel opponent standing in it (`duel`: the missile's own word it is mine)
     if (duel && caster?.entity === playerEntity) for (const t of sweepFoes(pos, EXPLOSION_RADIUS, duelMarksFor(spell))) giveToDuel(t, spell);
     // WB4b: and the court's boss, whose flank is in it (his own radius)
-    if (boss && caster?.entity === playerEntity) for (const t of sweepFoes(pos, EXPLOSION_RADIUS, bossMarksFor(spell))) giveToBoss(t, spell);   // AUDIT WBX F5: `boss` - a Soul Trap is no duel spell, and it meets him too
+    if (boss && caster?.entity === playerEntity) for (const t of sweepFoes(pos, EXPLOSION_RADIUS, bossMarksFor(spell))) giveToBoss(t, spell, caster);   // AUDIT WBX F5: `boss` - a Soul Trap is no duel spell, and it meets him too
     // ROAD-H H2: the player is a COLLIDER in DFU's OverlapSphere like every foe (DaggerfallMissile.cs:481) - its CharacterController capsule, at the LIVE height PlayerHeightChanger keeps (:54-57/:475-478). This measured ONE POINT at the STANDING half-capsule, feet + 0.9: a metre and a half wrong on a mount, half a metre wrong crouched, and short of DFU's catch by a whole body radius in every stance. AUDIT 65 CV-2: and that body is the PLAYER's 0.35 (PlayerAdvanced.prefab:82), not the foe's 0.45 - the rim is 4.35.
     if (playerFeet && !crewBlast && sphereOverlapsCapsule(pos, EXPLOSION_RADIUS, playerFeet, playerHeight, PLAYER_BODY_RADIUS)) {
       // AREA-SELF (FIELD BUGS 2026-10-01, Opaldes: "Big Regen Spell doesnt do anything" - Area at Range, Regenerate and
@@ -886,7 +904,7 @@ export function createPlayerMagic({
     for (const e of sp.effects) {
       if (e.type < 0) continue;
       if (!EFFECT_COST_TABLE[`${e.type},${e.subType & 0xff}`]) continue;
-      tallySkill(playerEntity, effectSchool(e), 1);
+      tallySkill(playerEntity, castSchool(playerEntity, sp, e), 1);   // SCHOOLS3: a signature spell teaches its path's schools
     }
     // AUDIT 58: the ID door - PlayCastSound's `(uint)castSoundID`
     // (EntityEffectManager.cs:1958 -> DaggerfallAudioSource.cs:232-238)
@@ -1033,11 +1051,12 @@ export function createPlayerMagic({
       giftFx(sp, bodyMid(mine));   // IMPACTFX
       return done(true);
     }
+    const cast = newCast(cost);   // AUDIT SCHOOLS: this release's token, carried by every landing of it
     if (sp.rangeType === 0) {
       // S7: CasterOnly applies to SELF (Balyna's Balm heals) - no
       // missile; AssignBundle at :2117.
       tallyCastSkills(sp);
-      const r = applySpellToPlayer(sp, effectiveLevel(playerEntity), playerCaster());
+      const r = applySpellToPlayer(sp, effectiveLevel(playerEntity), playerCaster(cast));
       // AUDIT 24 scenes: PlayerSpellCasting_OnReleaseFrame assigns the
       // CasterOnly bundle at :2117 and only stamps
       // `lastReadySpellCastingCost = readySpellCastingCost` at :2138 -
@@ -1062,8 +1081,8 @@ export function createPlayerMagic({
       if (t?.ally) giveToAlly(t, sp);   // AID1 onto ALLY-CAST: the touch met a mate the crosshair pick did not name
       else if (t?.companion) giveToCompanion(t, sp);   // COMPANION-KIT: the touch met my companion
       else if (t?.duel) giveToDuel(t, sp);   // DUEL1: the touch met my duel opponent
-      else if (t?.boss) giveToBoss(t, sp);   // WB4b: the touch met the court's boss
-      else if (t) applySpellToFoe(sp, effectiveLevel(playerEntity), t, playerCaster());
+      else if (t?.boss) giveToBoss(t, sp, playerCaster(cast));   // WB4b: the touch met the court's boss
+      else if (t) applySpellToFoe(sp, effectiveLevel(playerEntity), t, playerCaster(cast));
       // IMPACTFX: the touch, seen where it met - a heal rising at whoever took it, the element's small spray on a foe
       if (t) {
         const mid = bodyMid(t) ?? alongAim(eye, dir, 1.5), kind = fxKindOf(sp);
@@ -1077,14 +1096,15 @@ export function createPlayerMagic({
       lastCastCost = cost;
       tallyCastSkills(sp);
       surfacePlayer();
+      const areaCaster = playerCaster(cast);   // AUDIT SCHOOLS: one cast, however many it sweeps
       for (const t of sweepFoes(eye, EXPLOSION_RADIUS, playerTargets())) {   // DISC19-F (AUDIT DISC19): nor my area
-        applySpellToFoe(sp, effectiveLevel(playerEntity), t, playerCaster());
+        applySpellToFoe(sp, effectiveLevel(playerEntity), t, areaCaster);
       }
       giveToAllies(sweepFoes(eye, EXPLOSION_RADIUS, allyMarksFor(sp)), sp);   // AID1 onto ALLY-CAST: the mates around me - SPELL-GIFT: one line for all of them
       giveToCompanions(sweepFoes(eye, EXPLOSION_RADIUS, companionMarksFor(sp)), sp);   // COMPANION-KIT: and my companions
       for (const t of sweepFoes(eye, EXPLOSION_RADIUS, duelMarksFor(sp))) giveToDuel(t, sp);   // DUEL1: and my duel opponent, if they stand in it
-      for (const t of sweepFoes(eye, EXPLOSION_RADIUS, bossMarksFor(sp))) giveToBoss(t, sp);   // WB4b: and the court's boss, if any of him stands in it
-      giveAreaToCaster(sp);   // AREA-CASTER: and me, when it is all gifts
+      for (const t of sweepFoes(eye, EXPLOSION_RADIUS, bossMarksFor(sp))) giveToBoss(t, sp, areaCaster);   // WB4b: and the court's boss, if any of him stands in it
+      giveAreaToCaster(sp, cast);   // AREA-CASTER: and me, when it is all gifts
       mwFx.area(sp, _doorFeet ?? [eye[0], eye[1] - 1, eye[2]], EXPLOSION_RADIUS);   // MW-SPELLFX1: the burst at the caster (explodeSpell's hit position is the caster's own)
       // IMPACTFX: the area seen going off about me - a heal's wide ring of rising light, or the element's nova on the floor
       // AOE-SIZE: drawn to the sphere the sweep above catches - EXPLOSION_RADIUS about my EYE, so its rim on the floor
@@ -1098,9 +1118,9 @@ export function createPlayerMagic({
     lastCastCost = cost;
     tallyCastSkills(sp);
     surfacePlayer();
-    missiles.push({ spell: sp, pos: [eye[0], eye[1], eye[2]], dir: [...dir], age: 0, batch: null, fromPlayer: true, ally: !readiedFree && allyCastable(sp), duel: !!duelSpellOf(sp), boss: !!duelSpellOf(sp) || (sp.effects ?? []).some((e) => e && isSoulTrapEffect(e)) || spellSways(sp) });
+    missiles.push({ spell: sp, cast, pos: [eye[0], eye[1], eye[2]], dir: [...dir], age: 0, batch: null, fromPlayer: true, ally: !readiedFree && allyCastable(sp), duel: !!duelSpellOf(sp), boss: !!duelSpellOf(sp) || (sp.effects ?? []).some((e) => e && isSoulTrapEffect(e)) || spellSways(sp) });
     withBolt(missiles[missiles.length - 1]);   // MW-SPELLFX1: and its bolt   // AID1 onto ALLY-CAST: may be given to a party mate it strikes (never a free ready's); DUEL1: may strike my duel opponent; AUDIT WBX F5: may meet the court's boss - a harmful spell, or a Soul Trap (at range or bursting, as by touch)
-    if (sp.rangeType === 4) giveAreaToCaster(sp);   // AREA-CASTER: an Area at Range spell of gifts lands on me too, wherever it bursts
+    if (sp.rangeType === 4) giveAreaToCaster(sp, cast);   // AREA-CASTER: an Area at Range spell of gifts lands on me too, wherever it bursts
     return done(true);
   }
 
@@ -1393,7 +1413,7 @@ export function createPlayerMagic({
         const hitMate = [...allyMarksFor(m.spell, false), ...companionMarksFor(m.spell, false)].find((p) => missileHitsCapsule(m.pos, p.ai.feet, p.ai.height, PLAYER_BODY_RADIUS));
         if (hitMate) {
           const at = [m.pos[0], m.pos[1], m.pos[2]];
-          if (m.spell.rangeType === 4) explodeAt(at, m.spell, effectiveLevel(playerEntity), playerFeet, playerCaster(), { playerHeight, allies: true, duel: !!m.duel, boss: m.boss ?? !!m.duel });
+          if (m.spell.rangeType === 4) explodeAt(at, m.spell, effectiveLevel(playerEntity), playerFeet, playerCaster(m.cast ?? null), { playerHeight, allies: true, duel: !!m.duel, boss: m.boss ?? !!m.duel });
           else if (hitMate.companion) giveToCompanion(hitMate, m.spell);   // COMPANION-KIT
           else giveToAlly(hitMate, m.spell);
           showImpactFlash(m, at);
@@ -1407,7 +1427,7 @@ export function createPlayerMagic({
         const hitFoe = duelMarksFor(m.spell).find((p) => missileHitsCapsule(m.pos, p.ai.feet, p.ai.height, PLAYER_BODY_RADIUS));
         if (hitFoe) {
           const at = [m.pos[0], m.pos[1], m.pos[2]];
-          if (m.spell.rangeType === 4) explodeAt(at, m.spell, effectiveLevel(playerEntity), playerFeet, playerCaster(), { playerHeight, allies: !!m.ally, duel: true, boss: m.boss ?? true });
+          if (m.spell.rangeType === 4) explodeAt(at, m.spell, effectiveLevel(playerEntity), playerFeet, playerCaster(m.cast ?? null), { playerHeight, allies: !!m.ally, duel: true, boss: m.boss ?? true });
           else giveToDuel(hitFoe, m.spell);
           showImpactFlash(m, at);
           retireMissile(m);
@@ -1420,8 +1440,8 @@ export function createPlayerMagic({
         const hitBoss = bossMarksFor(m.spell).find((p) => missileHitsCapsule(m.pos, p.ai.feet, p.ai.height, p.ai.radius));
         if (hitBoss) {
           const at = [m.pos[0], m.pos[1], m.pos[2]];
-          if (m.spell.rangeType === 4) explodeAt(at, m.spell, effectiveLevel(playerEntity), playerFeet, playerCaster(), { playerHeight, allies: !!m.ally, duel: !!m.duel, boss: true });
-          else giveToBoss(hitBoss, m.spell);
+          if (m.spell.rangeType === 4) explodeAt(at, m.spell, effectiveLevel(playerEntity), playerFeet, playerCaster(m.cast ?? null), { playerHeight, allies: !!m.ally, duel: !!m.duel, boss: true });
+          else giveToBoss(hitBoss, m.spell, playerCaster(m.cast ?? null));
           showImpactFlash(m, at);
           retireMissile(m);
           continue;
@@ -1431,7 +1451,7 @@ export function createPlayerMagic({
       if (m.duel) {
         const hitBox = boxMarksFor(m.spell).find((q) => missileInBox(m.pos, q.box));
         if (hitBox) {
-          try { castAtBox(m.spell, hitBox); } catch { /* the host's door - nothing lands here */ }
+          try { castAtBox(m.spell, hitBox, playerCaster(m.cast ?? null)); } catch { /* the host's door - nothing lands here */ }
           showImpactFlash(m, [m.pos[0], m.pos[1], m.pos[2]]);
           retireMissile(m);
           continue;
@@ -1440,8 +1460,8 @@ export function createPlayerMagic({
       for (const f of playerTargets()) {   // DISC19-F (AUDIT DISC19): my missile flies through a defender
         if (f.dead) continue;
         if (missileHitsFoe(m.pos, f)) {   // ROAD-H tail: DaggerfallMissile.cs:339's SphereCast meets the foe's CAPSULE (REVIEW 2026-09-05 had its centre as a point)
-          if (m.spell.rangeType === 4) explodeAt(m.pos, m.spell, effectiveLevel(playerEntity), playerFeet, playerCaster(), { playerHeight, allies: !!m.ally, duel: !!m.duel, boss: m.boss ?? !!m.duel });   // ROAD-H H2
-          else applySpellToFoe(m.spell, effectiveLevel(playerEntity), f, playerCaster());
+          if (m.spell.rangeType === 4) explodeAt(m.pos, m.spell, effectiveLevel(playerEntity), playerFeet, playerCaster(m.cast ?? null), { playerHeight, allies: !!m.ally, duel: !!m.duel, boss: m.boss ?? !!m.duel });   // ROAD-H H2
+          else applySpellToFoe(m.spell, effectiveLevel(playerEntity), f, playerCaster(m.cast ?? null));
           showImpactFlash(m, [m.pos[0], m.pos[1], m.pos[2]]);   // F033
           retireMissile(m);
           break;

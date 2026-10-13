@@ -286,7 +286,7 @@ test('SERPENT4 a hand\'s weapons on the client: its segments are a hand\'s marks
   const magic = src('scenes/hostMagic.js');
   assert.ok(/if \(m\.duel\) \{\n {8}const hitBox = boxMarksFor\(m\.spell\)\.find\(\(q\) => missileInBox\(m\.pos, q\.box\)\);/.test(magic));
   const world = src('scenes/world.js');
-  for (const wired of ['boxMarks: () => serpentHost?.handBoxes?.() ?? null,', 'castAtBox: (sp, q) => serpentSpellOn(sp, q),', 'boxTargets: serpentHost?.handBoxes?.() ?? null,', 'onPlayerArrowHitBox: (m, t) => serpentArrowOn(m, t),']) assert.ok(world.includes(wired), wired);
+  for (const wired of ['boxMarks: () => serpentHost?.handBoxes?.() ?? null,', 'castAtBox: (sp, q, caster) => serpentSpellOn(sp, q, caster),', 'boxTargets: serpentHost?.handBoxes?.() ?? null,', 'onPlayerArrowHitBox: (m, t) => serpentArrowOn(m, t),']) assert.ok(world.includes(wired), wired);   // PIN MOVED (AUDIT SCHOOLS L2 F4): and the cast's wrapper, for the paths' riders
 });
 
 // ═══ the client rig ═══════════════════════════════════════════════════════════════════════════════

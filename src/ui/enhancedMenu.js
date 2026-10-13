@@ -4644,7 +4644,7 @@ function pauseStats(body) {
   // be described and chosen"). Unlike Ascend it opens a page of THIS window (statsSec 'master'), so it neither
   // resumes nor hands off; the page's own button comes back to Skills. A count on the button when a choice is waiting.
   const masterDoor = m.master ? (() => {
-    const n = m.master.candidates?.length ?? 0;
+    const n = (m.master.candidates?.length ?? 0) + (m.master.pathChoices?.length ? 1 : 0);   // SCHOOLS1: and a specialisation waiting
     const b = el('button', n ? 'act primary' : 'act', n ? t('pause.door.masterCount', 'Master Skills ({n})', { n }) : t('pause.master.title', 'Master Skills'));
     b.onclick = () => { statsSec = 'master'; _masterNote = null; render(); };
     return b;
@@ -4777,6 +4777,7 @@ function statsMaster(detail, m) {
     : t('pause.master.on', 'Choose the skills that may climb past 100, up to 200. A choice is permanent.');
   detail.append(el('div', 'px-master-lead', lead));
   if (_masterNote) detail.append(el('div', 'px-master-note', _masterNote));
+  if (ms.on) statsSpecialisation(detail, ms);
   for (const g of ms.groups) {
     const card = el('section', 'px-mgroup');
     const head = el('div', 'px-mhead');
@@ -4815,6 +4816,44 @@ function statsMaster(detail, m) {
     foot.classList.add('px-master-foot');
     detail.append(foot);
   }
+}
+
+/** SCHOOLS1 (bible/06-Systems/Arcane-Specialisations.md section 3): THE SPECIALISATION CARD, above the career groups -
+ *  the path chosen (gold, what it does); or each path two mastered schools open, what it does and a Choose button that
+ *  asks first (permanent); or, with none open, how one opens. The page's own card, pips and tags. */
+function statsSpecialisation(detail, ms) {
+  // AUDIT SCHOOLS L4 8: a class that can never master two schools sees no card at all
+  if (!ms.path && !ms.pathChoices?.length && !ms.pathPossible) return;
+  const card = el('section', 'px-mgroup px-spec');   // AUDIT SCHOOLS L4 5: px-spec - its rows stack on a phone
+  const head = el('div', 'px-mhead');
+  head.append(el('span', 'px-mname', t('pause.master.spec.title', 'Specialisation')));
+  card.append(head);
+  const pathRow = (name, schools, rows, side, chosen) => {
+    const row = el('div', chosen ? 'px-mrow2 is-mastered' : 'px-mrow2 is-ready');
+    const body = el('div', 'px-mbody');
+    const top = el('div', 'px-mtop');
+    top.append(el('span', 'k', `${chosen ? '\u25c6 ' : ''}${name}`), el('span', 'v px-spec-schools', schools));
+    body.append(top);
+    for (const line of rows) if (line) body.append(el('div', 'px-master-about', line));
+    row.append(body, side);
+    return row;
+  };
+  if (ms.path) {
+    const side = el('div', 'px-mside');
+    side.append(el('span', 'px-mtag gold', t('pause.master.spec.chosen', 'Chosen')));
+    card.append(pathRow(ms.path.name, ms.path.schools, [...ms.path.rows, t('schools.sheet.sold', 'Its signature spell is sold to you at the Mages Guild.')], side, true));
+  } else if (ms.pathChoices?.length) {
+    for (const p of ms.pathChoices) {
+      const side = el('div', 'px-mside');
+      const b = el('button', 'act primary px-mbtn', t('pause.master.spec.choose', 'Choose'));
+      b.onclick = () => askCard(p.ask, () => { _masterNote = ms.choosePath(p.id).text; render(); });
+      side.append(b);
+      card.append(pathRow(p.name, p.schools, p.rows, side, false));
+    }
+  } else {
+    card.append(el('div', 'px-master-about', t('pause.master.spec.none', 'Master two schools of magic to choose a specialisation: the pair names it, and it gives a passive and a signature spell.')));
+  }
+  detail.append(card);
 }
 
 /** SOFTCAP3: the enhanced face's own Yes/No card over the pause page (the same card class the skin's YesNo box wears). */

@@ -279,7 +279,7 @@ test('AUDIT WBX F5 a Soul Trap reaches him at range and bursting, not by touch a
   const m = read('src/scenes/hostMagic.js');
   assert.match(m, /boss: !!duelSpellOf\(sp\) \|\| \(sp\.effects \?\? \[\]\)\.some\(\(e\) => e && isSoulTrapEffect\(e\)\)/);
   assert.match(m, /if \(m\.boss \?\? m\.duel\) \{/);
-  assert.match(m, /if \(boss && caster\?\.entity === playerEntity\) for \(const t of sweepFoes\(pos, EXPLOSION_RADIUS, bossMarksFor\(spell\)\)\) giveToBoss\(t, spell\);/);
+  assert.match(m, /if \(boss && caster\?\.entity === playerEntity\) for \(const t of sweepFoes\(pos, EXPLOSION_RADIUS, bossMarksFor\(spell\)\)\) giveToBoss\(t, spell, caster\);/);   // PIN MOVED (AUDIT SCHOOLS L2 F4): and the cast's wrapper, for the paths' riders
 });
 
 // ═══ W: THE GATE IN THE WORLD, AND ITS MUSIC ═════════════════════════════════════════════════════════════════════════

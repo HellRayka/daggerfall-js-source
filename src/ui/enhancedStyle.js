@@ -2022,6 +2022,14 @@ ${badgeCss()}
 .px-mtag { color: #9c937d; font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; white-space: nowrap; }
 .px-mtag.gold { color: #f0d77a; }
 .px-mbtn { min-height: 34px; min-width: 104px; }
+/* AUDIT SCHOOLS (L4 5): the Specialisation card - its two schools beside the name; on a phone each path's description
+   takes the card's width and its button or tag stands under it (a 132px side column left the words a 120px strip) */
+.px-spec .px-spec-schools { color: #9c937d; font-size: 12px; letter-spacing: 0.08em; white-space: normal; text-align: right; }
+@media (max-width: 560px) {
+  .px-spec .px-mrow2 { flex-direction: column; align-items: stretch; gap: 6px; }
+  .px-spec .px-mside { flex: none; justify-content: flex-start; }
+  .px-spec .px-mtop { flex-wrap: wrap; gap: 2px 10px; }
+}
 .px-master-foot { margin-top: 6px; }
 .px-master-ask { position: fixed; inset: 0; z-index: 35; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.55); }
 .px-master-ask .yesnobox { position: static; transform: none; }

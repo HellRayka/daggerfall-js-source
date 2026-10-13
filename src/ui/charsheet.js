@@ -51,12 +51,13 @@ import { ownTimeLeftShort } from '../systems/worldTick.js';   // AUDIT LIVED1 Q:
 import { REGION_NAMES } from '../formats/mapsFile.js';       // GetLocalizedRegionName
 import { InputMessageBoxWindow } from './inputMessageBox.js';   // CM4: the Name button's DaggerfallInputMessageBox
 import { enterNewNameLabel } from './itemMakerWindow.js';       // CM4: Internal_Strings.enterNewName, homed with its first reader
-import { localizedText, formatText, processGrammar } from '../systems/textManager.js';   // L10N3d: DFU's Internal_Strings, read in the player's language; L10N3g: the race label's grammar
+import { localizedText, formatText, processGrammar, t } from '../systems/textManager.js';   // L10N3d: DFU's Internal_Strings, read in the player's language; L10N3g: the race label's grammar
 import { healthStatusRows } from '../systems/healthStatus.js';   // CM4: CreateHealthStatusBox's rows
 import { affiliations } from '../systems/affiliations.js';   // CM4: ShowAffiliationsDialog's book - GUILD-REP: one model, both skins
 import { firstHotkey } from '../systems/dialogShortcuts.js';   // CM4: the four buttons' DaggerfallShortcut bindings
 import { YesNoBoxWindow } from './yesNoBox.js';   // SOFTCAP3: the Master Skills switch asks in DFU's own Yes/No box
 import { masterSkillsActive, masterSkillsSwitchable, masterSkillsBlockReason, masterSkillsStatusText, setMasterSkills, MASTER_SKILLS_OFFER_ROWS, MASTER_SKILLS_INFO_ROWS, MASTERY_GROUP_NAMES, masterySlots, masteryCandidates, masteryChoiceRows, masterSkill, isMasteredSkill, careerGroupOf } from '../systems/masterSkills.js';   // SOFTCAP3/4
+import { pathOf, pathChoices, pathChoiceRows, pathAboutRows, choosePath } from '../systems/arcanePaths.js';   // SCHOOLS1: the specialisation row
 import { liveRaceTemplate, liveRaceName } from '../systems/vampirism.js';   // DISC10-D V5: the live race the sheet names
 /** AUDIT LIVED1 Q: the sheet's due column online - "in 359 days" / "due now"; null offline, where DFU's date stands. */
 const loanDueShort = (due) => { const s = ownTimeLeftShort(due); return s == null ? null : s === 'now' ? 'due now' : `in ${s}`; };
@@ -557,6 +558,7 @@ export class CharSheet {
     const p = pages[action];
     if (p) { this.page = this.page === p ? 0 : p; return; }
     if (this.page && (action === 'KeyM' || action === 'm')) { this._masterSkillsPrompt(); return; }   // SOFTCAP3: the skill page's Master Skills row
+    if (this.page && this._pathRow && (action === 'KeyS' || action === 's')) { this._pathPrompt(); return; }   // SCHOOLS1: and its Specialisation row
     if (this.page && (action === 'back' || action === 'Escape')) { this.page = 0; return; }
     // MAC-C: the toggle key is the REGISTRY's, not the literal 'F5'.
     // This window takes RAW codes (isChoiceWindow), so the code is
@@ -608,6 +610,7 @@ export class CharSheet {
     // sheet-anchored plate. One click, and the dialog is gone.
     // SOFTCAP3: ...except its own last row, the Master Skills switch - a click there asks, as M does
     if (this.page && this._masterRow && inRect(this._masterRow, vx, vy)) { audio.playOneShot(SOUND.ButtonClick, 1); this._masterSkillsPrompt(); return true; }
+    if (this.page && this._pathRow && inRect(this._pathRow, vx, vy)) { audio.playOneShot(SOUND.ButtonClick, 1); this._pathPrompt(); return true; }   // SCHOOLS1
     if (this.page) { this.page = 0; return true; }
     const R = CHARSHEET_RECTS;
     // The rollout's own hit rects, while it is mounted: the eight stat
@@ -826,7 +829,9 @@ export class CharSheet {
     const twoColumn = this.page === 4;   // :835 is the only caller that passes true
     const showHth = ids.includes(SKILLS.HandToHand);
     const lines = (twoColumn ? Math.ceil(ids.length / 2) : ids.length) + (showHth ? 1 : 0);
-    const h = (lines + 1) * 9 + 14;   // SOFTCAP3: + the Master Skills row under the skills
+    // SCHOOLS1: the Specialisation row under it, while Master Skills is in force and a path is chosen or open
+    const pathText = masterSkillsActive(e) ? (pathOf(e) ? t('schools.sheet.chosen', '{name}  (S)', { name: pathOf(e).name }) : pathChoices(e).length ? t('schools.sheet.choose', 'Specialise  (S)') : null) : null;
+    const h = (lines + 1 + (pathText ? 1 : 0)) * 9 + 14;   // SOFTCAP3: + the Master Skills row under the skills
     const w = twoColumn ? 246 : 130;
     const x = twoColumn ? Math.floor((320 - w) / 2) : 8;
     const y = twoColumn ? Math.floor((200 - h) / 2) : 100;
@@ -859,6 +864,30 @@ export class CharSheet {
     const slots = grp && masterSkillsActive(e) ? masterySlots(e, grp) : null;
     shadowText(renderer, font, slots ? `Mastered ${slots.used}/${slots.max}  (M)` : `${masterSkillsStatusText(e)}  (M)`, m, x + 4, my, { color: [0.86, 0.73, 0.35, 1] });
     this._masterRow = [x, my - 1, w, 9];
+    // SCHOOLS1: THE SPECIALISATION ROW - the path chosen (S tells what it does) or "Choose a specialisation" (S asks)
+    this._pathRow = null;
+    if (pathText) {
+      shadowText(renderer, font, pathText, m, x + 4, my + 9, { color: [0.86, 0.73, 0.35, 1] });
+      this._pathRow = [x, my + 8, w, 9];
+    }
+  }
+
+  /** SCHOOLS1 (bible/06-Systems/Arcane-Specialisations.md section 3): the Specialisation row, classic face. A path chosen:
+   *  DFU's OK box says what it does. None yet: each open path is asked about in DFU's Yes/No box - PERMANENT on Yes; No,
+   *  then S, offers the next. */
+  _pathPrompt() {
+    const e = this.entity;
+    const chosen = pathOf(e);
+    // AUDIT SCHOOLS L4 H1: the plate stays behind a choosing box, so "No, then S" reaches the next path
+    if (chosen) { this.page = 0; this.child = new YesNoBoxWindow({ okOnly: true, rows: [...pathAboutRows(chosen), '', t('schools.sheet.sold', 'Its signature spell is sold to you at the Mages Guild.')] }); return; }
+    const pool = pathChoices(e);
+    if (!pool.length) return;
+    const p = pool[(this._pathPick = ((this._pathPick ?? -1) + 1)) % pool.length];
+    const more = pool.length > 1 ? ['', t('schools.sheet.next', '{n, plural, one {# specialisation is open - No, then S, for the next.} other {# specialisations are open - No, then S, for the next.}}', { n: pool.length })] : [];
+    this.child = new YesNoBoxWindow({
+      rows: [...pathChoiceRows(e, p.id, { others: false }), ...more],
+      onYes: () => { const r = choosePath(e, p.id); this.notice = r.text; this.noticeOk = r.ok; },
+    });
   }
 
   /** SOFTCAP3: the Master Skills row, classic face. ONLINE it is always on: DFU's OK box explains it. OFFLINE it is
@@ -872,8 +901,10 @@ export class CharSheet {
     const grp = ['primary', 'major', 'minor'][this.page - 1] ?? null;
     if (grp && masterSkillsActive(e)) {
       const pool = masteryCandidates(e).filter((id) => careerGroupOf(e, id) === grp);
-      this.page = 0;
+      // AUDIT SCHOOLS L4 H1: the plate STAYS behind a choosing box - "No, then M, for the next" read a key the closed
+      // plate no longer answered (the box's own window draws over it while it stands; a click on the plate still closes it)
       if (!pool.length) {
+        this.page = 0;
         const sl = masterySlots(e, grp);
         this.child = new YesNoBoxWindow({ okOnly: true, rows: [
           `${MASTERY_GROUP_NAMES[grp]} skills: ${sl.used} of ${sl.max} mastered.`, '',

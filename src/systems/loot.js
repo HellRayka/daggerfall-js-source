@@ -39,6 +39,7 @@ import { createRandomBook, BOOK_TEMPLATE, bookValue } from './books.js';   // IM
 import { potionRecipeByKey, POTION_DEFAULT_TEXTURE_RECORD } from './potions.js';   // F103: PotionRecipeKey's price side effect; AUDIT 63 F20: and its texture-record half
 import { RANDOM_TREASURE_ARCHIVE, RANDOM_TREASURE_ICONS, DROP_ICON_ARCHIVES, DROP_ICON_IDXS } from './lootDataTables.js';   // G5: DaggerfallLootDataTables.cs, its own file again
 import { themedIngredientPool } from './lootThemes.js';   // MOD: a monster's CreatureIngredients roll draws from ITS OWN curated subset, not the full mismatched pool
+import { pathOfSignatureIndex } from './arcanePaths.js';   // AUDIT SCHOOLS: a signature spell's name, by its index band
 import { getLocalizedSpellName } from './textManager.js';   // L10N3e: a stock spell's name, by its SPELLS.STD index (shownSpellName)
 import { isOnlinePage } from './onlineLane.js';   // REALM P0.4: online, a pile's gold is not the level's
 import { rriLootMatrix, rriEnemyLootTableKey, conditionBasedPricesOn, randomConditionLootItems } from './rriRealism.js';   // RRI2: LootRealismTables over DefaultLootTables, MobLootKeys over the basics' key, the condition roll on tabled loot
@@ -295,6 +296,10 @@ export const spellRecordOfIndex = (index) => _spellsByIndex?.get?.(index) ?? nul
  *  name as it is. */
 export function shownSpellName(spell) {
   const name = spell?.name;
+  // AUDIT SCHOOLS L4 4: a path's signature spell (its own index band) under its canonical name reads in the player's
+  // language, as a stock spell does below; a name the player gave it in the book stays theirs
+  const sig = Number.isInteger(spell?.index) ? pathOfSignatureIndex(spell.index) : null;
+  if (sig) return name === sig.spell.nameEn ? sig.spell.name : name;
   const stock = typeof name === 'string' && Number.isInteger(spell.index) && spell.index >= 0 ? spellRecordOfIndex(spell.index) : null;
   if (!stock) return name;
   const own = String(stock.name ?? '');

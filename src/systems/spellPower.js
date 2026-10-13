@@ -20,24 +20,47 @@
 // player: a refereed fight's stand-in is a player (combat/duelCombat.js duelStub), so the duel, the siege, the Wild Zone
 // and the arena stand exactly where BAL8 left them; a foe's spell is its own (BAL3 keeps the place off a foe's spells).
 //
-// A leaf: the skills' ids, the softcap's climb and the page's lane, so systems/effects.js reads it with no cycle.
+// SCHOOLS2 (bible/06-Systems/Arcane-Specialisations.md section 4; the owner chose "each mastered school also pays past
+// 100 in its own way, not just in price" - BAL9's open "other schools" call): THE SAME LAW FOR EVERY SCHOOL. schoolPotency
+// reads any school's climb (Destruction's by default, BAL9b's own); systems/effects.js lands each school's in its own
+// dimension - Restoration's heals, Alteration's Shield, Illusion's concealments and Thaumaturgy's wards on MYSELF
+// (`schoolMult` with `self`), Mysticism's chances at a foe - and a signature spell reads the school it is cast in
+// (spellcost.js castSchool). And SCHOOLS3's LANDED listeners: the cast engine's word that MY spell landed, which the
+// paths' riders answer (systems/arcanePowers.js).
+//
+// Its imports: the skills' ids, the softcap's climb, the page's lane and the refereed fight's word (sigil.js). No leaf -
+// sigil.js reaches some 145 files (the wire, the folds, the price; AUDIT SCHOOLS L5) - but none of them imports this
+// file or systems/effects.js back, so effects.js reads it with no cycle.
 
 import { SKILLS } from './skills.js';
 import { SKILL_SOFT_CAP, climbedSkill } from './skillSoftcap.js';
 import { isOnlinePage } from './onlineLane.js';
+import { sigilDueling } from './sigil.js';   // SCHOOLS2: a self perk sleeps in a refereed fight, as every loot and set power does
 
 /** Each effective point of Destruction past 100 is this much more damage (CLIMB-PAST's CLIMB_OVERCAP_SPEED_PER_POINT). */
 export const DESTRUCTION_POTENCY_PER_POINT = 0.01;
+/** SCHOOLS2: and every school's own - one law, one number. */
+export const SCHOOL_POTENCY_PER_POINT = DESTRUCTION_POTENCY_PER_POINT;
 
 /** MY spell at a target the port may strengthen: a player's own (no peer's stand-in), at no player. */
 export const ownSpellAt = (caster, target) => !!caster?.isPlayer && !caster.peer && !!target && !target.isPlayer;
+/** SCHOOLS2: MY spell on MYSELF - my own player entity, its own caster, and no refereed fight in progress. */
+export const ownSpellOnSelf = (caster, target) => !!caster?.isPlayer && !caster.peer && caster === target && !sigilDueling();
 
-/** The school past 100: 1 to 100, then 1% a point of Destruction's CLIMB (effective 140 at most: x1.4). Online alone, and
- *  none while mentoring. */
-export function schoolPotency(caster, { online = isOnlinePage() } = {}) {
+/** The school past 100: 1 to 100, then 1% a point of the school's CLIMB (effective 140 at most: x1.4) - Destruction's
+ *  unless `school` names another (SCHOOLS2). Online alone, and none while mentoring. */
+export function schoolPotency(caster, { online = isOnlinePage(), school = SKILLS.Destruction } = {}) {
   if (!online || !caster?.isPlayer || caster._mentor) return 1;
-  const climbed = climbedSkill(caster, SKILLS.Destruction);
-  return climbed > SKILL_SOFT_CAP ? 1 + (climbed - SKILL_SOFT_CAP) * DESTRUCTION_POTENCY_PER_POINT : 1;
+  const climbed = climbedSkill(caster, school);
+  return climbed > SKILL_SOFT_CAP ? 1 + (climbed - SKILL_SOFT_CAP) * SCHOOL_POTENCY_PER_POINT : 1;
+}
+
+/** SCHOOLS2: what `school` past 100 multiplies on MY spell landing on `target` - its potency where the target is mine to
+ *  strengthen (`self`: myself, for a heal, a Shield, a concealment or a ward; else a foe, for a chance at it); 1 for
+ *  anything else - a peer's stand-in's cast, a foe's, a gift landing on a party mate, a duel's opponent. */
+export function schoolMult(caster, target, school, { self = false, ...opts } = {}) {
+  if (!(self ? ownSpellOnSelf(caster, target) : ownSpellAt(caster, target))) return 1;
+  return schoolPotency(caster, { ...opts, school });
 }
 
 const _power = new Map();
@@ -57,6 +80,20 @@ export function spellPowerMult(caster, target, opts = {}) {
     if (Number.isFinite(v) && v > 0) pct += v;
   }
   return schoolPotency(caster, opts) * (1 + pct / 100);
+}
+
+/** SCHOOLS3: named listeners told when MY spell LANDED - `fn({ caster, target, foe, spell, r, self, reflected, took,
+ *  cast })`: `r` the landing's answer (systems/effects.js applySpell's); `foe` the door's record of the target (null on
+ *  a relay's stand-in, whose body the relay holds); `self` true for my own cast on me, `reflected` for my spell a foe
+ *  turned back at me; `took` what the target could lose (never the overkill past its health); `cast` the cast's token
+ *  (`{ cost }`, the magicka it took - one token for every landing of one cast; null for a landing no cast released, a
+ *  Cast When Strikes proc's). The cast engine tells them (scenes/hostMagic.js applySpellToFoe, applySpellToPlayer) - the
+ *  one engine every host casts through - and the relay's stand-ins (scenes/dungeonContext.js tellStandIn, scenes/world.js
+ *  serpentSpellOn). A non-function removes the name; one that throws is skipped. */
+const _landed = new Map();
+export function registerSpellLandedListener(name, fn) { if (typeof fn === 'function') _landed.set(name, fn); else _landed.delete(name); }
+export function tellSpellLanded(info) {
+  for (const fn of _landed.values()) { try { fn(info); } catch { /* a rider is not the cast's problem */ } }
 }
 
 /** The points MY damage spell takes off the target's saving throw - never negative, none but my own at no player. */

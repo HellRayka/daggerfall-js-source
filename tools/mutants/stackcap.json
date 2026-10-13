@@ -29,8 +29,8 @@
   {
     "name": "STACK-CAP-chain-arm-stacks",
     "file": "src/systems/effects.js",
-    "old": "        if (inc) renewRounds(inc, rounds - 1);   // rounds renewed (STACK-CAP); the incumbent's chance stands",
-    "new": "        if (inc) inc.roundsRemaining += rounds;   // rounds renewed (STACK-CAP); the incumbent's chance stands",
+    "old": "          renewRounds(inc, rounds - 1);   // rounds renewed (STACK-CAP); the incumbent's chance stands -",
+    "new": "          inc.roundsRemaining += rounds;   // rounds renewed (STACK-CAP); the incumbent's chance stands -",
     "tests": [
       "test/stackcap.test.js"
     ]
@@ -38,8 +38,8 @@
   {
     "name": "STACK-CAP-shield-renews-past-a-fresh-cast",
     "file": "src/systems/effects.js",
-    "old": "          renewRounds(inc, rounds - 1);",
-    "new": "          renewRounds(inc, rounds);",
+    "old": "          renewRounds(inc, rounds - 1);\n          inc.shieldRemaining",
+    "new": "          renewRounds(inc, rounds);\n          inc.shieldRemaining",
     "tests": [
       "test/stackcap.test.js"
     ]

@@ -29,6 +29,7 @@ import { privateInteriorOf, privateInteriorMatches } from '../net/privateInterio
 import { iilActive, iilInteriorLights, iilDungeonLights, iilTorch, iilSyncLane } from '../systems/improvedInteriorLighting.js';   // IIL1: Improved Interior Lighting on the classic lane
 import { resurrectionSpell } from '../systems/resurrect.js';   // RESURRECT1
 import { sharedCartographySpell } from '../systems/partyMap.js';   // PARTY-MAP
+import { signatureOffers } from '../systems/signatureSpells.js';   // SCHOOLS3: a path's signature spell on the Buy Spells shelf
 import { isOnlinePage } from '../systems/onlineLane.js';   // RESURRECT1: the shelf's online arm
 import { horseCareOn } from '../systems/upkeepSwitch.js';   // STEED1: a Stable prices its horses by what they are while horses are cared for
 import { bloodDecalDeps } from '../combat/bloodSwitch.js';   // BLOOD1a
@@ -6547,7 +6548,7 @@ export function createWorldModes(host) {
         spells: () => (playerEntity.spells ??= []),
         entity: playerEntity,
         castCost: (sp) => calculateCastCost(sp, playerEntity).sp,
-        offered: () => [...sbi.values(), ...(isOnlinePage() ? [resurrectionSpell(), sharedCartographySpell()] : [])],   // RESURRECT1: online, the ready-made Resurrection is on the shelf; PARTY-MAP: and Shared Cartography beside it
+        offered: () => [...sbi.values(), ...(isOnlinePage() ? [resurrectionSpell(), sharedCartographySpell()] : []), ...signatureOffers(playerEntity)],   // RESURRECT1: online, the ready-made Resurrection is on the shelf; PARTY-MAP: and Shared Cartography beside it; SCHOOLS3: and my awake path's signature spell, to me alone
         buildingQuality: () => b?.quality ?? 0,
         priceFactor: () => bookFactor,   // CHAP3c: the hall's chapter's band on a spell's price
         shopName: () => b?.name ?? '',

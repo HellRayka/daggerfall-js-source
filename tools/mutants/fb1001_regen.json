@@ -83,8 +83,8 @@
   {
     "name": "AREA-CASTER-given-it-saved",
     "file": "src/scenes/hostMagic.js",
-    "old": "    const r = applySpellToPlayer({ ...sp, rangeType: 0 }, effectiveLevel(playerEntity), playerCaster());",
-    "new": "    const r = applySpellToPlayer(sp, effectiveLevel(playerEntity), playerCaster());",
+    "old": "    const r = applySpellToPlayer({ ...sp, rangeType: 0 }, effectiveLevel(playerEntity), playerCaster(cast));",
+    "new": "    const r = applySpellToPlayer(sp, effectiveLevel(playerEntity), playerCaster(cast));",
     "tests": [
       "test/fb1001_regen.test.js"
     ]
@@ -101,7 +101,7 @@
   {
     "name": "AREA-CASTER-around-caster-passes-her-by",
     "file": "src/scenes/hostMagic.js",
-    "old": "      giveAreaToCaster(sp);   // AREA-CASTER: and me, when it is all gifts",
+    "old": "      giveAreaToCaster(sp, cast);   // AREA-CASTER: and me, when it is all gifts",
     "new": "      // gone   // AREA-CASTER: and me, when it is all gifts",
     "tests": [
       "test/fb1001_regen.test.js"
@@ -110,8 +110,8 @@
   {
     "name": "AREA-CASTER-at-range-only-at-its-burst",
     "file": "src/scenes/hostMagic.js",
-    "old": "    if (sp.rangeType === 4) giveAreaToCaster(sp);",
-    "new": "    if (false) giveAreaToCaster(sp);",
+    "old": "    if (sp.rangeType === 4) giveAreaToCaster(sp, cast);",
+    "new": "    if (false) giveAreaToCaster(sp, cast);",
     "tests": [
       "test/fb1001_regen.test.js"
     ]

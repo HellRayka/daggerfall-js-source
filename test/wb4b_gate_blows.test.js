@@ -123,19 +123,19 @@ test('WB4b the seams, by source: the dungeon context meets him as a foe-shaped b
   assert.match(dc, /const \{ point: p, dist \} = bossReach\(eye, boss\.ai\);/);
   assert.match(dc, /landOnBoss\(boss, damage, HIT_KINDS\.Melee\);/);
   assert.match(dc, /if \(boss && missileHitsCapsule\(m\.pos, boss\.ai\.feet, boss\.ai\.height, boss\.ai\.radius\)\) \{\n\s*if \(boss\.warded\) wardTurns\(boss\);\n\s*else playerArrowHitFoe\(m, boss, \{[^\n]*dealDamage: \(t, d\) => landOnBoss\(boss, d, HIT_KINDS\.Shaft\) \}\);/, 'a shaft meets his whole body');
-  assert.match(dc, /try \{ applySpell\(harm, playerEntity\.level, boss\.entity, sinks, Math\.random, \{ entity: playerEntity \}\); \} finally \{ boss\.entity\.activeEffects = \[\]; \}/);
+  assert.match(dc, /try \{ r = applySpell\(harm, playerEntity\.level, boss\.entity, sinks, Math\.random, \{ entity: playerEntity \}\); \} finally \{ boss\.entity\.activeEffects = \[\]; \}/);   // PIN MOVED (AUDIT SCHOOLS L2 F4): its answer kept, for the paths' riders
   assert.match(dc, /return landOnBoss\(boss, dealt, HIT_KINDS\.Spell\);/);
-  assert.match(dc, /castAtBoss: opts\.gateBoss \? \(sp\) => spellOnBoss\(sp\) : null,/);
+  assert.match(dc, /castAtBoss: opts\.gateBoss \? \(sp, caster\) => spellOnBoss\(sp, caster\) : null,/);   // PIN MOVED (AUDIT SCHOOLS L2 F4): and the cast's wrapper
   // PIN MOVED (FIELD BUGS 2026-10-12g OPEN-HAND): a follow-up the blow owes him rides its one claim, taken first
   assert.match(dc, /function landOnBoss\(boss, damage, r\) \{\n\s*damage \+= takeOwed\(boss\.entity\);[^\n]*\n\s*if \(boss\.warded\) \{ wardTurns\(boss\); return false; \}\n\s*return sdRemnant \? sdRemnant\.hit\(\{ d: damage, r \}\) : !!opts\.onBossHit\?\.\(\{ d: damage, r \}\);/);   // PIN MOVED (SD8c): the Remnant's in the Hour
   const hm = read('src/scenes/hostMagic.js');
   // WBX7: the harmful families - and a Soul Trap, which met nobody before (it passed straight through him)
   assert.match(hm, /function bossMarksFor\(sp\) \{\n\s*if \(!bossMark \|\| !castAtBoss \|\| !sp \|\| !\(duelSpellOf\(sp\) \|\| \(sp\.effects \?\? \[\]\)\.some\(\(e\) => e && isSoulTrapEffect\(e\)\) \|\| spellSways\(sp\)\)\) return \[\];/, 'the harmful families, a soul trap - and WB8a: a sway, refused at him');
   for (const re of [
-    /if \(boss && caster\?\.entity === playerEntity\) for \(const t of sweepFoes\(pos, EXPLOSION_RADIUS, bossMarksFor\(spell\)\)\) giveToBoss\(t, spell\);/,   // AUDIT WBX F5: `boss` (a Soul Trap meets him too)
+    /if \(boss && caster\?\.entity === playerEntity\) for \(const t of sweepFoes\(pos, EXPLOSION_RADIUS, bossMarksFor\(spell\)\)\) giveToBoss\(t, spell, caster\);/,   // PIN MOVED (AUDIT SCHOOLS L2 F4)   // AUDIT WBX F5: `boss` (a Soul Trap meets him too)
     /const marks = \[\.\.\.allyMarksFor\(sp\), \.\.\.duelMarksFor\(sp\), \.\.\.bossMarksFor\(sp\)\];/,
-    /else if \(t\?\.boss\) giveToBoss\(t, sp\);/,
-    /for \(const t of sweepFoes\(eye, EXPLOSION_RADIUS, bossMarksFor\(sp\)\)\) giveToBoss\(t, sp\);/,
+    /else if \(t\?\.boss\) giveToBoss\(t, sp, playerCaster\(cast\)\);/,   // PIN MOVED (AUDIT SCHOOLS L2 F4): and this cast's wrapper
+    /for \(const t of sweepFoes\(eye, EXPLOSION_RADIUS, bossMarksFor\(sp\)\)\) giveToBoss\(t, sp, areaCaster\);/,   // PIN MOVED (AUDIT SCHOOLS L2 F4)
     /const hitBoss = bossMarksFor\(m\.spell\)\.find\(\(p\) => missileHitsCapsule\(m\.pos, p\.ai\.feet, p\.ai\.height, p\.ai\.radius\)\);/,
   ]) assert.match(hm, re);
   const wm = read('src/scenes/worldModes.js');

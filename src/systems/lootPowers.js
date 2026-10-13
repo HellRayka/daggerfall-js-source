@@ -69,7 +69,7 @@ import { addGoldPieces, addItem } from './inventory.js';
 import { createPellets } from './thunderlock.js';   // GILDED1: the Hour Tolls gives a felling shot's pellet back
 import { isNight } from '../world/worldClock.js';
 import { hudText } from './notify.js';
-import { healMine, _resetPlayerHealForTests } from './playerHeal.js';   // SERPENT-SET: the one heal a power gives, below this file and the sets'
+import { healMine, manaMine, _resetPlayerHealForTests } from './playerHeal.js';   // SERPENT-SET: the one heal a power gives, below this file and the sets'
 import { weaponSkillUsed } from '../characters/weapons.js';
 import { SKILLS } from './skills.js';
 import { friendlyProtected } from '../combat/playerWeapon.js';
@@ -120,7 +120,7 @@ export function foeGroup(target) {
   return g === ENEMY_GROUPS.Undead ? 'undead' : g === ENEMY_GROUPS.Daedra ? 'daedra' : g === ENEMY_GROUPS.Humanoid ? 'humanoid'
     : g === ENEMY_GROUPS.Animals ? 'animal' : null;
 }
-const ELEMENT_FLAG = Object.freeze({ fire: EFFECT_FLAGS.Fire, frost: EFFECT_FLAGS.Frost, shock: EFFECT_FLAGS.Shock, poison: EFFECT_FLAGS.Poison });
+const ELEMENT_FLAG = Object.freeze({ fire: EFFECT_FLAGS.Fire, frost: EFFECT_FLAGS.Frost, shock: EFFECT_FLAGS.Shock, poison: EFFECT_FLAGS.Poison, magic: EFFECT_FLAGS.Magic });   // AUDIT SCHOOLS: and magic, a path's arc's (arcanePowers.js)
 /** How much of an element a foe takes: none IMMUNE, half when it RESISTS, else whole. */
 export function elementShare(target, element) {
   const t = careerTolerance(target?.career ?? {}, ELEMENT_FLAG[element] ?? 0);
@@ -159,7 +159,6 @@ let _tolls = new WeakMap();              // GILDED1: a tolling weapon -> its lan
 let _lastToll = null;                    // GILDED1: the last foe a tolling weapon's shot landed on, and when
 /** @type {WeakSet<object>} */
 let _struck = new WeakSet();             // the foes my blows have landed on (First Blood)
-let _manaOwed = 0;
 /** GILDED1: THE HOUR TOLLS - is this weapon's next landed shot its toll? Its landed shots are counted on the strike
  *  (lootStrike, after the blow), so the blow asks before the count moves: shots one and two ring nothing, the third tolls. */
 const tollDue = (weapon, p) => !!weapon && (_tolls.get(weapon) ?? 0) === p.every - 1;
@@ -205,13 +204,7 @@ export const flowStacks = (now = _now()) => (now < _s.flowUntil ? _s.flow : 0);
 export const bedrockStacks = (now = _now()) => (now < _s.bedrockUntil ? _s.bedrock : 0);
 const hexed = (foe, now = _now()) => !!foe && now < (_hexed.get(foe) ?? 0);
 /** Restore MY magicka, the fraction carried, never past its maximum. */
-function gainMana(entity, amount) {
-  if (!entity || !(amount > 0) || !Number.isFinite(entity.magicka)) return;
-  const exact = amount + _manaOwed;
-  const whole = Math.floor(exact + 1e-9);
-  _manaOwed = exact - whole;
-  if (whole > 0) entity.magicka = Math.min(Number.isFinite(entity.maxMagicka) ? entity.maxMagicka : entity.magicka + whole, entity.magicka + whole);
-}
+const gainMana = manaMine;   // SCHOOLS3: the one magicka gift, moved to playerHeal.js beside the one heal
 
 // ── the blow: elemental, slayer ─────────────────────────────────────
 /**
@@ -276,8 +269,10 @@ export function lootStrike(attacker, target, damage, weapon) {
 const flat2 = (a, b) => Math.hypot(a[0] - b[0], a[2] - b[2]);
 const rise = (a, b) => Math.abs((a[1] ?? 0) - (b[1] ?? 0));
 /** The live foes my harm may reach near `feet`, but `except` - never an ally or a foe at peace (the sets' AUDIT SET H1),
- *  one a storey away (M4) or one behind a wall (the host's ray, where it has one). */
-function near(door, feet, metres, except) {
+ *  one a storey away (M4) or one behind a wall (the host's ray, where it has one). AUDIT SCHOOLS (L1 H1, L3 F1): THE ONE
+ *  REACH LAW, exported - a path's arcs (systems/arcanePowers.js) wrote their own and reached allies, foes at peace and
+ *  foes behind walls. */
+export function near(door, feet, metres, except) {
   return door.foes().filter((f) => f.entity !== except && !f.dead && f.ai?.feet && !friendlyProtected(f, { protection: true })
     && rise(f.ai.feet, feet) <= REACH_RISE_M && flat2(f.ai.feet, feet) <= metres && (!door.clear || door.clear(feet, f.ai.feet)));
 }
@@ -575,7 +570,7 @@ export function lootHudChips(entity, now = _now()) {
 
 /** Tests only: every carry and power fresh, a clock and a chance of their own (seconds, [0, 1)). */
 export function _resetLootPowersForTests() {
-  _carry = new WeakMap(); _resetPlayerHealForTests(); _manaOwed = 0; _s = freshState(); _hexed = new WeakMap(); _struck = new WeakSet(); _tolls = new WeakMap(); _lastToll = null;
+  _carry = new WeakMap(); _resetPlayerHealForTests(); _s = freshState(); _hexed = new WeakMap(); _struck = new WeakSet(); _tolls = new WeakMap(); _lastToll = null;
   _say = (line) => { hudText(line); };
 }
 export function _setLootPowersClockForTests(fn) { _now = typeof fn === 'function' ? fn : () => performance.now() / 1000; }

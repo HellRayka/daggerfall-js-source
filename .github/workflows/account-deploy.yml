@@ -194,6 +194,7 @@ on:
       - "src/systems/aetheric.js"
       - "src/systems/appRoot.js"
       - "src/systems/appStorage.js"
+      - "src/systems/arcanePaths.js"
       - "src/systems/armorMaterials.js"
       - "src/systems/artifactEffects.js"
       - "src/systems/ayleidStones.js"

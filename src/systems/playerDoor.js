@@ -13,7 +13,8 @@
 //   feet()          my feet in that host's frame ([x, y, z])
 //   hurtFoe(f, n)   n damage from ME to foe record f, through its own pool's door (a kill is mine, a puppet's goes to
 //                   its owner as my hit - the sinks every spell of mine already lands through)
-//   castOnPlayer(b) a spell bundle on me, no saving throw and no chance roll (a potion's way)
+//   castOnPlayer(b, { power })  a spell bundle on me, no saving throw and no chance roll (a potion's way); `power` (AUDIT
+//                   SCHOOLS): a path's rider - a merge with it takes the larger Shield pool or ward chance (effects.js powerCast)
 //   player()        my entity (a kill's word names the foe, not me)
 //   clear(a, b)     AUDIT SET M4 (optional): whether nothing solid stands between feet a and feet b, chest high
 //   say(line)       RVN3 (optional): a line the scene's HUD speaks
@@ -22,7 +23,7 @@
 //                   world (its map pixel and the named dungeons in reach), { underground } in a dungeon, or null
 // }
 
-/** @type {null | { foes: () => any[], feet: () => number[]|null, hurtFoe: (f: any, n: number) => void, castOnPlayer: (b: any) => void, player?: () => any, clear?: (a: number[], b: number[]) => boolean, say?: (line: string) => void, sfx?: (id: number, at: number[]) => void, lairHere?: () => any, isPuppet?: (f: any) => boolean }} */
+/** @type {null | { foes: () => any[], feet: () => number[]|null, hurtFoe: (f: any, n: number) => void, castOnPlayer: (b: any, o?: { power?: boolean }) => void, player?: () => any, clear?: (a: number[], b: number[]) => boolean, say?: (line: string) => void, sfx?: (id: number, at: number[]) => void, lairHere?: () => any, isPuppet?: (f: any) => boolean }} */
 let _door = null;
 /** The running host's word: this is the scene now. `null` takes it down. */
 export function setPlayerDoor(door) { _door = door && typeof door === 'object' ? door : null; }

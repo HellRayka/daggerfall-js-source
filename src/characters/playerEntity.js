@@ -279,6 +279,17 @@ export function playerBlowCameToNothing(entity) { tellDoorOpen(entity); }
 // here so this leaf imports none of it; until it is, no hurt is a blow.
 let _foeBlow = () => false;
 export function setFoeBlowProbe(fn) { _foeBlow = typeof fn === 'function' ? fn : () => false; }
+// AUDIT SCHOOLS (L1 M3): A FOE'S BLOW EVADED - named listeners `fn(entity) -> boolean`, asked once a foe's blow (the
+// struck tail's mark, setFoeBlowProbe) reaches a door that may say (no SetHealth(0) door, no duel's blow) and BEFORE any
+// modifier: one that answers true makes the blow land nothing - no modifier spends a charge on it (Iron Hide's ward,
+// Gearward's winding, Hold the Line's carry), no shield pool drinks it and no hurt listener hears it (the Seer's
+// Foresight). A blow at full health, a fall, a poison's round, a spell is never asked.
+const _evasions = new Map();
+export const registerPlayerBlowEvasion = namedRegistry(_evasions);
+function playerBlowEvaded(entity) {
+  for (const fn of _evasions.values()) { try { if (fn(entity) === true) return true; } catch { /* as below */ } }
+  return false;
+}
 /** The damage through every registered modifier, in registration order - a modifier that throws is skipped. */
 export function playerDamageMods(entity, dmg) {
   let d = dmg;
@@ -327,6 +338,7 @@ export function hurtPlayer(entity, dmg, { bypassShield = false, spare = null } =
   if (!(dmg > 0)) return false;
   const portSays = !bypassShield && !spare;   // SET2: never on a SetHealth(0) door, never on a duel's blow
   if (portSays) {
+    if (_foeBlow() && playerBlowEvaded(entity)) return false;   // AUDIT SCHOOLS L1 M3: before any modifier spends a charge
     dmg = playerDamageMods(entity, dmg);
     if (!(dmg > 0)) return false;
   }

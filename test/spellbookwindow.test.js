@@ -1207,7 +1207,7 @@ test('U42: BuySpells and BuySpellsMages are no longer FLAGGED nulls', () => {
   const modes = readFileSync(new URL('../src/scenes/worldModes.js', import.meta.url), 'utf8');
   assert.ok(modes.includes("destination === 'guildServiceSpellbook'"), 'the interior host runs the arm');
   assert.ok(/\{ buyMode: true \}/.test(modes), '...in BUY mode');
-  assert.ok(/offered: \(\) => \[\.\.\.sbi\.values\(\), \.\.\.\(isOnlinePage\(\) \? \[resurrectionSpell\(\), sharedCartographySpell\(\)\] : \[\]\)\]/.test(modes), 'over the whole of SPELLS.STD - and, online, RESURRECT1\'s ready-made Resurrection and PARTY-MAP\'s Shared Cartography');
+  assert.ok(/offered: \(\) => \[\.\.\.sbi\.values\(\), \.\.\.\(isOnlinePage\(\) \? \[resurrectionSpell\(\), sharedCartographySpell\(\)\] : \[\]\), \.\.\.signatureOffers\(playerEntity\)\]/.test(modes), 'over the whole of SPELLS.STD - and, online, RESURRECT1\'s ready-made Resurrection and PARTY-MAP\'s Shared Cartography; SCHOOLS3: and my awake path\'s signature spell');   // PIN MOVED (SCHOOLS3)
   // The popup's onService reads what openServiceFlow RETURNS and
   // answers "not available yet" on a null, so this arm hands the
   // window back as the repair arm does rather than mounting silently.
