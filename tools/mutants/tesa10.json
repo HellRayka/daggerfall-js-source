@@ -398,8 +398,8 @@
   {
     "name": "TESA10-pin-unwired",
     "file": "src/world/arenaPlaces.js",
-    "old": "_coastal, capitalPin, (bx, by) => !!capitalOnPixel(bx, by));",
-    "new": "_coastal);",
+    "old": "(tamrielTrace()), capitalPin, (bx, by) => !!capitalOnPixel(bx, by));",
+    "new": "(tamrielTrace()));",
     "tests": [
       "test/tesa10_capitals.test.js"
     ]
@@ -785,8 +785,8 @@
   {
     "name": "TESA10b-pin-no-port",
     "file": "src/world/arenaPlaces.js",
-    "old": "    const placed = { ...p, bx: at.px, by: at.py, pinned: true, ...(port ? { port: true } : {}) };",
-    "new": "    const placed = { ...p, bx: at.px, by: at.py, pinned: true };",
+    "old": "    const placed = { ...rest, bx: at.px, by: at.py, pinned: true, ...(port ? { port: true } : {}) };",
+    "new": "    const placed = { ...rest, bx: at.px, by: at.py, pinned: true };",
     "tests": [
       "test/tesa6_ports.test.js"
     ]

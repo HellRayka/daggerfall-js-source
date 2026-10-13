@@ -18,7 +18,7 @@ afterEach(() => setTamrielFit(null));
 
 // ── WAVE 1: ARENA'S NAMES, A QUEST'S SITE, THE CAPITALS' MARKERS ─
 
-test('AUDIT-TESA A1-1: an Arena place\'s automap key names it by its map id - never Arena\'s name on the party\'s shared map; a capital, a lair and a Bay place keep theirs; the party pose sends no Arena name', () => {
+test('AUDIT-TESA A1-1: an Arena place\'s automap key names it by its map id - never Arena\'s name on the party\'s shared map; a capital, a lair and a Bay place keep theirs; the party pose names the place (TESA12: the port\'s own - PIN MOVED: it sent none while the names were Arena\'s)', () => {
   const arena = { regionIndex: 0, name: 'Winterhold', arena: { provinceIndex: 2, id: 3 }, mapTableData: { mapId: 0xa7_7a1f4 } };
   const key = automapKeyOf(arena);
   assert.equal(key, automapDungeonKey(0, `arena#${0xa7_7a1f4 >>> 0}`));
@@ -27,7 +27,8 @@ test('AUDIT-TESA A1-1: an Arena place\'s automap key names it by its map id - ne
   assert.equal(automapKeyOf({ ...arena, capital: { key: 'solitude', k: 1 }, name: 'Solitude' }), automapDungeonKey(0, 'Solitude'), 'a capital is the port\'s, its name too');
   assert.equal(automapKeyOf({ regionIndex: 17, name: 'Daggerfall' }), automapDungeonKey(17, 'Daggerfall'));
   assert.equal(automapKeyOf({ regionIndex: 0, name: 'Ulrik\'s Hold', country: { dungeon: true }, mapTableData: { mapId: 5 } }), `${automapDungeonKey(0, 'Ulrik\'s Hold')}#5`);
-  assert.match(W, /loc: loc\?\.arena && !loc\.capital \? '' : ident\?\.kind === 'dungeon' \? \(ident\.name \?\? ''\) : \(loc\?\.name \?\? ''\),/);
+  // PIN MOVED (TESA12): the places are the port's own, every client's the same - the wire names one like any town
+  assert.match(W, /loc: ident\?\.kind === 'dungeon' \? \(ident\.name \?\? ''\) : \(loc\?\.name \?\? ''\),/);
 });
 
 test('AUDIT-TESA A1-2: entering an Arena place, and a quest revealing one, discovers it by its map id alone - its name never rides a save', () => {
@@ -209,7 +210,8 @@ test('AUDIT-TESA A6-2: where a capital\'s models stand - a wall over a garden or
 });
 
 test('AUDIT-TESA A7-1/A5-F1/A2-6: a load waits for the trace whenever a place past the Bay stands - a capital or the countryside, Arena or none; the land moving rolls the countryside\'s and the lairs\' pixels again; their ground\'s reads kept a fit and a land', () => {
-  const i = W.indexOf('if ((_countryTemplates || _capitalBase) && params.has(\'load\')) await Promise.race([arenaTraced, new Promise((r) => setTimeout(r, ARENA_LOAD_WAIT_MS))]);');
+  // PIN MOVED (TESA12): one wait - the town past the Bay's beside the capitals' and the countryside's
+  const i = W.indexOf('if ((_arenaTemplates || _countryTemplates || _capitalBase) && params.has(\'load\')) await Promise.race([arenaTraced, new Promise((r) => setTimeout(r, ARENA_LOAD_WAIT_MS))]);');
   assert.ok(i > 0, 'the wait');
   assert.match(W, /const rolled = moved && !!\(_countryTemplates \|\| _lairTemplates\) && !cap && !had\?\.capital && !had\?\.arena;\n\s+if \(rolled \|\| cap !== !!had\?\.capital\) again\.push/, 'the sweep');
   assert.match(read('src/world/tamrielCountry.js'), /if \(fit !== tamrielFit\(\) \|\| land !== tamrielLandVersion\(\)\) \{ dry\.clear\(\); fit = tamrielFit\(\); land = tamrielLandVersion\(\); \}/, 'the ground');

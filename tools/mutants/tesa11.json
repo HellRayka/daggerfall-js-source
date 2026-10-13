@@ -330,8 +330,8 @@
   {
     "name": "TESA11-arena-on-the-city",
     "file": "src/world/arenaPlaces.js",
-    "old": "_coastal, capitalPin, (bx, by) => !!capitalOnPixel(bx, by));",
-    "new": "_coastal, capitalPin, null);",
+    "old": "(tamrielTrace()), capitalPin, (bx, by) => !!capitalOnPixel(bx, by));",
+    "new": "(tamrielTrace()), capitalPin, null);",
     "tests": [
       "test/tesa11_imperial.test.js",
       "test/tesa10_capitals.test.js"

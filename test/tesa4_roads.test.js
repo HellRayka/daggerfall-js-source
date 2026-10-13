@@ -409,13 +409,12 @@ test('TESA4 the host: the towns go to the kernels when the places that stand mov
   assert.match(read('src/world/roadVerge.js'), /const bits = mx >= 0 && my >= 0 && mx < MAP_W && my < MAP_H \? pathsDataPoint\(net, mx, my\) \| arenaJoinByte\(mx, my\) : arenaPathsAt\(mx, my\);/, 'PIN MOVED (TESA5): and the join on the Bay');
 });
 
-const ARENA2 = process.env.ARENA2_PATH, ARENA = process.env.ARENA_PATH;
-const HAVE = !!ARENA2 && !!ARENA && ['TMAP00I0.IMG', 'TAMRIEL2.IMG', 'ART_PAL.COL', 'WOODS.WLD'].every((f) => existsSync(join(ARENA2, f))) && existsSync(join(ARENA, 'CITYDATA.65'));
-test('TESA4 with ARENA2 and ARENA: the freeware\'s 233 towns and villages, a window five pixels a cell, 150 roads and 56 tracks routed (four island pairs not), 19563 road pixels and 5813 track pixels - none on the Bay', { skip: HAVE ? false : 'ARENA2_PATH and ARENA_PATH not set' }, async () => {
+const ARENA2 = process.env.ARENA2_PATH;
+const HAVE = !!ARENA2 && ['TMAP00I0.IMG', 'TAMRIEL2.IMG', 'ART_PAL.COL', 'WOODS.WLD'].every((f) => existsSync(join(ARENA2, f)));
+test('TESA4 with ARENA2: the port\'s 283 cities, towns and villages (TESA12), a window five pixels a cell, 180 roads and 51 tracks routed (twenty pairs across the water not), 26828 road pixels and 6251 track pixels - none on the Bay', { skip: HAVE ? false : 'ARENA2_PATH not set' }, async () => {
   const { DFPalette } = await import('../src/formats/dfPalette.js');
   const { preloadTamrielTrace } = await import('../src/ui/tamrielTrace.js');
-  const { parseArenaCityData } = await import('../src/formats/arenaCityData.js');
-  const { setArenaCityData, arenaPixels } = await import('../src/world/arenaPlaces.js');
+  const { arenaPixels } = await import('../src/world/arenaPlaces.js');
   const { WoodsFile } = await import('../src/formats/woodsFile.js');
   const { groundWoods } = await import('../src/world/tamrielGround.js');
   const { WATER_BYTE } = await import('../src/world/roadsProducer.js');
@@ -423,18 +422,17 @@ test('TESA4 with ARENA2 and ARENA: the freeware\'s 233 towns and villages, a win
   const pal = new DFPalette(); pal.load(await fetchBytes('ART_PAL.COL'), 'ART_PAL.COL');
   setTamrielTrace(await preloadTamrielTrace({ fetchBytes, palette: pal }));
   setTamrielFit({ ox: 38 * 15.5, oy: 57 * 15.5, ppu: 15.5 });
-  setArenaCityData(parseArenaCityData(new Uint8Array(readFileSync(join(ARENA, 'CITYDATA.65')))));
   try {
     const woods = new WoodsFile(); woods.load(await fetchBytes('WOODS.WLD'));
     const g = groundWoods(woods);
     const towns = arenaRoadTowns(arenaPixels());
     const window = arenaRoadWindow(towns);
-    assert.equal(towns.length, 233);
-    assert.deepEqual(window, { x0: 41, y0: -400, s: 5 });
+    assert.equal(towns.length, 283);
+    assert.deepEqual(window, { x0: -71, y0: -474, s: 5 });
     const net = buildArenaNetwork({ towns, window, heightAt: (x, y) => g.getHeightMapValue(x, y), isWater: (_x, _y, h) => h <= WATER_BYTE });
-    assert.deepEqual([net.stats.roadEdges, net.stats.trackEdges, net.stats.unrouted], [150, 56, 4]);
+    assert.deepEqual([net.stats.roadEdges, net.stats.trackEdges, net.stats.unrouted], [180, 51, 20]);
     const layer = rasterArenaRoads(net, window, towns);
-    assert.deepEqual([layer.roads.size, layer.tracks.size], [19563, 5813]);
+    assert.deepEqual([layer.roads.size, layer.tracks.size], [26828, 6251]);
     assert.ok([...layer.roads.keys(), ...layer.tracks.keys()].every((k) => !inBay(...keyXY(k))));
-  } finally { setArenaCityData(null); }
+  } finally { setTamrielTrace(null); setTamrielFit(null); }
 });

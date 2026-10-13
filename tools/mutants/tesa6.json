@@ -1,122 +1,5 @@
 [
   {
-    "name": "TESA6-the-key-a-flag-off",
-    "file": "src/formats/arenaExe.js",
-    "old": "        out[n++] = byte() ^ (16 - read);",
-    "new": "        out[n++] = byte() ^ (15 - read);",
-    "tests": [
-      "test/tesa6_ports.test.js"
-    ]
-  },
-  {
-    "name": "TESA6-the-count-table-unbent",
-    "file": "src/formats/arenaExe.js",
-    "old": "const COUNT = new Map(COUNT_CODES.map((c, i) => [c, i < 11 ? i + 2 : i + 1]));",
-    "new": "const COUNT = new Map(COUNT_CODES.map((c, i) => [c, i + 2]));",
-    "tests": [
-      "test/tesa6_ports.test.js"
-    ]
-  },
-  {
-    "name": "TESA6-the-special-a-count",
-    "file": "src/formats/arenaExe.js",
-    "old": "      if (c === SPECIAL) {",
-    "new": "      if (false) {",
-    "tests": [
-      "test/tesa6_ports.test.js"
-    ]
-  },
-  {
-    "name": "TESA6-nothing-a-count",
-    "file": "src/formats/arenaExe.js",
-    "old": "        if (e === 0xfe) continue;\n",
-    "new": "",
-    "tests": [
-      "test/tesa6_ports.test.js"
-    ]
-  },
-  {
-    "name": "TESA6-the-high-byte-always",
-    "file": "src/formats/arenaExe.js",
-    "old": "      const high = count !== 2 ? HIGH.get(code(HIGH)) : 0;",
-    "new": "      const high = HIGH.get(code(HIGH));",
-    "tests": [
-      "test/tesa6_ports.test.js"
-    ]
-  },
-  {
-    "name": "TESA6-the-last-word-unread",
-    "file": "src/formats/arenaExe.js",
-    "old": "  if (le16(end - 2) !== 0xffff) return null;\n",
-    "new": "",
-    "tests": [
-      "test/tesa6_ports.test.js"
-    ]
-  },
-  {
-    "name": "TESA6-a-copy-past-the-end",
-    "file": "src/formats/arenaExe.js",
-    "old": "      if (back < 1 || back > n || n + count > out.length) return null;",
-    "new": "      if (back < 1 || back > n) return null;",
-    "tests": [
-      "test/tesa6_ports.test.js"
-    ]
-  },
-  {
-    "name": "TESA6-a-copy-before-the-start",
-    "file": "src/formats/arenaExe.js",
-    "old": "      if (back < 1 || back > n || n + count > out.length) return null;",
-    "new": "      if (back < 1 || n + count > out.length) return null;",
-    "tests": [
-      "test/tesa6_ports.test.js"
-    ]
-  },
-  {
-    "name": "TESA6-a-byte-past-the-end",
-    "file": "src/formats/arenaExe.js",
-    "old": "        if (n >= out.length) return null;\n",
-    "new": "",
-    "tests": [
-      "test/tesa6_ports.test.js"
-    ]
-  },
-  {
-    "name": "TESA6-the-cd-offset",
-    "file": "src/formats/arenaExe.js",
-    "old": "'ACD.EXE': 0x401e2",
-    "new": "'ACD.EXE': 0x401e0",
-    "tests": [
-      "test/tesa6_ports.test.js"
-    ]
-  },
-  {
-    "name": "TESA6-the-names-unread",
-    "file": "src/formats/arenaExe.js",
-    "old": "    for (let i = 0; i < TEMPLATE_HEAD.length && ok; i++) ok = exe[head + i] === TEMPLATE_HEAD.charCodeAt(i);",
-    "new": "    for (let i = 0; i < 0 && ok; i++) ok = exe[head + i] === TEMPLATE_HEAD.charCodeAt(i);",
-    "tests": [
-      "test/tesa6_ports.test.js"
-    ]
-  },
-  {
-    "name": "TESA6-the-list-unread",
-    "file": "src/world/arenaPlaces.js",
-    "old": "    const port = p.id < 32 && coast.has(arenaGlobalCityId(p.id, p.provinceIndex));",
-    "new": "    const port = false;",
-    "tests": [
-      "test/tesa6_ports.test.js"
-    ]
-  },
-  {
-    "name": "TESA6-a-dungeon-a-port",
-    "file": "src/world/arenaPlaces.js",
-    "old": "    const port = p.id < 32 && coast.has(arenaGlobalCityId(p.id, p.provinceIndex));",
-    "new": "    const port = coast.has(arenaGlobalCityId(p.id, p.provinceIndex));",
-    "tests": [
-      "test/tesa6_ports.test.js"
-    ]
-  },
-  {
     "name": "TESA6-the-sea-anywhere",
     "file": "src/world/arenaPlaces.js",
     "old": "free(bx, by) && RING8.some(([dx, dy]) => !inBay(bx + dx, by + dy) && pictureSea(trace, bx + dx, by + dy)); };",
@@ -126,55 +9,10 @@
     ]
   },
   {
-    "name": "TESA6-the-reach-short",
-    "file": "src/world/arenaPlaces.js",
-    "old": "export const SHORE_REACH = 320;",
-    "new": "export const SHORE_REACH = 200;",
-    "tests": [
-      "test/tesa6_ports.test.js"
-    ]
-  },
-  {
     "name": "TESA6-no-port-said",
     "file": "src/world/arenaPlaces.js",
     "old": "...(onShore ? { port: true } : {})",
     "new": "...({})",
-    "tests": [
-      "test/tesa6_ports.test.js"
-    ]
-  },
-  {
-    "name": "TESA6-a-list-any-length",
-    "file": "src/world/arenaPlaces.js",
-    "old": "  _coastal = list && list.length === COASTAL_CITY_COUNT ? Uint8Array.from(list) : null;",
-    "new": "  _coastal = list ? Uint8Array.from(list) : null;",
-    "tests": [
-      "test/tesa6_ports.test.js"
-    ]
-  },
-  {
-    "name": "TESA6-online-without-the-list",
-    "file": "src/world/arenaPlaces.js",
-    "old": "  if (_online && !(_known && _coastKnown)) return null;",
-    "new": "  if (_online && !_known) return null;",
-    "tests": [
-      "test/tesa6_ports.test.js"
-    ]
-  },
-  {
-    "name": "TESA6-the-list-stood-late",
-    "file": "src/world/arenaPlaces.js",
-    "old": "  if (_model.fit !== fit || _model.coast !== _coastal) {",
-    "new": "  if (_model.fit !== fit) {",
-    "tests": [
-      "test/tesa6_ports.test.js"
-    ]
-  },
-  {
-    "name": "TESA6-the-version-still",
-    "file": "src/world/arenaPlaces.js",
-    "old": "  _coastKnown = !!_coastal && !!known;\n  _version++;",
-    "new": "  _coastKnown = !!_coastal && !!known;",
     "tests": [
       "test/tesa6_ports.test.js"
     ]
@@ -193,51 +31,6 @@
     "file": "src/world/arenaLocations.js",
     "old": "kind: place.kind, port: !!place.port }),",
     "new": "kind: place.kind, port: false }),",
-    "tests": [
-      "test/tesa6_ports.test.js"
-    ]
-  },
-  {
-    "name": "TESA6-the-exe-unkept",
-    "file": "src/scenes/dataSource.js",
-    "old": "export const ARENA_FILES = Object.freeze([ARENA_CITYDATA, ...ARENA_EXES]);",
-    "new": "export const ARENA_FILES = Object.freeze([ARENA_CITYDATA]);",
-    "tests": [
-      "test/tesa6_ports.test.js"
-    ]
-  },
-  {
-    "name": "TESA6-the-file-printed",
-    "file": "src/scenes/dataSource.js",
-    "old": "isKnownCoastalPrint(await arenaCityDataPrint(coast))",
-    "new": "isKnownCoastalPrint(await arenaCityDataPrint(new Uint8Array(1)))",
-    "tests": [
-      "test/tesa6_ports.test.js"
-    ]
-  },
-  {
-    "name": "TESA6-remove-keeps-the-ports",
-    "file": "src/scenes/dataSource.js",
-    "old": "  setArenaCityData(null);\n  setArenaCoastal(null);\n",
-    "new": "  setArenaCityData(null);\n",
-    "tests": [
-      "test/tesa6_ports.test.js"
-    ]
-  },
-  {
-    "name": "TESA6-the-ports-row-always",
-    "file": "src/ui/enhancedMenu.js",
-    "old": "    ...(attached ? [['Ports',",
-    "new": "    ...(true ? [['Ports',",
-    "tests": [
-      "test/tesa6_ports.test.js"
-    ]
-  },
-  {
-    "name": "TESA6-a-reading-swapped",
-    "file": "src/ui/enhancedMenu.js",
-    "old": "coastKnown ? ARENA_PORT_WORDS.known : ARENA_PORT_WORDS.unknown",
-    "new": "coastKnown ? ARENA_PORT_WORDS.unknown : ARENA_PORT_WORDS.known",
     "tests": [
       "test/tesa6_ports.test.js"
     ]

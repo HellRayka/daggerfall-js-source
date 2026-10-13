@@ -24,7 +24,7 @@ out the whole of Tamriel, nine provinces of named places.
 4. **No cost on the Bay.** The placement is made once a trace (~90 ms, off the boot's critical path, beside TAMRIEL4's own
    ~0.4 s fit), and the ink is TAMRIEL1's: one rectangle test while the sheet shows the Bay.
 
-## The file (`formats/arenaCityData.js`)
+## The file (`formats/arenaCityData.js` - retired by TESA12, deleted)
 
 CITYDATA.65 is the world map as a new character starts it (BinaryAssetLibrary::initWorldMapDefs reads the .65; the .0x
 files are a save's copy, whose random dungeons carry the names that save rolled). A translation of OpenTESArena's
@@ -364,7 +364,7 @@ The owner, on the same item: *"Do it"*. Arena marks its coastal cities in the ex
 CoastalCityList, 58 global city ids (OpenTESArena's ExeData, its address maps `aExeStrings.txt` 0x3FEA8 and
 `acdExeStrings.txt` 0x401E2 - the freeware is the first), and Arena's coastal city is built round the water.
 
-- **The file** (`formats/arenaExe.js`): A.EXE (ACD.EXE on the CD) is PKLITE-packed; unpackArenaExe is OpenTESArena's
+- **The file** (`formats/arenaExe.js` - retired by TESA12, deleted): A.EXE (ACD.EXE on the CD) is PKLITE-packed; unpackArenaExe is OpenTESArena's
   ExeUnpacker law for law (the spec's two prefix tables, the 0x011100 special, a byte of data XORed with 16 less the flags
   read of its word) - byte-identical to it on the freeware's A.EXE, 19 ms. arenaCoastalCities reads the 58 ids at either
   release's offset where the city templates' names follow at once ("town%d.mif"), which is how a file is known to be a
@@ -740,6 +740,46 @@ at 317 m); Solitude and the other five stand as they were.
   the bridge west. Not yet walked in the game.
 
 
+## TESA12 - the places past the Bay, the port's own (2026-10-13)
+
+The owner: *"So with all these changes. I want to make it where attaching the arena file isn't needed (Elder Scrolls 1:
+Arena). How can we do that"*; asked, *"Canon + generated"* and *"Remove it"*. Nothing of Arena is read any more: the
+places TESA1 to TESA6 stood from the player's own CITYDATA.65 and A.EXE are the port's own, made on the trace from the
+player's Daggerfall files, the same Tamriel on every client, online and off.
+
+- **The cities** (`world/tamrielPlaces.js` makeTamrielPlaces): TAMRIEL1's 67 (`world/tamrielGeography.js` CITIES - the
+  lore's own, placed by the port's reading of the lore map: Windhelm and Whiterun, Anvil and Kvatch, Vivec and Necrom,
+  Senchal, Woodhearth, Lilmoth and the rest, the seven capitals among them), each in its province's slots from 0 in
+  TAMRIEL1's order, on its point where that is its province's land, else on the nearest of it within SNAP_REACH (24
+  picture pixels - the lore map's coasts lie wider than the picture's: Thorn, the farthest, 22.6). A capital's stands
+  on the capital (TESA10's pin), so its roads, its ink and a portal's end lead to the city the port built.
+- **The ports**: a city TAMRIEL1 sets on the sea (`port`, 30 of them: the Sea of Ghosts' four, the Abecean's, Summerset's
+  and Valenwood's coasts, Lilmoth, Archon, Soulrest, Necrom, Ebonheart, Vivec on the Inner Sea) stands on its province's
+  shore within SHORE_REACH (100 Bay pixels; `world/arenaPlaces.js` standArenaPixels) and is a port; one with no shore in
+  reach stands as any place and is none - on the freeware's picture Anvil and Leyawiin (no Gold Coast and no Topal Bay
+  there), so 28 ports. A.EXE's coastal list is not read.
+- **The towns and villages** (made): eight towns and sixteen villages a province (PLACE_COUNTS: Arena's shape of a
+  province - a count, no data), each a quarter inside a cell of its province's land off the Bay's rectangle and
+  BAY_MARGIN, the farthest of PLACE_TRIES (24) draws off the province's hash from every place before it; named by the
+  province's people (`world/tamrielCountry.js` countryName: a hamlet's or a village's stem off the province's DFU name
+  bank, TESA3's), no name twice nor a city's. A town clones a hamlet, a village a village (TESA2's templates). Arena's
+  staff dungeons are gone with it - the lairs (TESA8) are the land's dungeons.
+- **The lane** keeps TESA2's: a province's 48 slots (PLACES_PER_PROVINCE, the provinces in the picker's order, the
+  Imperial Province ninth - it stands its own cities now, Kvatch to Leyawiin), the cities from 0, the towns from 16, the
+  villages from 24. The module names keep TESA's (`arenaPlaces`, `arenaPixels`, `isArenaPlaceId`): the host's seams and a
+  save's ids are the same lane.
+- **No Arena**: `formats/arenaCityData.js` and `formats/arenaExe.js` are deleted; the Arena card is gone from Your files;
+  the prints, the room's word and the notice to a player without Arena went with them (every client stands the same
+  places). The store a copy was attached to stays in the database's schema (its arms are additive) and among the asset
+  stores, so a wipe still sweeps it, and the world's boot empties it once (`scenes/dataSource.js` clearRetiredArena): no
+  copy of Arena's files stays in a browser. `?arenaplaces=off` is offline alone now, as the countryside's door. A town
+  past the Bay is named on the wire (AUDIT-TESA A1-1's guard kept Arena's names off it; these are every client's);
+  the automap key and the save's discovery still name it by its map id.
+- **Measured** (the freeware's trace, the fit (38, 57) x15.5): 283 places - 67 cities (none lost), 216 towns and villages -
+  ~60 ms once a trace; all 283 stood on a pixel of their own (7 pinned on the capitals, 28 ports); the roads between
+  them 180 road and 51 track edges routed (20 pairs across the water not), and every one of TESA5's seven crossings on
+  the roads to a town past the Bay.
+
 - **The provinces as regions of their own** - their own chat rooms, banks, law, prices and quest sites. The save's shape,
   the relay's whitelist and the account services' validators move together: the owner's call.
 - **The dungeons' names** - Arena's own roll for the fourteen a province, so they stand too. What is known (2026-10-12):
@@ -761,6 +801,13 @@ at 317 m); Solitude and the other five stand as they were.
   sites in them.
 
 ## Pins
+
+`test/tesa12_places.test.js` (7, TESA12): the cities (TAMRIEL1's in their slots, on their points or snapped within
+SNAP_REACH, SNAP_INSET inside, else lost; the lore's ports); the made places (PLACE_COUNTS from TOWN_SLOT and
+VILLAGE_SLOT, off the Bay's rectangle and BAY_MARGIN, the best of PLACE_TRIES, the province's names none twice); the
+lane; the installed set; the ink; no Arena (no reader, no card, the retired store emptied once, the door online, the
+wire's name); with ARENA2 the freeware's 283 places and 28 ports. Mutants `tools/mutants/tesa12.json` (18, all dead).
+RETIRED: `test/tesa1_arena.test.js` and `test/tesa2_online.test.js` with Arena's data, below as they stood.
 
 `test/tesa11_imperial.test.js` (14, TESA11): the plan (24 x 24, its anchor the middle grid point; the lake, the city's
 own and a district's mix by the metres, the signatures once); the districts on their sectors; the slices (nine, their
@@ -858,10 +905,10 @@ coast, off the list and a dungeon unmoved, never across another province's land,
 the installed list (58 or none, its print, at once, online a known list too, the version); the store and the card's
 Ports row; the host by source (each port reader, no crown, the clone's and the sweep's port); with ARENA_PATH the real
 A.EXE's list known; with ARENA2_PATH and ARENA_PATH 248 stood, 51 ports, each beside the ground's sea. Mutants
-`tools/mutants/tesa6.json` (33, all dead). PIN MOVED: `test/tesa1_arena.test.js` (ARENA_FILES, the card's Ports row),
-`test/tesa2_arena.test.js` (`arena.port`, the clone's cache, the sweep's slot), `test/tesa2_online.test.js` (online needs
+`tools/mutants/tesa6.json` (33, all dead). PIN MOVED: `test/tesa1_arena.test.js` (DELETED by TESA12) (ARENA_FILES, the card's Ports row),
+`test/tesa2_arena.test.js` (`arena.port`, the clone's cache, the sweep's slot), `test/tesa2_online.test.js` (DELETED by TESA12; online needs
 the list too), `test/fb0929h_deedport.test.js` (its harness lifts the port test and the nearest-port finder: Arena's
-ports past the Bay, the Bay's on it); `tools/mutants/tesa1.json`'s TESA1-a-registration-installs-nothing, `tesa2.json`'s TESA2-one-fit-ever,
+ports past the Bay, the Bay's on it); `tools/mutants/tesa1.json` (DELETED by TESA12)'s TESA1-a-registration-installs-nothing, `tesa2.json`'s TESA2-one-fit-ever,
 TESA2-a-harbour-kept and TESA2-the-index-keeps-it, `tesa_online.json`'s TESA-ONLINE-any-copy-online re-aimed by content,
 all judged dead again.
 
@@ -902,13 +949,13 @@ ARENA2_PATH, Winterhold's pixel Skyrim's, Mournhold's Morrowind's, Daggerfall no
 (13, all dead). PIN MOVED: `test/audit58_magic.test.js` (the talk's and the stranger's names through nameBankHere and
 getRandomFullNameOfBank) and `test/macro6_talk.test.js` (the town talk's %fn/%mn through the province's bank first).
 
-`test/tesa2_online.test.js` (5, TESA-ONLINE): the print (SHA-256 in hex, every byte two digits, the one list, case
+RETIRED by TESA12 (the file deleted): `test/tesa2_online.test.js` (5, TESA-ONLINE): the print (SHA-256 in hex, every byte two digits, the one list, case
 held), the room (online only a known release stands; offline any copy; the switch's version), the registration and the
 card's three readings, the host by source (online and off, the room's word, the notice's gates and its once, on the
 crossing) and the relay's rooms for an Arena dungeon and building; with ARENA_PATH, the freeware's file is the release
-the room knows. Mutants `tools/mutants/tesa_online.json` (12, all dead). PIN MOVED: `test/tesa2_arena.test.js` (the
-host stands them online too) and `test/tesa1_arena.test.js` (the card's reading names the release); TESA2's
-TESA2-online-too record retired with the law it held; `tools/mutants/tesa1.json`'s TESA1-a-registration-installs-nothing
+the room knows. Mutants `tools/mutants/tesa_online.json` (DELETED by TESA12) (12, all dead). PIN MOVED: `test/tesa2_arena.test.js` (the
+host stands them online too) and `test/tesa1_arena.test.js` (DELETED by TESA12) (the card's reading names the release); TESA2's
+TESA2-online-too record retired with the law it held; `tools/mutants/tesa1.json` (DELETED by TESA12)'s TESA1-a-registration-installs-nothing
 re-aimed by content (the install now carries `known`), judged dead again.
 
 `test/tesa2_arena.test.js` (8, TESA2): the pixel (under the point, the centre's land deciding where the corner's would not,
@@ -933,7 +980,7 @@ picture, the jump to Winterhold's pixel (2200, -360) built in 59 s of software r
 "Winterhold" - Arena key 2|2, a 6 x 7 city of 243 buildings, the region the clamp's (the Alik'r Desert) - with no page
 error.
 
-`test/tesa1_arena.test.js` (11): the file's layout field by field over a CITYDATA minted by the format's own law (a full
+RETIRED by TESA12 (the file deleted): `test/tesa1_arena.test.js` (11): the file's layout field by field over a CITYDATA minted by the format's own law (a full
 twenty-byte name, the last slot of a province, a zeroed slot, any other length refused); the location laws (the 49 kinds,
 getGlobalPoint's truncation on a case the exact ratio moves, the city id's shift, the visibility bit, the province
 order); the cloud's fit (a shift found, the count's bias held by FIT_SPARE and taken without it, the identity on a
@@ -943,7 +990,7 @@ places beyond the Bay, the capitals, the kinds' glyphs and words, the rebuild, t
 own, the version, the filter, a registration with no IndexedDB) and the doors (the host's two warms, the static key, the
 card's rows and buttons); and, where ARENA_PATH and ARENA2_PATH name the data, the freeware CITYDATA.65 (401 placed, 273
 named, the provinces and rectangles) and the placement on the real trace (392 by the fit, 9 snapped, none lost, 248
-inked, the eight capitals). Mutants `tools/mutants/tesa1.json` (33, all dead).
+inked, the eight capitals). Mutants `tools/mutants/tesa1.json` (DELETED by TESA12) (33, all dead).
 PIN MOVED: `test/features.test.js`, `test/org2_options.test.js` and `test/settingsUI.test.js` name the Arena card in
 Your files and in the card table. Re-aimed by content, each judged dead again: `tools/mutants/mwa4.json`'s
 MWA4-the-card-off-the-head-of-the-files-page (the files row now ends with the Arena card), `tools/mutants/tamriel.json`'s

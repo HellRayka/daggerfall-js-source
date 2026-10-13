@@ -9,15 +9,6 @@
     ]
   },
   {
-    "name": "AUDIT-TESA-A1-1-pose-names",
-    "file": "src/scenes/world.js",
-    "old": "loc: loc?.arena && !loc.capital ? '' : ident?.kind",
-    "new": "loc: ident?.kind",
-    "tests": [
-      "test/audit_tesa.test.js"
-    ]
-  },
-  {
     "name": "AUDIT-TESA-A1-2-discovery-names",
     "file": "src/scenes/world.js",
     "old": "locationName: dfLocation.arena && !dfLocation.capital ? '' : dfLocation.name,",
@@ -228,7 +219,7 @@
   {
     "name": "AUDIT-TESA-A7-1-no-wait",
     "file": "src/scenes/world.js",
-    "old": "if ((_countryTemplates || _capitalBase) && params.has('load'))",
+    "old": "if ((_arenaTemplates || _countryTemplates || _capitalBase) && params.has('load'))",
     "new": "if (false && params.has('load'))",
     "tests": [
       "test/audit_tesa.test.js"
@@ -358,15 +349,6 @@
     "new": "  return pageParam('country', search) !== 'off';",
     "tests": [
       "test/audit_tesa.test.js"
-    ]
-  },
-  {
-    "name": "AUDIT-TESA-A1-6-silent-no-exe",
-    "file": "src/scenes/dataSource.js",
-    "old": "    doneText: (n) => (!n ? 'no CITYDATA.65 in that folder' : _arenaCoast ?",
-    "new": "    doneText: (n) => (!n ? 'no CITYDATA.65 in that folder' : true ?",
-    "tests": [
-      "test/tesa1_arena.test.js"
     ]
   },
   {

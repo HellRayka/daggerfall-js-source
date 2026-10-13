@@ -34,7 +34,7 @@ import { pictureToBay, bayToPicture, inBay, BAY_W, BAY_H, tamrielFit, tamrielFra
 // TAMRIEL3: the picture's own land where the world host traced it (world/tamrielLand.js) - the coast, the borders and
 // the provinces' places come off the trace, the authored shape stands where there is none
 import { tamrielTrace, tamrielLandVersion, provinceKeyAt, PROVINCE_OF_ID } from '../world/tamrielLand.js';
-// TESA1: Arena's places, where the player attached their Arena and the trace stands them (world/arenaPlaces.js)
+// TESA1: the places past the Bay where the trace stands them (world/arenaPlaces.js; TESA12: the port's own)
 import { arenaPlaces, arenaPlacesVersion, arenaPixels, arenaStanding } from '../world/arenaPlaces.js';
 import { capitalPin, capitalsStanding, capitalsVersion } from '../world/tamrielCapitals.js';   // TESA10d: a capital's pixel on the map, Arena or none
 import { makeNoise, octaveNoise } from './introMap.js';   // the intro's own seeded value noise - ONE home for it
@@ -62,14 +62,10 @@ export const CARET_LATTICE = 1;
 export const CONTINENT_BELOW = 0.85;
 /** A city beyond the Bay answers a hover within this many paper pixels. */
 export const CITY_HIT_PX = 9;
-/** TESA1: an Arena place's kind, as the hover says it. */
-export const ARENA_KIND_WORDS = Object.freeze({
-  'city-state': 'city-state', town: 'town', village: 'village', 'staff-dungeon': 'dungeon', 'map-dungeon': 'dungeon', dungeon: 'dungeon',
-});
-/** TESA1: an Arena place's glyph, the Bay's own kinds - a capital is the city glyph whatever its kind. */
-export const ARENA_KIND_GLYPHS = Object.freeze({
-  'city-state': 'hamlet', town: 'village', village: 'village', 'staff-dungeon': 'dungeon', 'map-dungeon': 'dungeon', dungeon: 'dungeon',
-});
+/** TESA1: a place's kind, as the hover says it. */
+export const ARENA_KIND_WORDS = Object.freeze({ 'city-state': 'city-state', town: 'town', village: 'village' });
+/** TESA1: a place's glyph, the Bay's own kinds - a capital is the city glyph whatever its kind. */
+export const ARENA_KIND_GLYPHS = Object.freeze({ 'city-state': 'hamlet', town: 'village', village: 'village' });
 /** The words. */
 export const TAMRIEL_TEXT = Object.freeze({
   beyond: 'beyond the Bay',
@@ -426,9 +422,9 @@ export function placeCity(city) {
   return best;
 }
 
-/** TESA1: the ink's cities off Arena's places - every named place beyond the Bay's rectangle (the Bay's own are
- *  Daggerfall's, inked by the Bay's painter), each a capital where TAMRIEL1 named it one, by name in its province.
- *  The unnamed dungeons (a name each Arena save rolls) are not inked. TESA2: where a host stands the places
+/** TESA1: the ink's cities off the places past the Bay (TESA12: the port's own) - every named place beyond the Bay's
+ *  rectangle (the Bay's own are Daggerfall's, inked by the Bay's painter), each a capital where TAMRIEL1 named it one, by
+ *  name in its province. TESA2: where a host stands the places
  *  (arenaStanding), each carries the Bay pixel it stands on (`pixel`, world/arenaPlaces.js standArenaPixels) - a portal's
  *  end on the teleport map (TESA-NO-FAST: never a journey); else `pixel` is null and a press picks nothing, as TESA1's did.
  *  @param {NonNullable<ReturnType<typeof arenaPlaces>>} model */
@@ -442,7 +438,7 @@ export function arenaInkCities(model) {
     const [x, y] = pictureToBay(p.px, p.py);
     if (inBay(x, y)) continue;
     const st = stood.get(`${p.provinceIndex}|${p.id}`), pixel = st ? { x: st.x, y: st.y } : capitalStandsAt(p);
-    // AUDIT-TESA A7-4: a place on a capital's pixel (its pin, or the capital standing where Arena's places do not) is inked
+    // AUDIT-TESA A7-4: a place on a capital's pixel (its pin, or the capital standing where the places do not) is inked
     // there - on the city the world stands, not on its own point a pixel or more away
     const on = pixel && (st?.pinned || !st) ? [pixel.x + 0.5, pixel.y + 0.5] : [x, y];
     out.push({ name: p.name, province: p.province, capital: capital.has(`${p.province}|${p.name}`), kind: p.kind, x: on[0], y: on[1], pixel });
@@ -508,7 +504,7 @@ export function buildTamrielInk({ bayCoast = [] } = {}) {
     : PROVINCES.map((p) => { const [x, y] = pictureToBay(p.label[0], p.label[1]); return { key: p.key, name: p.name, x, y }; });
   const seas = SEAS.map((s) => { const [x, y] = pictureToBay(s.at[0], s.at[1]); return { name: s.name, x, y }; })
     .filter((s) => !traced || !provinceKeyAt(...bayToPicture(s.x, s.y)));   // a sea's name on the picture's land is left off
-  // TESA1: Arena's places where the player's Arena stands them on the trace; TAMRIEL1's authored cities else
+  // TESA1: the places past the Bay where the trace stands them (TESA12: the port's own); TAMRIEL1's authored cities else
   const arena = traced ? arenaPlaces() : null;
   const cities = arena ? arenaInkCities(arena) : CITIES.map((c) => {
     const pixel = capitalStandsAt(c);   // TESA10d: a capital the world stands is inked on its pixel - on the teleport map a portal's end (TESA-NO-FAST)
@@ -526,7 +522,7 @@ const _inks = new WeakMap();
 const _noBay = { ink: null };
 export function tamrielInkFor(bayModel) {
   const key = bayModel?.coast;
-  const v = tamrielLandVersion(), a = arenaPlacesVersion(), c = capitalsVersion();   // TESA1: Arena's places attached or removed rebuild it too; TESA10d: the capitals standing
+  const v = tamrielLandVersion(), a = arenaPlacesVersion(), c = capitalsVersion();   // TESA1: the places' standing moved rebuilds it too; TESA10d: the capitals standing
   const stale = (ink) => !ink || ink.version !== v || ink.arenaVersion !== a || ink.capitalsVersion !== c;
   if (!key) { if (stale(_noBay.ink)) _noBay.ink = buildTamrielInk(); return _noBay.ink; }
   let ink = _inks.get(key);
@@ -594,7 +590,7 @@ export function paintTamrielInk(ctx, view, ink, opts) {
     if (!c.capital && !all) continue;
     if (!visible(c.x, c.y)) continue;
     const [x, y] = toPaper(view, c.x, c.y);
-    const glyph = c.capital ? 'city' : (ARENA_KIND_GLYPHS[c.kind] ?? 'hamlet');   // TESA1: an Arena place by its kind
+    const glyph = c.capital ? 'city' : (ARENA_KIND_GLYPHS[c.kind] ?? 'hamlet');   // TESA1: a place past the Bay by its kind
     paintGlyph(ctx, glyph, x, y, true);
     paintGlyph(ctx, glyph, x, y, false);
     named.push([c, x, y]);

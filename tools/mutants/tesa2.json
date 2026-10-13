@@ -47,8 +47,8 @@
   {
     "name": "TESA2-one-fit-ever",
     "file": "src/world/arenaPlaces.js",
-    "old": "  if (_model.fit !== fit || _model.coast !== _coastal) {",
-    "new": "  if (!_model.pixels) {",
+    "old": "  if (!_model || _model.land !== land || _model.fit !== fit) _model =",
+    "new": "  if (!_model || _model.land !== land) _model =",
     "tests": [
       "test/tesa2_arena.test.js"
     ]
@@ -83,7 +83,7 @@
   {
     "name": "TESA2-the-ordinal-overlaps",
     "file": "src/world/arenaLocations.js",
-    "old": "const ordinal = (place) => place.provinceIndex * LOCATIONS_PER_PROVINCE + place.id;",
+    "old": "const ordinal = (place) => place.provinceIndex * PLACES_PER_PROVINCE + place.id;",
     "new": "const ordinal = (place) => place.provinceIndex * 47 + place.id;",
     "tests": [
       "test/tesa2_arena.test.js"
@@ -92,17 +92,8 @@
   {
     "name": "TESA2-a-town-a-village",
     "file": "src/world/arenaLocations.js",
-    "old": "  town: Object.freeze({ type: LOCATION_TYPES.TownHamlet, dungeon: false }),",
-    "new": "  town: Object.freeze({ type: LOCATION_TYPES.TownVillage, dungeon: false }),",
-    "tests": [
-      "test/tesa2_arena.test.js"
-    ]
-  },
-  {
-    "name": "TESA2-a-dungeon-without-blocks",
-    "file": "src/world/arenaLocations.js",
-    "old": "(dungeon ? !!(l.hasDungeon && l.dungeon?.blocks?.length) : !l.hasDungeon)",
-    "new": "(dungeon ? !!l.hasDungeon : !l.hasDungeon)",
+    "old": "  town: Object.freeze({ type: LOCATION_TYPES.TownHamlet }),",
+    "new": "  town: Object.freeze({ type: LOCATION_TYPES.TownVillage }),",
     "tests": [
       "test/tesa2_arena.test.js"
     ]
@@ -119,8 +110,8 @@
   {
     "name": "TESA2-the-rows-unordered",
     "file": "src/world/arenaLocations.js",
-    "old": "      .sort((a, b) => idOf(a) - idOf(b));",
-    "new": "      ;",
+    "old": "&& !l.hasDungeon).sort((a, b) => idOf(a) - idOf(b));",
+    "new": "&& !l.hasDungeon);",
     "tests": [
       "test/tesa2_arena.test.js"
     ]
@@ -209,8 +200,8 @@
   {
     "name": "TESA2-the-load-waits-not",
     "file": "src/scenes/world.js",
-    "old": "  if (_arenaTemplates && params.has('load')) await arenaReady.then((n) => (n ? Promise.race([arenaTraced, new Promise((r) => setTimeout(r, ARENA_LOAD_WAIT_MS))]) : 0));\n",
-    "new": "\n",
+    "old": "if ((_arenaTemplates || _countryTemplates || _capitalBase) && params.has('load'))",
+    "new": "if ((_countryTemplates || _capitalBase) && params.has('load'))",
     "tests": [
       "test/tesa2_arena.test.js"
     ]

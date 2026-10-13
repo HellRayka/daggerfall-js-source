@@ -182,7 +182,7 @@ test('SO1: the settings pane is organised - the port\'s rows sit in the categori
   assert.equal(whereIs('port:showFps')?.section.id, 'display', 'the FPS counter beside the frame rate cap');
   // FT14: the Mods page is gone; ORG2: its cards are items on the map - the files under Mods & files, other players under Gameplay
   assert.deepEqual(whereIs('card:morrowind') && [whereIs('card:morrowind').tab.id, whereIs('card:packs').tab.id, whereIs('card:peerSprites').tab.id], ['mods', 'mods', 'gameplay']);
-  assert.match(menu, /const make = \{ morrowind: \(\) => morrowindCard\(\), packs: \(\) => packsCard\(\), arena: \(\) => arenaCard\(\), peerSprites: \(\) => peerSpritesCard\(\), nightSounds: \(\) => nightSoundsCard\(\) \}\[item\.slice\(5\)\];/);
+  assert.match(menu, /const make = \{ morrowind: \(\) => morrowindCard\(\), packs: \(\) => packsCard\(\), peerSprites: \(\) => peerSpritesCard\(\), nightSounds: \(\) => nightSoundsCard\(\) \}\[item\.slice\(5\)\];/);
   assert.match(menu, /await ds\.pickMusicFolder\(\); render\(\);/, 'the music pack is reachable without the launcher');
   assert.match(menu, /await ds\.pickTextureFolder\(\); render\(\);/);
   // tier is a group: live flat, the other two folded with a count, remembered on the shelf

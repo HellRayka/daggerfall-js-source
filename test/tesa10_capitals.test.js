@@ -88,11 +88,11 @@ test('TESA10 Arena\'s place pinned: a place its pin names stands on that pixel e
   const P = (id, name, bx, by) => ({ province: 'Skyrim', provinceIndex: 2, id, kind: 'city-state', name, px: (bx + 0.5 + 400) / 10, py: (by + 0.5 + 500) / 10, snapped: 0 });
   const model = { places: [P(0, 'First', 1500, -100), P(1, 'Pinned', 1600, -150), P(2, 'OnBay', 1700, -150)] };
   const pin = (p) => (p.name === 'Pinned' ? { px: 1500, py: -100 } : p.name === 'OnBay' ? { px: 10, py: 10 } : null);
-  const s = standArenaPixels(model, trace, null, pin);
+  const s = standArenaPixels(model, trace, pin);
   assert.deepEqual(s.stood.map((p) => [p.name, p.bx, p.by, !!p.pinned]), [['First', 1500, -101, false], ['Pinned', 1500, -100, true], ['OnBay', 1700, -150, false]], 'the pinned first, the first moved off it; a pin on the Bay ignored');
   assert.equal(s.byPixel.get('1500,-100').name, 'Pinned');
   assert.deepEqual(standArenaPixels(model, trace).stood.map((p) => [p.name, p.bx, p.by]), [['First', 1500, -100], ['Pinned', 1600, -150], ['OnBay', 1700, -150]], 'no pin, no change');
-  assert.match(read('src/world/arenaPlaces.js'), /_model\.pixels = standArenaPixels\(model, \/\*\* @type \{any\} \*\/ \(tamrielTrace\(\)\), _coastal, capitalPin, \(bx, by\) => !!capitalOnPixel\(bx, by\)\);/, 'PIN MOVED (TESA11): and no other place on a capital\'s pixels');
+  assert.match(read('src/world/arenaPlaces.js'), /_model\.pixels = standArenaPixels\(model, \/\*\* @type \{any\} \*\/ \(tamrielTrace\(\)\), capitalPin, \(bx, by\) => !!capitalOnPixel\(bx, by\)\);/, 'PIN MOVED (TESA11): and no other place on a capital\'s pixels');
 });
 
 // ── THE PLAN ────────────────────────────────────────────────────

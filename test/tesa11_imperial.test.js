@@ -135,13 +135,13 @@ test('TESA11 Arena\'s places off the city\'s pixels: a place whose point falls o
   const model = { places: [P(0, 'Capital', 1500, -100), P(1, 'Neighbour', 1501, -100), P(2, 'Far', 1600, -150)] };
   const pin = (p) => (p.name === 'Capital' ? { px: 1500, py: -100 } : null);
   const reserved = (bx, by) => Math.abs(bx - 1500) <= 1 && Math.abs(by + 100) <= 1;
-  const s = standArenaPixels(model, trace, null, pin, reserved);
+  const s = standArenaPixels(model, trace, pin, reserved);
   const got = Object.fromEntries(s.stood.map((p) => [p.name, [p.bx, p.by, !!p.pinned]]));
   assert.deepEqual(got.Capital, [1500, -100, true]);
   assert.ok(!reserved(got.Neighbour[0], got.Neighbour[1]), 'off the city');
   assert.ok(Math.abs(got.Neighbour[0] - 1502) <= 0 || Math.max(Math.abs(got.Neighbour[0] - 1501), Math.abs(got.Neighbour[1] + 100)) === 1, 'the nearest free');
   assert.deepEqual(got.Far, [1600, -150, false]);
-  assert.deepEqual(standArenaPixels(model, trace, null, pin).stood.map((p) => [p.name, p.bx, p.by]).find(([n]) => n === 'Neighbour'), ['Neighbour', 1501, -100], 'no reserve, no change');
+  assert.deepEqual(standArenaPixels(model, trace, pin).stood.map((p) => [p.name, p.bx, p.by]).find(([n]) => n === 'Neighbour'), ['Neighbour', 1501, -100], 'no reserve, no change');
 });
 
 test('TESA11 a slice\'s location: its eight by eight of the plan (its hash and gardens the plan\'s), its name, id and index, its buildings\' seeds its own; every slice\'s ground flattened to the centre\'s pixel; Arena\'s slot on the centre alone', () => {
@@ -373,6 +373,6 @@ test('TESA11 one ground: every slice of a city over several pixels flattened to 
 test('TESA11 the host: a slice stood once on its pixel - a slice moved is stood again; the plan\'s Arena slot the centre\'s', () => {
   const W = read('src/scenes/world.js');
   assert.match(W, /if \(at && had\.capital\.k === at\.k && had\.capital\.s === at\.s && \(had\.arena\?\.id \?\? null\) === \(slot\?\.id \?\? null\)/);
-  assert.match(read('src/world/arenaPlaces.js'), /standArenaPixels\(model, \/\*\* @type \{any\} \*\/ \(tamrielTrace\(\)\), _coastal, capitalPin, \(bx, by\) => !!capitalOnPixel\(bx, by\)\);/);
+  assert.match(read('src/world/arenaPlaces.js'), /standArenaPixels\(model, \/\*\* @type \{any\} \*\/ \(tamrielTrace\(\)\), capitalPin, \(bx, by\) => !!capitalOnPixel\(bx, by\)\);/);
   assert.match(read('src/world/arenaPlaces.js'), /const free = \(bx, by\) => !inBay\(bx, by\) && !byPixel\.has\(`\$\{bx\},\$\{by\}`\) && !reserved\?\.\(bx, by\) && own\(/);
 });

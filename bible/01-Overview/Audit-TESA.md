@@ -56,7 +56,7 @@ The lead verified every finding again against the tree before it was fixed, and 
 | Id | Finding | Verdict |
 |---|---|---|
 | A1-3 | `.gitignore` named ARENA2 but not Arena's folder or files | FIXED - `/ARENA/`, `CITYDATA.*`, `A.EXE`, `ACD.EXE` (the root's folder alone: `vendor/daggerfall-arena/Arena/` is the port's own) |
-| A1-4 | `test/tesa1_arena.test.js` carries a few of CITYDATA.65's rectangles as literals | THE OWNER'S CALL - a handful of numbers to check a reader against is how every reader here is pinned, but they are read out of Arena's file; kept until the owner says |
+| A1-4 | `test/tesa1_arena.test.js` carries a few of CITYDATA.65's rectangles as literals | THE OWNER'S CALL - a handful of numbers to check a reader against is how every reader here is pinned, but they are read out of Arena's file; kept until the owner says; RESOLVED by TESA12 (2026-10-13): the file DELETED with the reader it pinned, Arena unread |
 | A1-5 | The Arena card says the data is attached under `?arenaplaces=off` | STANDS - it is attached; the door is a URL's for a day the fit reads a place wrong, not a player's switch, and the card cannot read it without the scene module |
 | A1-6 | The attach notice said nothing when the folder held no A.EXE | FIXED - it says what that costs: no ports, and online no places |
 | A3-2 | The road to the Imperial City ends at its pixel's corner, on the lake | OPEN - a road's end at a gate is a law of its own for the roads' kernel |
@@ -90,7 +90,7 @@ vertex clear of a house's block, the dry kinds, the closed byte's quarter) and b
 `tools/mutants/audittesa.json` (56, all dead; 54 since TESA11, which retired the 8 x 8 Imperial City's two - its wall at 317 m is the nine-pixel city's wall at 900 m now, `03-World/Arena-Provinces.md` TESA11). PIN MOVED, each by its finding: `test/audit23_hosts.test.js`,
 `test/audit26_talk.test.js`, `test/auditrr2.test.js`, `test/sd2d_castout.test.js`, `test/seat2b_peace_client.test.js`, `test/audit28_smallerdungeons.test.js`, `test/auditcaptsea.test.js`,
 `test/auditdisc28_quests.test.js`, `test/citedrift.test.js`, `test/disc28e_shipport.test.js`,
-`test/etherplaces.test.js`, `test/portal1_stone.test.js`, `test/qrepair.test.js`, `test/tesa1_arena.test.js`,
+`test/etherplaces.test.js`, `test/portal1_stone.test.js`, `test/qrepair.test.js`, `test/tesa1_arena.test.js` (DELETED by TESA12),
 `test/tesa2_arena.test.js`, `test/tesa6_ports.test.js`, `test/tesa10_capitals.test.js`, `test/tesa10c_capitals.test.js`.
 Re-aimed by content, each judged dead again: seventeen records in `auditcaptsea`, `auditdisc28_quests`, `etherplaces`,
 `portal1`, `tesa1`, `tesa6`, `tesa7`, `tesa10` and `tesa10c`.

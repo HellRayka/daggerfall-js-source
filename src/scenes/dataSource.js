@@ -57,13 +57,13 @@ const MW_STORE = 'morrowind';
  *  stale) became exactly the derived artifact this contract was kept
  *  for. Said out loud here so nobody reads the roads as living here. */
 const DERIVED_STORE = 'derived';
-/** TESA1 (bible/03-World/Arena-Provinces.md): the player's own copy of
- *  The Elder Scrolls: Arena - Bethesda's freeware release, which is no
- *  more redistributable than ARENA2 and never enters the repo or the
- *  build either. Its own store for the Morrowind store's reasons: it is
- *  not Daggerfall's data (KEEP's diet and clearStoredData's recovery
- *  wipe are ARENA2's) and it comes and goes on its own card. It keeps
- *  only the files the port reads - ARENA_FILES. */
+/** TESA1 (bible/03-World/Arena-Provinces.md): the store that held the
+ *  player's own copy of The Elder Scrolls: Arena (CITYDATA.65 and A.EXE).
+ *  TESA12 retired the attachment - the places past the Bay are the
+ *  port's own - and nothing reads it now. It stays in the schema (the
+ *  upgrade's arms are additive: version 6 made it) and among the asset
+ *  stores so a wipe still sweeps it, and the world's boot empties it once
+ *  (clearRetiredArena): no copy of Arena's files stays in a browser. */
 const ARENA_STORE = 'arena';
 /** Every injected-asset store, so the upgrade and the helpers below
  *  cannot drift from each other - adding a domain is one entry. */
@@ -916,96 +916,12 @@ export async function registerMorrowindData() {
   return _mwCount;
 }
 
-// ---- TESA1: the player's own Arena -------------------------------------
+// ---- TESA12: Arena's store, retired --------------------------------------
 
-/** The files of Arena the port reads, by their canonical (uppercase) names: CITYDATA.65, the world map's places as a
- *  new character starts them (formats/arenaCityData.js); TESA6: the executable, A.EXE (ACD.EXE on the CD), for its list
- *  of coastal cities (formats/arenaExe.js). A folder pick keeps these and nothing else. */
-export const ARENA_CITYDATA = 'CITYDATA.65';
-export const ARENA_EXES = Object.freeze(['A.EXE', 'ACD.EXE']);
-export const ARENA_FILES = Object.freeze([ARENA_CITYDATA, ...ARENA_EXES]);
-export const isArenaFile = (name) => ARENA_FILES.includes(normalizeName(name));
-
-export async function storeArenaFiles(files) {
-  return storeAssets(ARENA_STORE, files, isArenaFile, (f, base) => normalizeName(base));
-}
-export const storedArenaNames = () => assetNames(ARENA_STORE);
-export const loadArenaFile = (fileName) => assetBytes(ARENA_STORE, fileName);
-
-let _arenaRegistered = false;
-let _arenaPlacesInstalled = false;
-let _arenaKnown = false;
-let _arenaCoast = false;
-let _arenaCoastKnown = false;
-/** Has a registration read the store this page? */
-export const arenaDataRegistered = () => _arenaRegistered;
-/** Did it find a CITYDATA the reader took? The Arena card's reading. */
-export const arenaDataAttached = () => _arenaPlacesInstalled;
-/** TESA-ONLINE: is it a release a room knows (its print)? The Arena card's reading. */
-export const arenaDataKnown = () => _arenaKnown;
-/** TESA6: did it find an executable whose coastal list the reader took - and is that list one a room knows? */
-export const arenaCoastAttached = () => _arenaCoast;
-export const arenaCoastKnown = () => _arenaCoastKnown;
-
-/** THE ONE REGISTRATION (the texture store's law, AUDIT VE R2): the stored CITYDATA read, parsed and installed for every
- *  reader (world/arenaPlaces.js) - by the world host at its boot, by a pick, by the card. A missing or malformed file
- *  installs nothing, and TAMRIEL1's authored cities stand. Answers 1 when Arena's places are installed, else 0. */
-export async function registerArenaData() {
-  const [{ parseArenaCityData }, { setArenaCityData, arenaCityDataPrint, isKnownArenaPrint }] = await Promise.all([import('../formats/arenaCityData.js'), import('../world/arenaPlaces.js')]);
-  let bytes = null;
-  try { bytes = await loadArenaFile(ARENA_CITYDATA); } catch { bytes = null; }   // no IndexedDB (private mode): no Arena
-  const cityData = bytes ? parseArenaCityData(bytes) : null;
-  // TESA-ONLINE: the file's print, so a room stands its places only from a release it knows (world/arenaPlaces.js)
-  const known = cityData ? isKnownArenaPrint(await arenaCityDataPrint(bytes)) : false;
-  setArenaCityData(cityData, { known });
-  // TESA6: the coastal list, from whichever executable the folder held - its print the list's, never the file's
-  const { unpackArenaExe, arenaCoastalCities } = await import('../formats/arenaExe.js');
-  const { setArenaCoastal, isKnownCoastalPrint } = await import('../world/arenaPlaces.js');
-  let coast = null;
-  for (const name of ARENA_EXES) {
-    let exe = null;
-    try { exe = await loadArenaFile(name); } catch { exe = null; }
-    coast = exe ? arenaCoastalCities(unpackArenaExe(exe)) : null;
-    if (coast) break;
-  }
-  const coastKnown = coast ? isKnownCoastalPrint(await arenaCityDataPrint(coast)) : false;
-  setArenaCoastal(coast, { known: coastKnown });
-  _arenaRegistered = true;
-  _arenaPlacesInstalled = !!cityData;
-  _arenaKnown = known;
-  _arenaCoast = !!coast;
-  _arenaCoastKnown = coastKnown;
-  return cityData ? 1 : 0;
-}
-
-/** REMOVE THE ARENA DATA - the store emptied and the places taken off the map at once. */
-export async function clearStoredArena() {
-  await clearAssets(ARENA_STORE);
-  const { setArenaCityData, setArenaCoastal } = await import('../world/arenaPlaces.js');
-  setArenaCityData(null);
-  setArenaCoastal(null);
-  _arenaRegistered = true;
-  _arenaPlacesInstalled = false;
-  _arenaKnown = false;
-  _arenaCoast = false;
-  _arenaCoastKnown = false;
-}
-
-export async function pickArenaFolder() {
-  return pickAssetFolder({
-    title: 'Your Arena data',
-    blurb: `<p>Pick your <b>ARENA</b> folder - The Elder Scrolls: Arena, free
-      from Bethesda. Nothing is uploaded - it is stored in this browser,
-      exactly like the ARENA2 pick.</p>
-      <p style="color:#999">Arena's cities, towns, villages and dungeons
-      stand on the map of Tamriel beyond the Iliac Bay, its coastal cities
-      ports. Only <b>CITYDATA.65</b> and <b>A.EXE</b> are kept.</p>`,
-    store: storeArenaFiles,
-    register: registerArenaData,
-    // AUDIT-TESA A1-6: and what a folder without A.EXE (or ACD.EXE) costs - the ports, and online the places (TESA6)
-    doneText: (n) => (!n ? 'no CITYDATA.65 in that folder' : _arenaCoast ? 'Arena\u2019s places will stand on the map of Tamriel, its coastal cities ports'
-      : 'Arena\u2019s places will stand on the map of Tamriel - no A.EXE in that folder: no ports, and online no places'),
-  });
+/** TESA12: empty the store a copy of Arena was attached to (TESA1 to TESA6) - nothing reads it since the places past the
+ *  Bay became the port's own. The world's boot asks it once; no IndexedDB (private mode), nothing to clear. */
+export async function clearRetiredArena() {
+  try { await clearAssets(ARENA_STORE); } catch { /* no IndexedDB: nothing stored */ }
 }
 
 export async function pickMorrowindFiles() {

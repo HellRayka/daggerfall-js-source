@@ -207,15 +207,14 @@ test('TESA5 the host: the crossings found on the Bay\'s own network with the lan
   assert.match(read('src/world/terrainGen.js'), /const join = arena \? 0 : arenaJoinByte\(px, py\);/);
 });
 
-const ARENA2 = process.env.ARENA2_PATH, ARENA = process.env.ARENA_PATH;
-const HAVE = !!ARENA2 && !!ARENA && ['TMAP00I0.IMG', 'TAMRIEL2.IMG', 'ART_PAL.COL', 'WOODS.WLD', 'MAPS.BSA', 'CLIMATE.PAK', 'POLITIC.PAK'].every((f) => existsSync(pathJoin(ARENA2, f))) && existsSync(pathJoin(ARENA, 'CITYDATA.65'));
-test('TESA5 with ARENA2 and ARENA: on Basic Roads\' own network seven crossings - three north, three south, one east, none west (the Eltheric) - every gate on Arena\'s roads, 19 join pixels on the Bay', { skip: HAVE ? false : 'ARENA2_PATH and ARENA_PATH not set' }, async () => {
+const ARENA2 = process.env.ARENA2_PATH;
+const HAVE = !!ARENA2 && ['TMAP00I0.IMG', 'TAMRIEL2.IMG', 'ART_PAL.COL', 'WOODS.WLD', 'MAPS.BSA', 'CLIMATE.PAK', 'POLITIC.PAK'].every((f) => existsSync(pathJoin(ARENA2, f)));
+test('TESA5 with ARENA2: on Basic Roads\' own network seven crossings - three north, three south, one east, none west (the Eltheric) - every gate on the roads to a town past the Bay, 19 join pixels on the Bay', { skip: HAVE ? false : 'ARENA2_PATH not set' }, async () => {
   const { DFPalette } = await import('../src/formats/dfPalette.js');
   const { preloadTamrielTrace } = await import('../src/ui/tamrielTrace.js');
   const { setTamrielTrace } = await import('../src/world/tamrielLand.js');
   const { setTamrielFit } = await import('../src/world/tamrielFrame.js');
-  const { parseArenaCityData } = await import('../src/formats/arenaCityData.js');
-  const { setArenaCityData, arenaPixels } = await import('../src/world/arenaPlaces.js');
+  const { arenaPixels } = await import('../src/world/arenaPlaces.js');
   const { arenaRoadTowns } = await import('../src/world/arenaLocations.js');
   const { WoodsFile } = await import('../src/formats/woodsFile.js');
   const { groundWoods } = await import('../src/world/tamrielGround.js');
@@ -226,7 +225,6 @@ test('TESA5 with ARENA2 and ARENA: on Basic Roads\' own network seven crossings 
   const pal = new DFPalette(); pal.load(bytes('ART_PAL.COL'), 'ART_PAL.COL');
   setTamrielTrace(await preloadTamrielTrace({ fetchBytes: async (n) => bytes(n), palette: pal }));
   setTamrielFit({ ox: 38 * 15.5, oy: 57 * 15.5, ppu: 15.5 });
-  setArenaCityData(parseArenaCityData(new Uint8Array(readFileSync(pathJoin(ARENA, 'CITYDATA.65')))));
   try {
     const woods = new WoodsFile(); woods.load(bytes('WOODS.WLD'));
     const g = groundWoods(woods);
@@ -240,6 +238,10 @@ test('TESA5 with ARENA2 and ARENA: on Basic Roads\' own network seven crossings 
     const net = buildArenaNetwork({ towns, window, heightAt: (x, y) => g.getHeightMapValue(x, y), isWater: (_x, _y, h) => h <= WATER_BYTE });
     const layer = rasterArenaRoads(net, window, towns, joins);
     assert.equal(layer.join.size, 19);
-    for (const j of joins) assert.ok((layer.roads.get(beyondKey(...j.gate)) ?? 0) & ~(j.side === 'N' ? DIR.S : j.side === 'S' ? DIR.N : DIR.W), `${j.side} ${j.gate}: an Arena road at its gate`);
-  } finally { setArenaCityData(null); setTamrielTrace(null); setTamrielFit(null); }
+    // PIN MOVED (TESA12): every gate walks the roads to a town past the Bay - the window's cells fall where the places'
+    // extent puts them, so a gate is not always its cell's centre, and the road it meets can cross the join's run a pixel
+    // inside the gate rather than at it (N 366: the east-west road at y -7)
+    const own = arenaRoadTowns(arenaPixels());
+    for (const j of joins) assert.ok(own.some((t) => walks(layer.roads, j.gate, [t.x, t.y])), `${j.side} ${j.gate}: on the roads to a town`);
+  } finally { setTamrielTrace(null); setTamrielFit(null); }
 });

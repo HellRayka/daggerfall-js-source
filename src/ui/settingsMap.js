@@ -186,7 +186,7 @@ export const CATEGORIES = Object.freeze([
   ]),
   tab("mods", "Mods & files", [
     sec("files", "Your files", [
-      "card:morrowind", "card:packs", "card:arena"]),
+      "card:morrowind", "card:packs"]),
     sec("dfu", "Daggerfall Unity's mod system", [
       "Enhancements/LypyL_ModSystem", "Enhancements/AssetInjection", "Enhancements/CompressModdedTextures", "Experimental/CustomBooksImport",
       "Daggerfall/MyDaggerfallPath", "Daggerfall/MyDaggerfallUnitySavePath", "Daggerfall/MyDaggerfallUnityScreenshotsPath"]),

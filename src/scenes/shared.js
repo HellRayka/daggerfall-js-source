@@ -885,11 +885,12 @@ export function tamrielTraceOn(search) {
   return pageParam('tamrieltrace', search) !== 'off';
 }
 
-/** TESA1 (bible/03-World/Arena-Provinces.md): ARENA'S PLACES' KILL DOOR - `?arenaplaces=off` leaves the player's attached
- *  Arena unread at the world's boot, and TAMRIEL1's authored cities stand. No Features row: attached is on (the Arena
- *  card's Remove data is the off), and this is a door for a day the fit reads a place wrong. */
+/** TESA1 (bible/03-World/Arena-Provinces.md): THE PLACES' KILL DOOR - `?arenaplaces=off` stands none of the cities, towns
+ *  and villages past the Bay (TESA12: the port's own, world/tamrielPlaces.js), and the ink draws TAMRIEL1's cities. No
+ *  Features row: the places are the land's own. Offline alone, as the countryside's (AUDIT-TESA A7-8): online the land is
+ *  the room's. */
 export function arenaPlacesOn(search) {
-  return pageParam('arenaplaces', search) !== 'off';
+  return pageParam('arenaplaces', search) !== 'off' || isOnlinePage(search);
 }
 
 /** TESA7 (bible/03-World/Arena-Provinces.md): THE COUNTRYSIDE'S KILL DOOR - `?country=off` stands no hamlet, farm, inn,

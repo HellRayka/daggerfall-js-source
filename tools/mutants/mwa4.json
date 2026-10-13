@@ -47,8 +47,8 @@
   {
     "name": "MWA4-the-card-off-the-head-of-the-files-page",
     "file": "src/ui/settingsMap.js",
-    "old": "      \"card:morrowind\", \"card:packs\", \"card:arena\"]),",
-    "new": "      \"card:packs\", \"card:arena\"]),",
+    "old": "      \"card:morrowind\", \"card:packs\"]),",
+    "new": "      \"card:packs\"]),",
     "tests": [
       "test/features.test.js"
     ]

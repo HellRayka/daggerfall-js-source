@@ -281,9 +281,9 @@ import { LPT_SCALE_MAX, lptVariety, buildTreeSet } from '../world/lowPolyTrees.j
 import { realForestsOn, FOREST_HIDDEN_LOCATION_TYPES, roadVergesOn, climateBlendOn } from './shared.js';   // FOREST1: the Real forests switch, and the places the woods hide; VERGE1: the clear roadsides' switch; ECOTONE1: the blended climates'
 import { landformsOn, tamrielLandOn, tamrielTraceOn, etherSeaOn, etherCrossOutOn, arenaPlacesOn } from './shared.js';   // LANDFORM1-3: the Landforms switch; TAMRIEL2: the land beyond the Bay's; TAMRIEL3: the trace's door; ETHER-SEA: the Etheric Sea's
 import { preloadTamrielTrace } from '../ui/tamrielTrace.js';   // TAMRIEL3: Daggerfall's own map of Tamriel, off the player's two files
-import { arenaPlaces, arenaPixels, arenaPlaceOnPixel, setArenaCityData, setArenaStanding, setArenaRoom } from '../world/arenaPlaces.js';   // TESA1: Arena's places on it; TESA2: the pixels they stand on
+import { arenaPlaces, arenaPixels, arenaPlaceOnPixel, setArenaStanding } from '../world/arenaPlaces.js';   // TESA1: the places on it (TESA12: the port's own); TESA2: the pixels they stand on
 import { arenaRoadsLayer, layerTouches, setArenaRoads, arenaJoins } from '../world/arenaRoads.js';   // TESA4: the roads between them; TESA5: their crossings onto the Bay's
-import { arenaTemplates, arenaTemplateOf, synthesizeArenaLocation, ARENA_LOAD_WAIT_MS, ARENA_PLACES_TEXT, arenaRoadTowns, isArenaPlaceId } from '../world/arenaLocations.js';   // TESA2: the places stood, each a Daggerfall town or dungeon cloned
+import { arenaTemplates, arenaTemplateOf, synthesizeArenaLocation, ARENA_LOAD_WAIT_MS, arenaRoadTowns, isArenaPlaceId } from '../world/arenaLocations.js';   // TESA2: the places stood, each a Daggerfall town or dungeon cloned
 import { fitBayToPicture } from '../world/tamrielLand.js';   // TAMRIEL3: where the Bay stands on it
 import { countryTemplates, countryCounts, bayLand, countryRates, countryPick, countryName, countryNameSeed, createCountryGround, synthesizeCountryLocation, isCountryPlaceId } from '../world/tamrielCountry.js';   // TESA7: the countryside past the Bay
 import { countrysideOn } from './shared.js';   // TESA7: its kill door
@@ -910,7 +910,7 @@ import { isTouchDevice } from '../ui/touchDevice.js';   // JOURNAL1: ...or a tap
 import { composeCard, createCardAnswerGate, CARD_WAIT_MS } from '../net/profileCard.js';   // INSPECT1: my card when asked, and how often one asker is answered
 import { relayVersionSeen, buildUpdateSeen, fetchLiveBuildTag, RELAY_RESTART_TEXT, BUILD_UPDATE_TEXT, BUILD_POLL_MS } from '../net/updateNotice.js';   // SRV-N: the relay moved, or the build did
 import { BUILD_TAG } from '../buildTag.js';   // SRV-N: which build this tab is actually running
-import { morrowindDataCount, morrowindDataGeneration, getBytes, registerArenaData } from './dataSource.js';   // MWBODY1: the bodies' gate - Morrowind data attached - and its generation
+import { morrowindDataCount, morrowindDataGeneration, getBytes, clearRetiredArena } from './dataSource.js';   // MWBODY1: the bodies' gate - Morrowind data attached - and its generation
 // Q4-v: THE QUEST BRIDGE - the machine goes live in this host.
 import { createQuestBridge, tokensToRows } from './questBridge.js';
 import { loadQuestPack } from './questData.js';
@@ -1346,12 +1346,10 @@ export async function bootWorld(canvas, renderer, params, status) {
     maps.getClimateIndex = groundClimateIndex(maps.getClimateIndex.bind(maps));
   }
   StreamingWorldState.frame = tamrielLand ? tamrielFrameInBay() : null;
-  // TESA2 (bible/03-World/Arena-Provinces.md): ARENA'S PLACES STAND on the land beyond the Bay. TESA-ONLINE: online too, from
-  // a CITYDATA.65 the room knows (world/arenaPlaces.js ARENA_CITYDATA_PRINTS - the release as Bethesda shipped it), so every
-  // player in a room who has Arena stands the same Tamriel; the file is each player's own, and nothing of it crosses the
-  // wire. A player without it is told what they are missing the first time they set foot on the land past the Bay.
+  // TESA2 (bible/03-World/Arena-Provinces.md): THE PLACES STAND on the land beyond the Bay - TESA12: the port's own
+  // (world/tamrielPlaces.js: TAMRIEL1's lore cities and the towns and villages made beside them), on the trace from the
+  // player's Daggerfall files, so every client stands the same Tamriel, online and off. Nothing of Arena is read.
   const arenaStands = tamrielLand && arenaPlacesOn();
-  setArenaRoom(params.has('online'));
   setArenaStanding(arenaStands);
   setArenaRoads(null);   // TESA4: a mount starts with no Arena roads on this thread - the last world's are not this one's (handArenaRoads asks)
   // ETHER-SEA (bible/03-World/Etheric-Sea.md): THE ETHERIC SEA'S GROUND - its isles and its open water, composed over
@@ -1784,8 +1782,8 @@ export async function bootWorld(canvas, renderer, params, status) {
   const _capitalBase = tamrielLand && capitalsOn() ? capitalBase(_classicRows ?? _hubRows.map(classicRow).filter(Boolean), isMainStoryDungeon) : null;
   const _capitalNames = _capitalBase ? cityBlockNames(_classicRows ?? _hubRows.map(classicRow).filter(Boolean)) : null;
   setCapitalsStanding(!!_capitalBase);   // TESA10d: a capital on the map (a portal's end there - TESA-NO-FAST), Arena attached or not
-  // TESA2 (world/arenaLocations.js): THE ARENA PLACES' TEMPLATES - the cities, hamlets, villages, labyrinths and keeps an
-  // Arena place may clone, off the same rows (the game's own, as MAPS.BSA holds them), kept before the rows go
+  // TESA2 (world/arenaLocations.js): THE PLACES' TEMPLATES - the cities, hamlets and villages a place past the Bay may
+  // clone, off the same rows (the game's own, as MAPS.BSA holds them), kept before the rows go
   const _arenaTemplates = arenaStands ? arenaTemplates(_classicRows ?? _hubRows.map(classicRow).filter(Boolean), isMainStoryDungeon) : null;
   // ETHER-PLACES (world/etherPlaces.js): THE ISLES' TEMPLATES - the towns and the ruins an Etheric isle's place may
   // clone, off the SAME rows (the game's own, as MAPS.BSA holds them: every client clones the same place), kept before
@@ -2550,11 +2548,11 @@ export async function bootWorld(canvas, renderer, params, status) {
     locationIndex.set(key, loc);
     return loc;
   }
-  /** TESA2 (world/arenaLocations.js): THE PLACE AN ARENA PIXEL STANDS - the Arena place standing on it (world/arenaPlaces.js
-   *  arenaPlaceOnPixel: the player's own Arena, on the trace) cloned off the game's own rows under its own id, name and
+  /** TESA2 (world/arenaLocations.js): THE PLACE A PIXEL PAST THE BAY STANDS - the place standing on it (world/arenaPlaces.js
+   *  arenaPlaceOnPixel: TESA12, the port's own, on the trace) cloned off the game's own rows under its own id, name and
    *  index, the region and the climate the pixel's (TAMRIEL2: the province's climate; the region the clamp's until TESA3) -
-   *  stood in the index once, or null: no place there, or none stood yet (the trace or the data still to land; the sweep
-   *  builds the pixel again when they do). A place taken off (the Arena card's Remove) leaves the index here. */
+   *  stood in the index once, or null: no place there, or none stood yet (the trace still to land; the sweep builds the
+   *  pixel again when it does). A place the land no longer stands there leaves the index here. */
   function arenaLocationAt(px, py) {
     const key = `${px},${py}`;
     const place = arenaPlaceOnPixel(px, py);
@@ -2655,16 +2653,6 @@ export async function bootWorld(canvas, renderer, params, status) {
     _locIndexGen += 1;
     locationIndex.set(key, loc);
     return loc;
-  }
-  /** TESA-ONLINE: THE NOTICE - online, a player who stands no Arena place (no Arena attached, or a copy the room does not
-   *  know) is told once a session, as they first cross onto the land past the Bay, that the players beside them may see
-   *  Arena's cities there, and where their own copy attaches. Never at sea, never on the Bay, never past the Veil. */
-  let _arenaNoticed = false;
-  function arenaBeyondNotice(x, y) {
-    if (_arenaNoticed || !_arenaTemplates || !params.has('online') || onTheBay(x, y) || (etherSea && inEther(x, y))) return;
-    if (arenaPixels() || maps.getClimateIndex(x, y) === CLIMATES.Ocean) return;
-    _arenaNoticed = true;
-    tvSay(ARENA_PLACES_TEXT.beyondWithout, 8);
   }
   /** AUDIT OW4 D4: THE CLONE a pixel's spawn IS - the template its hash picks, dressed as where it stands (region, politic,
    *  climate, elite). Pure in the salt, the pixel and the map files, so the one answer serves spawnedDungeonAt (which stands
@@ -8032,21 +8020,18 @@ export async function bootWorld(canvas, renderer, params, status) {
   // the land module and the frame for every reader - the held map's ink, the ground beyond the Bay on this thread and
   // on the worker (terrainGen.setTamriel), the stream's frame. Until it lands the authored shape stands; a missing
   // file leaves it standing and says so. `?tamrieltrace=off` the door.
-  // TESA1 (bible/03-World/Arena-Provinces.md): ARENA'S PLACES - the player's own CITYDATA.65 (the Arena card,
-  // scenes/dataSource.js registerArenaData) installed for the held map's ink, and stood on the trace as soon as both
-  // have landed (world/arenaPlaces.js: ~90 ms, once a trace) so the map's first open does not pay for it. Before the
-  // trace, and without one, the authored cities stand. `?arenaplaces=off` the door.
+  // TESA1 (bible/03-World/Arena-Provinces.md): THE PLACES PAST THE BAY - TESA12: the port's own (world/tamrielPlaces.js),
+  // made on the trace as soon as it lands (~60 ms, once a trace) so the map's first open does not pay for it. Before the
+  // trace, and without one, the authored cities stand. `?arenaplaces=off` the door. The store a copy of Arena was once
+  // attached to is emptied (scenes/dataSource.js clearRetiredArena): nothing reads it now.
+  clearRetiredArena();
   let arenaSaid = null;
   const arenaWarm = () => {
-    const m = arenaPlaces();
-    if (!m || m === arenaSaid) return;   // said once a model, whichever landing finished it
+    const m = arenaStands ? arenaPlaces() : null;
+    if (!m || m === arenaSaid) return;   // said once a model
     arenaSaid = m;
-    console.log(`[arena] ${m.places.length} of Arena's places stood on the picture: ${m.places.filter((p) => p.snapped > 0).length} snapped onto their province's land, ${m.lost.length} left off`);
+    console.log(`[places] ${m.places.length} places past the Bay on the picture: ${m.places.filter((p) => p.kind === 'city-state').length} cities (${m.places.filter((p) => p.snapped > 0).length} snapped onto their province's land, ${m.lost.length} left off), ${m.places.filter((p) => p.kind !== 'city-state').length} towns and villages`);
   };
-  const arenaReady = arenaPlacesOn()
-    ? registerArenaData().then((n) => { if (n) arenaWarm(); return n; })
-      .catch((e) => { console.warn('[arena] the Arena data could not be read; the authored cities stand:', e?.message ?? e); return 0; })
-    : Promise.resolve(setArenaCityData(null)).then(() => 0);
   // TESA2: the trace's landing (or its failing, or the door shut - then no place stands, and nothing waits on it), for
   // the boot's load
   let arenaTraceLanded = () => {};
@@ -8061,7 +8046,7 @@ export async function bootWorld(canvas, renderer, params, status) {
       terrainGen.setTamriel({ trace, fit: fitPx });
       StreamingWorldState.frame = tamrielLand ? tamrielFrameInBay() : null;
       console.log(`[tamriel] the picture traced: ${trace.land.reduce((n, v) => n + v, 0)} land pixels; the Bay fitted at picture (${fit?.ox}, ${fit?.oy}) x${fit?.ppu}, ${fit ? Math.round((100 * fit.score) / fit.cells) : 0}% of its cells and ${fit ? Math.round((100 * fit.seam) / fit.edge) : 0}% of its edge agreeing`);   // TAMRIEL4: the seam the fit is made for
-      arenaReady.then((n) => { if (n) arenaWarm(); });   // TESA1: the places onto the trace that just landed
+      arenaWarm();   // TESA1: the places onto the trace that just landed
     }).catch((e) => console.warn('[tamriel] TMAP00I0/TAMRIEL2 unavailable; the authored continent stands:', e?.message ?? e))
       .finally(() => arenaTraceLanded());   // TESA2: landed, or never will
   }
@@ -26662,8 +26647,9 @@ export async function bootWorld(canvas, renderer, params, status) {
       px: px.x, py: px.y,
       in: mode === 'dungeon' ? 1 : mode === 'interior' ? 2 : 0,
       ...(online?.layer ? { ly: online.layer } : {}),   // SCALE5d: the layer of the place I stand in, so a mate who comes asks for it
-      // AUDIT-TESA A1-1: an Arena place's name is the player's own file's - never on the wire (a capital's is the port's)
-      loc: loc?.arena && !loc.capital ? '' : ident?.kind === 'dungeon' ? (ident.name ?? '') : (loc?.name ?? ''),
+      // AUDIT-TESA A1-1 kept an Arena place's name off the wire (it was the player's own file's); TESA12: the places are the
+      // port's own, every client's the same, so a town past the Bay is named like any
+      loc: ident?.kind === 'dungeon' ? (ident.name ?? '') : (loc?.name ?? ''),
       // AUDIT SOC B5: fatigue in the DIGITS a sheet shows (ui/charsheet.js: the stored pool is x FATIGUE_MULTIPLIER) - a
       // member's card said 3200/6400 where their own sheet said 50/100
       h: playerEntity.health ?? 0, hm: playerEntity.maxHealth ?? 0, f: Math.trunc((playerEntity.fatigue ?? 0) / FATIGUE_MULTIPLIER), fm: Math.trunc(maxFatigue(playerEntity) / FATIGUE_MULTIPLIER), m: playerEntity.magicka ?? 0, mm: playerEntity.maxMagicka ?? 0,
@@ -30825,13 +30811,11 @@ export async function bootWorld(canvas, renderer, params, status) {
   // their save was to start a new game and press F11. A load is not a
   // new game, so it takes the classic start's place rather than
   // running after it.
-  // TESA2: a save made in an Arena town loads into it - the places stand once the data and the trace have landed, so
-  // with the player's Arena attached a load waits for both, ARENA_LOAD_WAIT_MS at most (a trace that never lands costs
-  // that and no more)
-  // AUDIT-TESA A7-1: and every place past the Bay moves with the trace - a capital (Arena attached or not), the
-  // countryside's, a lair - so with any of them standing a load waits for the trace whatever Arena's data says
-  if (_arenaTemplates && params.has('load')) await arenaReady.then((n) => (n ? Promise.race([arenaTraced, new Promise((r) => setTimeout(r, ARENA_LOAD_WAIT_MS))]) : 0));
-  if ((_countryTemplates || _capitalBase) && params.has('load')) await Promise.race([arenaTraced, new Promise((r) => setTimeout(r, ARENA_LOAD_WAIT_MS))]);
+  // TESA2: a save made in a town past the Bay loads into it - the places stand once the trace has landed, so a load waits
+  // for it, ARENA_LOAD_WAIT_MS at most (a trace that never lands costs that and no more)
+  // AUDIT-TESA A7-1: every place past the Bay moves with the trace - a town, a capital, the countryside's, a lair - so
+  // with any of them standing a load waits for it
+  if ((_arenaTemplates || _countryTemplates || _capitalBase) && params.has('load')) await Promise.race([arenaTraced, new Promise((r) => setTimeout(r, ARENA_LOAD_WAIT_MS))]);
   let _loadedGame = false;   // EOTB-IL: which of StartGameBehaviour's two events this boot is
   if (params.has('classicload') && peekPendingClassicSave()) {
     // SAV3: the classic import takes the load's place in the boot walk
@@ -34419,7 +34403,6 @@ const _pixelOrder = [];   // NEAR-FIRST: the frame's pixel walk, nearest first -
       announceNearbySpawns(r.current.x, r.current.y, walkMode ? player.pos : cam.pos);   // SPAWNED-DUNGEONS2: said on ENTERING the pixel, not when it is rolled (that is three pixels ahead); SPAWNED-DUNGEONS3: from where the player stands, in metres
       if (dwDecor) dwDecor.onMapPixelChanged(r.current);   // DW-E2: PlayerGPS.OnMapPixelChanged -> HandleMapPixelChanged
       ohAbyss?.onMapPixelChanged();   // OH-D: PlayerGPS.OnMapPixelChanged -> OceanHoles.OnMapPixelChanged (the rename held for its own pixel)
-      arenaBeyondNotice(r.current.x, r.current.y);   // TESA-ONLINE: online, the land past the Bay without Arena's places, said once
       // WOD5: PlayerGPS raises OnRegionIndexChanged on the frame the
       // region changes, and it changes only on a crossing - so the loader
       // hears it here as well as at a build: a visit shorter than a build
