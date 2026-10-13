@@ -3686,7 +3686,7 @@ export class HeldMapWindow {
       // TAMRIEL1: beyond the Bay the continent answers - a city, its province, or the sea - and nothing is picked
       if (!this._tamriel || this._zoneMap) return null;
       const place = tamrielPlaceAt(mx, my, this._view, tamrielInkFor(this._model));
-      return place ? { label: place, cursor: tamrielCityAt(mx, my, this._view, tamrielInkFor(this._model))?.pixel ? 'pointer' : '' } : null;   // TESA2: a place the press travels to points
+      return place ? { label: place, cursor: this.teleportationTravel && tamrielCityAt(mx, my, this._view, tamrielInkFor(this._model))?.pixel ? 'pointer' : '' } : null;   // TESA2: a place the stone's portal reaches points (TESA-NO-FAST: on the teleport map alone)
     }
     // the raw politic read, range-checked - the classic window's own
     // region-under-cursor law; the sea answers nothing
@@ -3719,15 +3719,17 @@ export class HeldMapWindow {
     const quest = this._questAt(sx, sy);
     const place = quest ? this._questPlace(quest) : null;
     if (place) { this._select(place); return; }
-    // TESA2 (bible/03-World/Arena-Provinces.md): beyond the Bay an Arena place the world stands is a journey's end - the
-    // press picks its pixel, and the trip is the coordinates' own (DFU's calculator over every pixel of the way); a
-    // place the world does not stand (online, the classic skin's world) picks nothing, as TAMRIEL1's continent did
-    if (this._tamriel && !this._zoneMap) {
+    // TESA2 (bible/03-World/Arena-Provinces.md): beyond the Bay a place the world stands - Arena's, a capital (TESA10d) -
+    // is a portal's end: on the teleport map (the Portal Stone's, the guild's) the press picks its pixel and the
+    // teleport is to it. TESA-NO-FAST (the owner: "fast travel shouldnt be a thing since we use portal stones online or
+    // the player can traverse using the overworld"): on the travel map it is no journey - the land past the Bay is
+    // walked, or a stone's portal reaches it; a place the world does not stand picks nothing, as TAMRIEL1's did
+    if (this._tamriel && !this._zoneMap && this.teleportationTravel) {
       const [mx, my] = toMap(this._view, sx, sy);
       const city = tamrielCityAt(mx, my, this._view, tamrielInkFor(this._model));
       if (city?.pixel) {
         this._select({ coords: true, x: city.pixel.x + 0.5, y: city.pixel.y + 0.5, colorIndex: -1, kind: 'coords', name: city.name, summary: null, mapId: null, arena: true });
-        this._openPanel('travel');
+        this._openPanel('teleport');
         return;
       }
     }

@@ -181,10 +181,12 @@ into, a dungeon to go down - and the held map takes the player there.
   the trace (`arenaTraced`), ARENA_LOAD_WAIT_MS (8 s) at most.
 - **The journey** (`ui/heldMap.js` `_pickAt`, `ui/tamrielInk.js` tamrielCityAt): where a host stands the places
   (`setArenaStanding`, the world host's word at its mount) each inked place carries the pixel it stands on, and a press
-  on one selects it as a journey to that pixel - the coordinates' own trip (DFU's calculator over every pixel of the way,
-  `systems/travel.js` calculateTravelTime, on the composed climate reads) - and `fastTravelTo` lands the player by the
-  town's start markers (DFU's DirectionFromStartMarker, as every journey lands). The cursor points at a place it travels to. TAMRIEL1's law that a press beyond the Bay picks
-  nothing stands for everything else (PIN MOVED in `test/tamriel.test.js`).
+  on one ON THE TELEPORT MAP (the Portal Stone's, the guild's) picks that pixel for the portal; the cursor points at a
+  place the portal reaches. TESA-NO-FAST (2026-10-13, the owner: "fast travel shouldnt be a thing since we use portal
+  stones online or the player can traverse using the overworld"): on the travel map a press beyond the Bay is no
+  journey - the land past the Bay is walked or reached through a stone's portal (`06-Systems/Portal-Stone.md`). TESA2
+  had made it the coordinates' own trip; that is gone. TAMRIEL1's law that a press beyond the Bay picks nothing stands
+  for everything else (PIN MOVED in `test/tamriel.test.js`).
 - **What an Arena town is not yet**: no house is sold in one (`scenes/worldModes.js`, the isles' rule, AUDIT CAPTAIN'S SEA
   P9 - every Arena town answers the clamp's region until TESA3, so a deed's key would own the same key in all of them);
   no spawn ever clones one (`spawnTemplates`, AUDIT CAPTAIN'S SEA P3's law); its port byte is 0. `/tp` names Arena's
@@ -650,15 +652,15 @@ mossy stone). No game data.
   land, the shore capitals beside the sea, no two on one.
 - **Measured**: their landmarks draw in the stand-in view as laid. Not yet seen in the game.
 
-## TESA10d - a capital is a journey, Arena or none (2026-10-13)
+## TESA10d - a capital on the map, Arena or none (2026-10-13)
 
 The owner: "Do we really need Arena attached?" - no. The capitals stand on their own (the port's plans and landmarks,
-Daggerfall's blocks); only the map's journey to one went through Arena's places. Now where a host stands the capitals
-(`world/tamrielCapitals.js` setCapitalsStanding, from the world host's boot: the land past the Bay and the capitals'
-door open), each capital the held map inks - TAMRIEL1's cities with no Arena, Arena's places with it - stands on the
-capital's pixel and a press on it is the journey there (`ui/tamrielInk.js` capitalJourney, `ui/heldMap.js`'s press as
-TESA2's). The ink is made again when the standing changes. In the game: open the map, zoom out past the Bay, press
-the capital.
+Daggerfall's blocks). Where a host stands the capitals (`world/tamrielCapitals.js` setCapitalsStanding, from the world
+host's boot: the land past the Bay and the capitals' door open), each capital the held map inks - TAMRIEL1's cities with
+no Arena, Arena's places with it - stands on the capital's pixel, and on the teleport map a press on it is a Portal
+Stone's portal there (`ui/tamrielInk.js` capitalJourney, `ui/heldMap.js`'s press as TESA2's - TESA-NO-FAST: never a
+journey from the travel map). The ink is made again when the standing changes. In the game: use a Portal Stone, zoom
+out past the Bay, press the capital; or walk.
 
 ## The arc - what comes next
 

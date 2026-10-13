@@ -597,7 +597,7 @@ test('TESA10b the landmarks turned north: a model drawn as the map reads (+z sou
   assert.ok(Math.abs(bounds(docks).hi[2] + bounds(drawn).lo[2]) < 1e-6, 'the docks north of the anchor in the world');
 });
 
-test('TESA10d the map\'s journey, Arena or none: where a host stands the capitals, each capital the map inks stands on its pixel and is a journey there; no other city is; none while no host stands them; the ink made again when that changes', async () => {
+test('TESA10d the map\'s capitals, Arena or none: where a host stands the capitals, each capital the map inks stands on its pixel and is a portal\'s end there (the teleport map\'s - TESA-NO-FAST); no other city is; none while no host stands them; the ink made again when that changes', async () => {
   const { buildTamrielInk, tamrielInkFor } = await import('../src/ui/tamrielInk.js');
   const { setCapitalsStanding, capitalsStanding, capitalsVersion } = await import('../src/world/tamrielCapitals.js');
   setTamrielFit({ ox: 38 * 15.5, oy: 57 * 15.5, ppu: 15.5 });

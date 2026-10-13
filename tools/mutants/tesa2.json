@@ -241,5 +241,23 @@
     "tests": [
       "test/tesa2_arena.test.js"
     ]
+  },
+  {
+    "name": "TESA-NO-FAST-the-travel-map-a-journey",
+    "file": "src/ui/heldMap.js",
+    "old": "    if (this._tamriel && !this._zoneMap && this.teleportationTravel) {",
+    "new": "    if (this._tamriel && !this._zoneMap) {",
+    "tests": [
+      "test/tesa2_arena.test.js"
+    ]
+  },
+  {
+    "name": "TESA-NO-FAST-the-cursor-points-anyway",
+    "file": "src/ui/heldMap.js",
+    "old": "cursor: this.teleportationTravel && tamrielCityAt(",
+    "new": "cursor: tamrielCityAt(",
+    "tests": [
+      "test/tesa2_arena.test.js"
+    ]
   }
 ]

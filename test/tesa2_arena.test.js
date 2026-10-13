@@ -214,10 +214,12 @@ test('TESA2 the map: where a host stands the places, each inked place carries th
   assert.deepEqual(arenaInkCities(placeArenaLocations(parseArenaCityData(mintCityData([])), null)), []);
   const held = read('src/ui/heldMap.js');
   const pick = held.slice(held.indexOf('  _pickAt(sx, sy) {'), held.indexOf('  _renderSearch(entries) {'));
-  assert.match(pick, /if \(city\?\.pixel\) \{\n\s+this\._select\(\{ coords: true, x: city\.pixel\.x \+ 0\.5, y: city\.pixel\.y \+ 0\.5, colorIndex: -1, kind: 'coords', name: city\.name, summary: null, mapId: null, arena: true \}\);\n\s+this\._openPanel\('travel'\);/);
+  // PIN MOVED (TESA-NO-FAST): a portal's end on the teleport map alone - the travel map makes no journey past the Bay
+  assert.match(pick, /if \(this\._tamriel && !this\._zoneMap && this\.teleportationTravel\) \{/);
+  assert.match(pick, /if \(city\?\.pixel\) \{\n\s+this\._select\(\{ coords: true, x: city\.pixel\.x \+ 0\.5, y: city\.pixel\.y \+ 0\.5, colorIndex: -1, kind: 'coords', name: city\.name, summary: null, mapId: null, arena: true \}\);\n\s+this\._openPanel\('teleport'\);/);
   assert.ok(pick.indexOf('// TESA2') < pick.indexOf('// WILD2'), 'before the zone\'s and the coordinates\' own arms');
   assert.match(held, /if \(selected\.coords\) return \{ pixel: \{ x: Math\.floor\(selected\.x\), y: Math\.floor\(selected\.y\) \}, name: selected\.name \};/, 'the journey is to its pixel, by its name');
-  assert.match(held, /cursor: tamrielCityAt\(mx, my, this\._view, tamrielInkFor\(this\._model\)\)\?\.pixel \? 'pointer' : ''/);
+  assert.match(held, /cursor: this\.teleportationTravel && tamrielCityAt\(mx, my, this\._view, tamrielInkFor\(this\._model\)\)\?\.pixel \? 'pointer' : ''/);
 });
 
 test('TESA2 the host: offline on the land beyond the Bay it stands the places - the templates off the game\'s rows, the build asking Arena past the Bay, one clone a pixel in the index taken out when its place goes, the region and the climate the pixel\'s; the built pixel keeps its place for the sweep, which builds again what moved; a boot\'s load waits for the places; no house is sold in an Arena town; /tp names them (mutant: online, an arm, the wait)', () => {
