@@ -68,12 +68,32 @@ import { waterBedOf, bedHalo, bedNearEdge } from './waterBed.js';   // AUDIT WAT
  *   3x3 of pixels' climates about this one (world/terrainNature.js
  *   layoutNature's `ecotone`), null with the Blended climates row off or
  *   every neighbour this pixel's own climate.
+ * @param {?{px: number, py: number}} [job.flattenAt] - TESA11: a capital that spans several pixels (world/tamrielCapitals.js
+ *   `span`): the pixel whose average every one of its pixels is flattened to - its centre's - so they meet level.
  * @returns {{samples: Float32Array, tilemap: Uint8Array,
  *   positions: Float32Array, normals: Float32Array,
  *   tilemapBytes: Uint8Array, avg: number, paths: ?Uint8Array,
  *   nature: Array<{record:number,x:number,y:number,z:number}>, beach: ?Float32Array}}
  */
-export function generatePixelTerrain({ woods, px, py, stride = 1, tilemap, locationRect = null, hasLocation = false, climateType, roads = null, sites = null, climates = null, wod = null, forests = null, landform = false, ecotone = null, bed = false }) {
+/** TESA11: the averages a city over several pixels is flattened to, by its centre pixel and whether the ground is shaped -
+ *  kept while the kernel's inputs are the same (its woods, its network, its sites, its climates). */
+const _flatAverages = new Map();
+/** TESA11: the average height of a pixel's samples (and of DFU's own, the classic pass, where the ground is shaped) - the
+ *  pixel's own samples when this job is the pixel's (`own`), else generated for it once. */
+function flattenAverage(inputs, landforms, at, own) {
+  const key = `${at.px},${at.py}|${landforms ? 1 : 0}`, had = _flatAverages.get(key);
+  if (had && had.woods === inputs.woods && had.roads === inputs.roads && had.sites === inputs.sites && had.climates === inputs.climates) return had;
+  let samples = own?.samples ?? null, classic = own?.classic ?? null;
+  if (!samples) {
+    classic = landforms ? new Float32Array(HEIGHTMAP_DIMENSION * HEIGHTMAP_DIMENSION) : null;
+    samples = generateSamples(inputs.woods, at.px, at.py, HEIGHTMAP_DIMENSION, landforms, classic);
+  }
+  const out = { ...inputs, avg: calcAvgMaxHeight(samples)[0], classic: classic ? calcAvgMaxHeight(classic)[0] : null };
+  _flatAverages.set(key, out);
+  return out;
+}
+
+export function generatePixelTerrain({ woods, px, py, stride = 1, tilemap, locationRect = null, hasLocation = false, climateType, roads = null, sites = null, climates = null, wod = null, forests = null, landform = false, ecotone = null, bed = false, flattenAt = null }) {
   // LANDFORM1-3: built from the network THIS kernel holds - the one the painter below paints - so the cut and the paint
   // are the same roads; restrideGrid's ghost rows take the same landforms, so the edge normals read the shaped ground.
   // LANDFORM4: and the sites this kernel holds (landforms.js landformSites, the client's to hand both threads); LANDFORM6:
@@ -89,9 +109,11 @@ export function generatePixelTerrain({ woods, px, py, stride = 1, tilemap, locat
   const samples = generateSamples(woods, px, py, HEIGHTMAP_DIMENSION, landforms, classic);
   let avg = 0;
   if (hasLocation) {
-    [avg] = calcAvgMaxHeight(samples);
+    // TESA11: a city over several pixels stands on one ground - each of its pixels flattened to its centre's average
+    const flat = flattenAt ? flattenAverage({ woods, roads, sites, climates }, landforms, flattenAt, px === flattenAt.px && py === flattenAt.py ? { samples, classic } : null) : null;
+    avg = flat ? flat.avg : calcAvgMaxHeight(samples)[0];
     blendLocationTerrain(samples, avg, locationRect);
-    if (classic) blendLocationTerrain(classic, calcAvgMaxHeight(classic)[0], locationRect);
+    if (classic) blendLocationTerrain(classic, flat?.classic ?? calcAvgMaxHeight(classic)[0], locationRect);
   }
   // ROADS 2: the one seam. Ground classified, squares not yet run, so a
   // road tile lands over a known ground type and the marching squares

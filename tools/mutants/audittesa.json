@@ -110,7 +110,7 @@
   {
     "name": "AUDIT-TESA-A6-2-shared-garden",
     "file": "src/world/tamrielCapitals.js",
-    "old": "else if (cell === 'G') out.push(CAPITALS[k] ? capitalGardenName(CAPITALS[k], x, r) : CAPITAL_BLOCKS.garden);",
+    "old": "else if (cell === 'G') out.push(CAPITALS[k] ? capitalGardenName(CAPITALS[k], x0 + x, r0 + r) : CAPITAL_BLOCKS.garden);",
     "new": "else if (cell === 'G') out.push(CAPITAL_BLOCKS.garden);",
     "tests": [
       "test/audit_tesa.test.js",
@@ -406,24 +406,6 @@
     ]
   },
   {
-    "name": "AUDIT-TESA-A6-3-ic-towers-in-houses",
-    "file": "src/world/capitalModels.js",
-    "old": "export const IMPERIAL_WALL = Object.freeze({ apothem: 317, flat",
-    "new": "export const IMPERIAL_WALL = Object.freeze({ apothem: 311, flat",
-    "tests": [
-      "test/audit_tesa.test.js"
-    ]
-  },
-  {
-    "name": "AUDIT-TESA-A6-3-bridge-inside-gate",
-    "file": "src/world/capitalModels.js",
-    "old": "export const IMPERIAL_BRIDGE = Object.freeze({ from: IMPERIAL_WALL.apothem, to:",
-    "new": "export const IMPERIAL_BRIDGE = Object.freeze({ from: 311, to:",
-    "tests": [
-      "test/audit_tesa.test.js"
-    ]
-  },
-  {
     "name": "AUDIT-TESA-A6-3-solitude-north-in-houses",
     "file": "src/world/tamrielCapitals.js",
     "old": "    west: -7, north: -108, east: 604, south: 416, thick: 5,",
@@ -462,8 +444,8 @@
   {
     "name": "AUDIT-TESA-A6-4-canals-inland",
     "file": "src/world/tamrielCapitals.js",
-    "old": "const blockNames = capitalBlockNames(plan, k, cap.shore ? ctx.names : dryKinds(ctx.names, ctx.blockOf));",
-    "new": "const blockNames = capitalBlockNames(plan, k, ctx.names);",
+    "old": "const blockNames = capitalBlockNames(plan, k, cap.shore ? ctx.names : dryKinds(ctx.names, ctx.blockOf), cap.blocks,",
+    "new": "const blockNames = capitalBlockNames(plan, k, ctx.names, cap.blocks,",
     "tests": [
       "test/audit_tesa.test.js"
     ]

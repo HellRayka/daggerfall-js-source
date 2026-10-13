@@ -2634,14 +2634,15 @@ export async function bootWorld(canvas, renderer, params, status) {
   /** TESA10 (world/tamrielCapitals.js): THE CAPITAL A PIXEL PAST THE BAY STANDS - its own, laid out by its plan (its
    *  districts of the game's city blocks round the port's own landmarks), the region and climate the pixel's, and where
    *  Arena's place of its name stands on it (world/arenaPlaces.js standArenaPixels' pin) that place's slot (the Arena
-   *  sweep and the port readers read it) - stood in the index once, and again when the place on it changes; or null. */
+   *  sweep and the port readers read it) - stood in the index once, and again when the place on it changes; or null.
+   *  TESA11: a capital over several pixels stands a slice on each (capitalOnPixel's `s`), its own location. */
   function capitalLocationAt(px, py) {
     const at = _capitalBase ? capitalOnPixel(px, py) : null;
     const key = `${px},${py}`, had = locationIndex.get(key);
     const place = at && _arenaTemplates ? arenaPlaceOnPixel(px, py) : null;
     const slot = place ? Object.freeze({ province: place.province, provinceIndex: place.provinceIndex, id: place.id, kind: place.kind, port: !!place.port }) : null;
     if (had?.capital) {
-      if (at && had.capital.k === at.k && (had.arena?.id ?? null) === (slot?.id ?? null) && (had.arena?.provinceIndex ?? null) === (slot?.provinceIndex ?? null)
+      if (at && had.capital.k === at.k && had.capital.s === at.s && (had.arena?.id ?? null) === (slot?.id ?? null) && (had.arena?.provinceIndex ?? null) === (slot?.provinceIndex ?? null)
         && !!had.arena?.port === !!slot?.port) return had;   // AUDIT-TESA A4-F2: its place made a port, its slot too
       _locIndexGen += 1;
       locationIndex.delete(key);
@@ -5895,6 +5896,7 @@ export async function bootWorld(canvas, renderer, params, status) {
     const arenaRoadsAt = terrainGen.arenaRoadsEpoch;   // TESA4: the Arena roads' layer this job is built with
     const { samples, tilemap, positions, normals, bed: carved, tilemapBytes, avg, nature, withRoads, paths, wodAverages, beach, arenaRoads } = await terrainGen.generate({
       px, py, stride, tilemap: seedTilemap, locationRect, hasLocation: !!dfLocation, climateType: climateBase,
+      flattenAt: dfLocation?.capital?.flattenAt ?? null,   // TESA11: a capital over several pixels flattened to its centre's ground
       bed: waterOn,   // AUDIT WATER-NEXT P1: the bed under the water, carved on the worker with the grid
       // WOD2: the smoothing arms run in the kernel; FOREST1: and whether each pick is a SITE the woods close round (a camp, a
       // fort, a ruin - not a rock field or a mountain, AUDIT FOREST1 F1) and its whole footprint (its objects, F7)

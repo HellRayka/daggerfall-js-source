@@ -20,8 +20,8 @@
   {
     "name": "TESA2-a-pixel-twice",
     "file": "src/world/arenaPlaces.js",
-    "old": "const free = (bx, by) => !inBay(bx, by) && !byPixel.has(`${bx},${by}`) && own(",
-    "new": "const free = (bx, by) => !inBay(bx, by) && own(",
+    "old": "const free = (bx, by) => !inBay(bx, by) && !byPixel.has(`${bx},${by}`) && !reserved?.(bx, by) && own(",
+    "new": "const free = (bx, by) => !inBay(bx, by) && !reserved?.(bx, by) && own(",
     "tests": [
       "test/tesa2_arena.test.js"
     ]

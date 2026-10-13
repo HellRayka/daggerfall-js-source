@@ -900,8 +900,8 @@
   {
     "name": "AUDIT-LANDFORMS-D3-classic-unblended",
     "file": "src/world/terrainGen.js",
-    "old": "    if (classic) blendLocationTerrain(classic, calcAvgMaxHeight(classic)[0], locationRect);\n",
-    "new": "\n",
+    "old": "    if (classic) blendLocationTerrain(classic, flat?.classic ?? calcAvgMaxHeight(classic)[0], locationRect);\n",
+    "new": "",
     "tests": [
       "test/landform.test.js",
       "test/auditlandforms.test.js"
@@ -910,7 +910,7 @@
   {
     "name": "AUDIT-LANDFORMS-D3-classic-blended-to-the-shaped-mean",
     "file": "src/world/terrainGen.js",
-    "old": "if (classic) blendLocationTerrain(classic, calcAvgMaxHeight(classic)[0], locationRect);",
+    "old": "if (classic) blendLocationTerrain(classic, flat?.classic ?? calcAvgMaxHeight(classic)[0], locationRect);",
     "new": "if (classic) blendLocationTerrain(classic, avg, locationRect);",
     "tests": [
       "test/landform.test.js",

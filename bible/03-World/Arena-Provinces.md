@@ -572,6 +572,8 @@ Imperial City is the first; Solitude (its arch over the water, the Blue Palace, 
   stands the Imperial City - 8 x 8 blocks, 45 named buildings (the Mages Guild, the Fighters Guild and a temple among
   them), its port blocks resolving at their indices (TESALAKE 900200, TESAWGT0 900202); 7170 water tiles in its tilemap
   (the lake ring's 28 blocks). Not yet seen rendered in the game; the landmarks render in a stand-in view.
+- **Superseded by TESA11**: the Imperial City above (its 8 x 8 plan, its Tower to 292 m, its walls and bridges) is
+  the nine-pixel city now; Solitude and the other five stand as below.
 - **Fixed in TESA10b**: Daggerfall's block rows run from the SOUTH (DFU lays a location's block row y at Unity +z,
   north; the port keeps +z north) and the plan's rows are written north to south, so the city first stood mirrored north
   to south of its plan's names; TESA10b lays the plan's rows into the grid from its last and turns the landmarks north.
@@ -687,6 +689,56 @@ lanes, every finding's verdict. What it changed here, by id:
 - **The roads** (A3-1): a shore town's cell its land. **The switches** (A7-8): `?capitals=off` and `?country=off`
   offline alone.
 
+## TESA11 - the Imperial City over nine pixels (2026-10-13)
+
+The owner: *"the imperial city needs to be much larger and be split into distinct districts with the tower very large.
+The entire city also needs to be lore accurate to daggerfall"*; asked, *"3x3 pixels"* and *"Canon layout, DF era"*. It
+supersedes TESA10's 8 x 8 Imperial City (its plan, its Tower to 292 m, its walls and bridges, and AUDIT-TESA A6-3's wall
+at 317 m); Solitude and the other five stand as they were.
+
+- **Nine pixels, nine locations** (`world/tamrielCapitals.js` capitalSpan, capitalCentre, capitalSliceOrdinal,
+  capitalSliceName): Daggerfall's engine stands one location on a pixel, eight blocks a side at most. The city stands on
+  three pixels a side (`world/imperialCity.js` IMPERIAL_SPAN, 2.46 km across), each pixel's 8 x 8 slice of one 24 x 24
+  plan its own location - its own map id and index (the slice's ordinal, the centre 0), its buildings' seeds its own (64
+  a slice) - named for its district: Elven Gardens District, Prison District, Market District (north row, west to east),
+  Talos Plaza District, Imperial City, Arena District, Temple District, Waterfront District, Arboretum.
+- **Where**: the pixel law over nine - the centre the nearest pixel to TAMRIEL1's point all nine of whose pixels are the
+  Imperial Province's land (the 8 x 8 city's pixel when its eight neighbours are land too). With Arena attached, the pinned place of the name stands on the centre and no other Arena place on any of the
+  nine (`world/arenaPlaces.js` standArenaPixels' `reserved`: the next free pixel).
+- **One ground** (`world/terrainGen.js` flattenAt): a location flattens its pixel to the pixel's own average height,
+  so nine slices stood nine levels with walls at every seam. Every slice is flattened to its centre pixel's average (cached
+  by its inputs), so the nine meet level; the outer edge steps to the land as any city's does.
+- **The layout is the city's canon** - the wheel the later games mapped, in Daggerfall's day (3E 405, Uriel Septim VII)
+  and of Daggerfall's own blocks (`world/imperialCity.js`, every cell decided from the metres about the city's middle):
+  City Isle in Lake Rumare (1010 m from the middle); at the heart the White-Gold Tower on its plaza, Green Emperor Way's lawns round it
+  and the emperors' eight tombs, inside the palace wall (300 m, six gates); within the city wall (900 m, four gates,
+  a tower every ten degrees) the six districts on their sectors, each walled from the next with a gate - the Market
+  District north-east, the Arena District east, the Arboretum south-east, the Temple District south-west, Talos Plaza
+  west, the Elven Gardens north-west; outside the wall on the isle the Prison District (north of north-east, so it stands
+  in the north pixel), the Arcane University south-east and the Waterfront on the lake's south shore; Talos Bridge west to
+  the mainland. Recorded as the port's placing: no source the port can read gives the Waterfront's compass, nor the
+  Prison's bearing finer than "beside the Market".
+- **The districts are Daggerfall's blocks** (IMPERIAL_MIX, IMPERIAL_SIGNATURE): 86 of the game's city blocks by trade,
+  off the cell's hash - the Market's general stores, armorers, jewellers and alchemists, the Arena District's armorers
+  and the Fighters Guild, the Temple District's temples, Talos Plaza's bank and houses, the Elven Gardens' tavern and
+  houses, the Waterfront's pawnbrokers, taverns and the Thieves Guild, the Arcane University's Mages Guild and a library;
+  each signature once. The rest of the grid: 217 cells of lake, 22 of garden (the Arboretum's, its own blocks), 251 the
+  city's own (`I<row><column>` base 36: the plaza's and Green Emperor Way's stone and lawns, a wall's foot, a
+  landmark's ground, a shore) - closed where a model stands at a body's height, its gates open.
+- **The landmarks** (`world/capitalImperial.js`, the port's own make, each carried by the slice it stands in -
+  IMPERIAL_CARRY, `capitalModelCarriers`): the WHITE-GOLD TOWER - an octagon over a plinth 172 m across, its shaft
+  tapering from 56 m to 38 m banded in gold every 60 m, eight fins to 340 m, a gallery at 494 m, a crown to 548 m and a
+  gilt spire to 680 m; the palace wall; the tombs; the city wall; the district walls; the Colosseum (east, its stands in
+  three tiers and its ways in); the Temple of the One (south-west, a dome and two towers); the statue of Talos on its
+  plaza (west); the Imperial Prison (north, a bastion to 64 m); the Arcane University (south-east, its walls, its hall and
+  a spire to 120 m); the Waterfront (its piers and lights); Talos Bridge. Twelve models (910200 to 910211), their
+  pictures CAPITAL_ARCHIVE's. No game data.
+- **The host** (`scenes/world.js` capitalLocationAt): a slice stood once on its pixel and again when it moves; the
+  terrain job carries the slice's `flattenAt`.
+- **Seen** (a stand-in view of the twelve over the plan's ground, scratch): the wheel, the districts behind their walls,
+  the Tower, the Colosseum with its gate, the statue, the Prison north, the University south-east, the Waterfront south,
+  the bridge west. Not yet walked in the game.
+
 
 - **The provinces as regions of their own** - their own chat rooms, banks, law, prices and quest sites. The save's shape,
   the relay's whitelist and the account services' validators move together: the owner's call.
@@ -703,12 +755,25 @@ lanes, every finding's verdict. What it changed here, by id:
   the contract board and the ship passage.
 - **The capitals, the rest** - Solitude (Skyrim: the arch over the Karth's mouth, the Blue Palace, Castle Dour, the docks),
   then Mournhold, Alinor, Falinesti, Torval and Helstrom, each its own plan and landmarks; the Imperial City's
-  Waterfront docks and its Arena's colosseum; houses for sale in a capital (its own region's deed key first).
+  Waterfront docks and its Arena's colosseum (both TESA11's now); houses for sale in a capital (its own region's deed key first).
 - **Morrowind of Morrowind's own** (TESA9) - set aside by the owner, 2026-10-12: "Dont worry about morrowind".
 - **The countryside and the lairs, the rest** - their places on the held map and the travel map, roads to them, and quest
   sites in them.
 
 ## Pins
+
+`test/tesa11_imperial.test.js` (14, TESA11): the plan (24 x 24, its anchor the middle grid point; the lake, the city's
+own and a district's mix by the metres, the signatures once); the districts on their sectors; the slices (nine, their
+names, ordinals, ids and indices); the pixel law over nine and Arena's places off the city's pixels; a slice's location
+(its eight by eight, its seeds, `flattenAt`); the ground's laws; the port blocks (each landmark carried by its own slice
+at that slice's middle, the lawns treed); the Tower (680 m, its plinth, its fins, marble and gold); the walls' gates; the
+districts' landmarks; the install (twelve, turned north); one ground (the slices flattened to the centre's average, the
+cache keyed by its inputs); the host. Every model finite, its normals unit, every face wound along its normal. Mutants
+`tools/mutants/tesa11.json` (45: 44 dead, 1 recorded equivalent - a shore cell's house). PIN MOVED: `test/tesa10_capitals.test.js`
+(the Imperial City's plan, Tower and walls retired to this suite; its pixel, pin, blocks, port blocks and location tests
+read the nine-pixel city) and `test/audit_tesa.test.js` (the footprint's gates, A6-3's Imperial City asserts retired);
+`tools/mutants/tesa10.json` (19 retired, 13 re-aimed), `audittesa.json` (2 retired, 2 re-aimed), `auditlandforms.json` (2)
+and `tesa2.json` (1) re-aimed by content, each judged dead again.
 
 `test/tesa10_capitals.test.js` (14, TESA10): the id (the capitals' lane after the lairs', the ordinal in the low 20 with
 0x80000, a place the port made, nothing past it, the index past the lairs'); the pixel (TAMRIEL1's own point, its centre

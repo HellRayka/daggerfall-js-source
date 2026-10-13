@@ -10,7 +10,7 @@ import { readFileSync } from 'node:fs';
 
 import {
   CAPITAL_LANE, CAPITAL_INDEX_BASE, CAPITAL_SALT, CAPITAL_BLOCK_INDEX, CAPITAL_BLOCKS, CAPITAL_MODELS, CAPITALS, IMPERIAL_CITY_PLAN, capitalGardenName, CAPITAL_CLOSED_BYTE,
-  IMPERIAL_DISTRICTS, IMPERIAL_GROUNDS, BLOCK_M, capitalPlaceId, capitalLocationIndex, isCapitalPlaceId, capitalPixel, capitalOnPixel,
+  BLOCK_M, capitalPlaceId, capitalLocationIndex, isCapitalPlaceId, capitalPixel, capitalOnPixel,
   capitalPin, capitalBase, cityBlockNames, capitalBlockNames, capitalBuildings, portBlockJson, miscModelAt, tileCentre, autoCentre,
   capitalPortBlocks, synthesizeCapitalLocation, capitalDistrict, capitalCarrier, anchorMetres, SOLITUDE, SOLITUDE_PLAN, SOLITUDE_DISTRICTS,
   SOLITUDE_BLOCKS,
@@ -20,12 +20,13 @@ import {
   solitudeTowers,
 } from '../src/world/capitalSolitude.js';
 import {
-  CAPITAL_ARCHIVE, CAPITAL_ART, CAPITAL_ART_SIZE, WHITE_GOLD, IMPERIAL_WALL, IMPERIAL_INNER, IMPERIAL_BRIDGE, imperialWallCorners,
-  buildWhiteGoldTower, buildImperialWall, buildImperialInnerWall, buildImperialBridges, capitalArt, installCapitals, _resetCapitals, northward,
+  CAPITAL_ARCHIVE, CAPITAL_ART, CAPITAL_ART_SIZE, capitalArt, installCapitals, _resetCapitals, northward,
 } from '../src/world/capitalModels.js';
 import { LAIR_LANE, isCountryPlaceId } from '../src/world/tamrielCountry.js';
 import { LAIR_INDEX_BASE } from '../src/world/tamrielDungeons.js';
 import { standArenaPixels } from '../src/world/arenaPlaces.js';
+import { buildImperialTower, buildTalosBridge } from '../src/world/capitalImperial.js';
+import { imperialTile, imperialClosed, IMPERIAL_SLICE_NAMES } from '../src/world/imperialCity.js';
 import { setTamrielFit, pictureToBay, inBay, tamrielFit as tamrielFitNow } from '../src/world/tamrielFrame.js';
 import { setTamrielTrace, tamrielLandVersion, provinceKeyBeyondBay } from '../src/world/tamrielLand.js';
 import { CITIES } from '../src/world/tamrielGeography.js';
@@ -67,7 +68,9 @@ test('TESA10 the pixel: the capital\'s point on Daggerfall\'s map (TAMRIEL1\'s C
   assert.ok(!inBay(2177, 612));
   assert.equal(capitalOnPixel(2177, 612).cap, ic);
   assert.equal(capitalOnPixel(2177, 612).k, 0);
-  assert.equal(capitalOnPixel(2178, 612), null);
+  // PIN MOVED (TESA11): the Imperial City over nine pixels - its east slice beside it, nothing past them
+  assert.deepEqual([capitalOnPixel(2178, 612).cap, capitalOnPixel(2178, 612).s], [ic, 5]);
+  assert.equal(capitalOnPixel(2179, 612), null);
   setTamrielFit({ ox: 400, oy: 500, ppu: 10 });
   assert.equal(capitalOnPixel(2177, 612), null, 'a new fit, the pixel moves');
   assert.equal(capitalOnPixel(1385, 465).cap, ic);
@@ -89,28 +92,10 @@ test('TESA10 Arena\'s place pinned: a place its pin names stands on that pixel e
   assert.deepEqual(s.stood.map((p) => [p.name, p.bx, p.by, !!p.pinned]), [['First', 1500, -101, false], ['Pinned', 1500, -100, true], ['OnBay', 1700, -150, false]], 'the pinned first, the first moved off it; a pin on the Bay ignored');
   assert.equal(s.byPixel.get('1500,-100').name, 'Pinned');
   assert.deepEqual(standArenaPixels(model, trace).stood.map((p) => [p.name, p.bx, p.by]), [['First', 1500, -100], ['Pinned', 1600, -150], ['OnBay', 1700, -150]], 'no pin, no change');
-  assert.match(read('src/world/arenaPlaces.js'), /_model\.pixels = standArenaPixels\(model, \/\*\* @type \{any\} \*\/ \(tamrielTrace\(\)\), _coastal, capitalPin\);/);
+  assert.match(read('src/world/arenaPlaces.js'), /_model\.pixels = standArenaPixels\(model, \/\*\* @type \{any\} \*\/ \(tamrielTrace\(\)\), _coastal, capitalPin, \(bx, by\) => !!capitalOnPixel\(bx, by\)\);/, 'PIN MOVED (TESA11): and no other place on a capital\'s pixels');
 });
 
 // ── THE PLAN ────────────────────────────────────────────────────
-
-test('TESA10 the Imperial City\'s plan: 8 x 8 - the lake its outer ring, the city\'s four corners gardens, the Tower\'s grounds the heart, 26 of Daggerfall\'s city blocks round them and the Arboretum\'s gardens; every district\'s cells in the city', () => {
-  const P = IMPERIAL_CITY_PLAN;
-  assert.equal(P.length, 8);
-  assert.ok(P.every((r) => r.length === 8));
-  for (let y = 0; y < 8; y++) for (let x = 0; x < 8; x++) assert.equal(P[y][x] === 'L', x === 0 || y === 0 || x === 7 || y === 7, `${x},${y}`);
-  for (const [x, y] of [[1, 1], [6, 1], [1, 6], [6, 6]]) assert.equal(P[y][x], 'G');
-  assert.deepEqual([P[3][3], P[3][4], P[4][3], P[4][4]], ['C0', 'C1', 'C2', 'C3']);
-  const kinds = P.flat().filter((c) => !['L', 'G'].includes(c) && !/^C\d$/.test(c));
-  assert.equal(kinds.length, 26, 'the Arboretum\'s two cells gardens too');
-  for (const k of ['MAGE', 'TEMP', 'FIGH', 'THIE', 'TVRN', 'GENR', 'ARMR', 'ALCH', 'BANK', 'GEMS', 'PAWN', 'BOOK', 'LIBR', 'RESI', 'CUST']) assert.ok(kinds.includes(k), k);
-  const seen = new Set();
-  for (const [d, cells] of Object.entries(IMPERIAL_DISTRICTS)) for (const [x, y] of cells) { assert.notEqual(P[y][x], 'L', d); assert.equal(seen.has(`${x},${y}`), false, `${x},${y} in two districts`); seen.add(`${x},${y}`); }
-  assert.equal(seen.size, 6 * 6 - 4, 'every cell of the city but its four corner gardens has a district');
-  assert.equal(capitalDistrict(CAPITALS[0], 3, 3), 'Green Emperor Way');
-  assert.equal(capitalDistrict(CAPITALS[0], 6, 3), 'Talos Plaza District');
-  assert.equal(capitalDistrict(CAPITALS[0], 0, 0), null);
-});
 
 const city = (mapId, names, o = {}) => ({ name: `C${mapId}`, mapTableData: { mapId, locationType: LOCATION_TYPES.TownCity, longitude: 0, latitude: 0 }, exterior: { exteriorData: { blockNames: names, width: 2, height: 1 }, buildings: [] }, hasDungeon: false, ...o });
 
@@ -118,16 +103,24 @@ test('TESA10 the blocks: every name the game\'s cities lay by its kind, sorted, 
   const rows = [city(1, ['TVRNAL02.RMB', 'WALLAA00.RMB']), city(2, ['TVRNAL01.RMB', 'PALAAA00.RMB', 'TVRNAL02.RMB']), { ...city(3, ['GENRAL09.RMB']), mapTableData: { mapId: 3, locationType: LOCATION_TYPES.TownHamlet } }];
   const names = cityBlockNames(rows);
   assert.deepEqual([...names], [['TVRN', ['TVRNAL01.RMB', 'TVRNAL02.RMB']]]);
+  // PIN MOVED (TESA11): the capital's own blocks handed (the Imperial City's grounds are its plan's own now)
+  const own = Object.fromEntries(['C0', 'C1', 'C2', 'C3'].map((c, i) => [c, { name: `OWN${i}.RMB` }]));
   const plan = [['L', 'G', 'TVRN'], ['C0', 'C1', 'TVRN'], ['C2', 'C3', 'L']];
-  const out = capitalBlockNames(plan, 0, names);
+  const out = capitalBlockNames(plan, 0, names, own);
   // the grid's rows from the south: the plan's last row first
-  assert.deepEqual(out.slice(0, 3), [...CAPITAL_BLOCKS.grounds.slice(2, 4), CAPITAL_BLOCKS.lake]);
-  assert.deepEqual(out.slice(3, 5), CAPITAL_BLOCKS.grounds.slice(0, 2));
+  assert.deepEqual(out.slice(0, 3), ['OWN2.RMB', 'OWN3.RMB', CAPITAL_BLOCKS.lake]);
+  assert.deepEqual(out.slice(3, 5), ['OWN0.RMB', 'OWN1.RMB']);
   assert.deepEqual(out.slice(6, 8), [CAPITAL_BLOCKS.lake, capitalGardenName(CAPITALS[0], 1, 0)], 'PIN MOVED (AUDIT-TESA A6-2): a garden the capital\'s own, by its cell');
   assert.equal(out[8], names.get('TVRN')[hash32(CAPITAL_SALT, 0, 2, 0) % 2], 'the hash the plan\'s column and row');
   assert.equal(out[5], names.get('TVRN')[hash32(CAPITAL_SALT, 0, 2, 1) % 2]);
   assert.deepEqual(capitalBlockNames([['L'], ['G']], 0, names), [capitalGardenName(CAPITALS[0], 0, 1), CAPITAL_BLOCKS.lake], 'the plan\'s south row the grid\'s first');
   assert.equal(capitalBlockNames([['MAGE']], 0, names), null);
+  // TESA11: a kind the game's cities lay none of falls back to a house, else a general store; a slice's hash the plan's
+  const homes = new Map([['RESI', ['RESIAA00.RMB', 'RESIAA01.RMB', 'RESIAA02.RMB']]]);
+  assert.equal(capitalBlockNames([['MAGE']], 0, homes)[0], homes.get('RESI')[hash32(CAPITAL_SALT, 0, 0, 0) % 3]);
+  assert.equal(capitalBlockNames([['RESI']], 0, homes, {}, [5, 9])[0], homes.get('RESI')[hash32(CAPITAL_SALT, 0, 5, 9) % 3], 'the cell (5, 9) of the whole plan');
+  assert.equal(capitalBlockNames([['G']], 0, homes, {}, [10, 13])[0], capitalGardenName(CAPITALS[0], 10, 13));
+  assert.equal(capitalGardenName(CAPITALS[0], 10, 13), 'TESGICda.RMB', 'base 36');
 });
 
 test('TESA10 the buildings: each classic block\'s own named records in grid order (its guild\'s faction, its quality), under the capital\'s seeds (1 to 65535, the cell\'s and the record\'s), its sector the cell, its location the capital', () => {
@@ -143,35 +136,30 @@ test('TESA10 the buildings: each classic block\'s own named records in grid orde
 
 // ── THE PORT BLOCKS ─────────────────────────────────────────────
 
-test('TESA10 the port blocks: the lake all water, the garden grass with a tree in about five, the grounds\' plaza stone, Green Emperor Way grass, the street stone; the Tower\'s foot and the ring wall\'s band closed, its four gates open; the landmarks in the heart\'s first block at the city\'s middle', () => {
+test('TESA10 the port blocks: the lake all water, the garden grass with a tree in about five; a capital\'s own block its ground and its closed cells by its laws of the anchor\'s metres; the landmarks in the anchor\'s block at the city\'s middle (PIN MOVED, TESA11: the Imperial City\'s own blocks its plan\'s, its centre\'s landmarks five)', () => {
   const b = capitalPortBlocks();
-  assert.deepEqual(b.slice(0, 6).map((x) => [x.name, x.index]), [[CAPITAL_BLOCKS.lake, CAPITAL_BLOCK_INDEX], [CAPITAL_BLOCKS.garden, CAPITAL_BLOCK_INDEX + 1], ...CAPITAL_BLOCKS.grounds.map((n, i) => [n, CAPITAL_BLOCK_INDEX + 2 + i])]);
+  assert.deepEqual(b.slice(0, 2).map((x) => [x.name, x.index]), [[CAPITAL_BLOCKS.lake, CAPITAL_BLOCK_INDEX], [CAPITAL_BLOCKS.garden, CAPITAL_BLOCK_INDEX + 1]]);
   assert.ok(CAPITAL_BLOCK_INDEX >= 900000 && CAPITAL_BLOCK_INDEX !== 900100, 'past any BSA, apart from the arena\'s');
   const tiles = (j) => j.RmbBlock.FldHeader.GroundData.GroundTiles.map((t) => t.TileBitfield);
   assert.ok(tiles(b[0].json).every((t) => t === 0), 'the lake: water');
   assert.ok(tiles(b[1].json).every((t) => t === 2), 'the garden: grass');
   const trees = b[1].json.RmbBlock.FldHeader.GroundData.GroundScenery.filter((s) => s.TextureRecord >= 0).length;
   assert.ok(trees > 25 && trees < 80, `trees ${trees}`);
-  for (const [q, blk] of b.slice(2, 6).entries()) {
-    // the heart's block q at the plan's (3 + qx, 3 + qy): the middle at its corner - its west or east, its south (the
-    // plan's north row, qy 0) or north - in its own metres (z north)
-    const qx = q % 2, qy = q >> 1, ox = BLOCK_M * (1 - qx), oz = BLOCK_M * qy;
-    const T = tiles(blk.json), A = blk.json.RmbBlock.FldHeader.AutoMapData;
-    for (let ty = 0; ty < 16; ty++) for (let tx = 0; tx < 16; tx++) {
-      const [x, z] = tileCentre(tx, ty), r = Math.hypot(x - ox, z - oz);
-      assert.equal(T[ty * 16 + tx], r < IMPERIAL_GROUNDS.plaza || r > IMPERIAL_GROUNDS.ringOut ? 3 : 2);
-    }
-    for (let ay = 0; ay < 64; ay++) for (let ax = 0; ax < 64; ax++) {
-      const [x, z] = autoCentre(ax, ay), dx = x - ox, dz = z - oz, r = Math.hypot(dx, dz);
-      const want = r <= IMPERIAL_GROUNDS.towerFoot || (r >= IMPERIAL_GROUNDS.ringIn && r <= IMPERIAL_GROUNDS.ringOut && Math.abs(dx) > IMPERIAL_GROUNDS.gate && Math.abs(dz) > IMPERIAL_GROUNDS.gate);
-      assert.equal(A[ay * 64 + ax], want ? CAPITAL_CLOSED_BYTE : 0);   // PIN MOVED (AUDIT-TESA A6-5): a wall's byte in no quarter
-    }
-    assert.equal(blk.json.RmbBlock.Misc3dObjectRecords.length, q === 0 ? 4 : 0);
+  // the Imperial City's anchor block (the plan's (11, 11), the anchor its south-east corner): its ground by the city's laws
+  const ic = CAPITALS[0], code = capitalCarrier(ic);
+  assert.equal(code, 'Ibb');
+  const blk = b.find((x) => x.name === ic.blocks[code].name), T = tiles(blk.json), A = blk.json.RmbBlock.FldHeader.AutoMapData;
+  for (let ty = 0; ty < 16; ty++) for (let tx = 0; tx < 16; tx++) assert.equal(T[ty * 16 + tx], imperialTile(...anchorMetres(ic, 11, 11, ...tileCentre(tx, ty))));
+  let closed = 0;
+  for (let ay = 0; ay < 64; ay++) for (let ax = 0; ax < 64; ax++) {
+    const want = imperialClosed(...anchorMetres(ic, 11, 11, ...autoCentre(ax, ay)));
+    assert.equal(A[ay * 64 + ax], want ? CAPITAL_CLOSED_BYTE : 0);   // PIN MOVED (AUDIT-TESA A6-5): a wall's byte in no quarter
+    if (want) closed++;
   }
-  // the landmarks, laid by the classic law, stand at the city's middle: the plan's block (3, 3)'s south-east corner
-  const laid = layoutRmbBlock(blockFromJson(b[2].json, b[2].index));
-  assert.deepEqual(laid.models.map((m) => m.modelIdNum), CAPITALS[0].models);
-  assert.deepEqual(CAPITALS[0].models, [CAPITAL_MODELS.whiteGoldTower, CAPITAL_MODELS.imperialWall, CAPITAL_MODELS.imperialInnerWall, CAPITAL_MODELS.imperialBridges]);
+  assert.ok(closed > 500, 'the tower\'s plinth');
+  // the landmarks, laid by the classic law, stand at the city's middle: the anchor block's south-east corner
+  const laid = layoutRmbBlock(blockFromJson(blk.json, blk.index));
+  assert.deepEqual(laid.models.map((m) => m.modelIdNum), [CAPITAL_MODELS.whiteGoldTower, CAPITAL_MODELS.palaceWall, CAPITAL_MODELS.tombs, CAPITAL_MODELS.cityWall, CAPITAL_MODELS.districtWalls]);
   for (const m of laid.models) assert.deepEqual([...m.matrix.slice(12, 15)].map((v) => +v.toFixed(3)), [102.4, 0, 0]);
   assert.deepEqual(miscModelAt(5, 51.2, 25.6), { ModelId: '5', ModelIdNum: 5, ObjectType: 0, XPos: 2048, YPos: -4, ZPos: 1024 - 4096, XRotation: 0, YRotation: 0, ZRotation: 0 });
   // the stamp's own flips (world/terrainTiles.js setLocationTiles, world/cityNavigation.js setBlockData) - pinned at their source
@@ -186,9 +174,12 @@ test('TESA10 the port blocks: the lake all water, the garden grass with a tree i
 // ── THE LOCATION ────────────────────────────────────────────────
 
 test('TESA10 the location: its plan\'s grid and its blocks\' buildings on a city\'s shape, its own id, index, longitude and latitude, the host\'s region, no dungeon, no harbour, `capital`, Arena\'s slot where one stands; none without a base or with a kind missing; the base untouched', () => {
-  const kinds = [...new Set(IMPERIAL_CITY_PLAN.flat())].filter((c) => !['L', 'G'].includes(c) && !/^C\d$/.test(c));
+  // PIN MOVED (TESA11): the Imperial City's centre slice - its eight by eight of the plan, its name the city's
+  const own = CAPITALS[0].blocks, isClassic = (c) => c !== 'L' && c !== 'G' && !Object.hasOwn(own, c);
+  const kinds = [...new Set(IMPERIAL_CITY_PLAN.flat())].filter(isClassic);
   const names = new Map(kinds.map((k) => [k, [`${k}AA00.RMB`, `${k}AA01.RMB`]]));
   const fh = { rmbBlock: { fldHeader: { numBlockDataRecords: 1, buildingDataList: [{ buildingType: 9, factionId: 0, quality: 5 }] } } };
+  const centre = IMPERIAL_CITY_PLAN.slice(8, 16).map((r) => r.slice(8, 16)), classic = centre.flat().filter(isClassic).length;
   const base = { ...city(9, ['X']), name: 'Broadvale', regionIndex: 1, regionName: 'R', politic: 129, climate: { worldClimate: 231 }, hasDungeon: false, exterior: { exteriorData: { blockNames: ['X'], width: 1, height: 1, mapId: 9, portTownAndUnknown: 1 }, buildings: [{ buildingType: 2 }], recordElement: { header: { locationId: 9 } } } };
   const snap = JSON.stringify(base);
   const slot = Object.freeze({ province: 'Imperial', provinceIndex: 8, id: 0, kind: 'city-state', port: false });
@@ -196,15 +187,15 @@ test('TESA10 the location: its plan\'s grid and its blocks\' buildings on a city
   assert.equal(JSON.stringify(base), snap);
   const id = capitalPlaceId(0), ll = mapPixelToLongitudeLatitude(2177, 612), ed = loc.exterior.exteriorData;
   assert.equal(loc.name, 'Imperial City');
-  assert.deepEqual([ed.width, ed.height, ed.blockNames.length, ed.mapId, ed.locationId, ed.portTownAndUnknown, ed.buildingCount], [8, 8, 64, id, id, 0, 26]);
-  assert.deepEqual(ed.blockNames, capitalBlockNames(IMPERIAL_CITY_PLAN, 0, names));
-  assert.equal(loc.exterior.buildings.length, 26, 'one named record a classic block');
+  assert.deepEqual([ed.width, ed.height, ed.blockNames.length, ed.mapId, ed.locationId, ed.portTownAndUnknown, ed.buildingCount], [8, 8, 64, id, id, 0, classic]);
+  assert.deepEqual(ed.blockNames, capitalBlockNames(centre, 0, names, own, [8, 8]));
+  assert.equal(loc.exterior.buildings.length, classic, 'one named record a classic block');
   assert.ok(loc.exterior.buildings.every((d) => d.locationId === id));
   assert.equal(loc.exterior.recordElement.header.locationId, id);
   assert.deepEqual([loc.mapTableData.mapId, loc.mapTableData.locationType, loc.mapTableData.longitude, loc.mapTableData.latitude], [id, LOCATION_TYPES.TownCity, ll.x, ll.y]);
   assert.deepEqual([loc.locationIndex, loc.hasDungeon, loc.dungeon], [capitalLocationIndex(0), false, null]);
   assert.deepEqual([loc.regionIndex, loc.regionName, loc.politic, loc.climate.worldClimate], [23, 'Wrothgarian Mountains', 151, 230]);
-  assert.deepEqual(loc.capital, { key: 'imperial-city', k: 0 });
+  assert.deepEqual(loc.capital, { key: 'imperial-city', k: 0, s: 4, flattenAt: { px: 2177, py: 612 } }, 'TESA11: the centre slice, its ground its own pixel\'s');
   assert.equal(loc.arena, slot);
   assert.equal('arena' in synthesizeCapitalLocation({ cap: CAPITALS[0], k: 0 }, { base, names, blockOf: () => fh, px: 2177, py: 612 }), false, 'no Arena place, no slot');
   assert.equal(synthesizeCapitalLocation({ cap: CAPITALS[0], k: 0 }, { base: null, names, blockOf: () => fh, px: 0, py: 0 }), null);
@@ -248,76 +239,6 @@ const crosses = (m, p, q) => {
   return false;
 };
 
-test('TESA10 the White-Gold Tower: an octagon from its sunk plinth to a gilt spire at 292 m, its fins within 42 m of its axis, marble and gold, its door\'s dark face on the east', () => {
-  const m = buildWhiteGoldTower();
-  sane(m);
-  const { lo, hi } = bounds(m);
-  assert.ok(Math.abs(hi[1] - WHITE_GOLD.spireTop) < 1e-3 && lo[1] === -3);
-  assert.ok(Math.max(-lo[0], hi[0], -lo[2], hi[2]) <= WHITE_GOLD.finR + 0.01);
-  const recs = new Set(m.subMeshes.map((s) => s.textureRecord));
-  assert.deepEqual([...recs].sort(), [CAPITAL_ART.marble, CAPITAL_ART.gold, CAPITAL_ART.dark].sort());
-  assert.equal(WHITE_GOLD.spireTop, 292, 'the spire to 292 m');
-  // the spire gilt: the topmost vertex is the gold's
-  let top = 0;
-  for (let i = 1; i < m.positions.length; i += 3) if (m.positions[i] > m.positions[top * 3 + 1]) top = (i - 1) / 3;
-  const owner = m.subMeshes.find((s) => { for (let i = s.startIndex; i < s.startIndex + s.primitiveCount * 3; i++) if (m.indices[i] === top) return true; return false; });
-  assert.equal(owner.textureRecord, CAPITAL_ART.gold, 'the spire gilt');
-  // every face standing clear of the shaft faces away from the axis (the fins' outer edges among them)
-  for (let t = 0; t < m.indices.length; t += 3) {
-    const c = [0, 1, 2].map((a) => (m.positions[m.indices[t] * 3 + a] + m.positions[m.indices[t + 1] * 3 + a] + m.positions[m.indices[t + 2] * 3 + a]) / 3);
-    const n = [0, 1, 2].map((a) => m.normals[m.indices[t] * 3 + a]), r = Math.hypot(c[0], c[2]);
-    if (Math.abs(n[1]) < 0.99 && r > WHITE_GOLD.shaftR0 + 1 && c[1] > WHITE_GOLD.plinthH + 1) assert.ok((n[0] * c[0] + n[2] * c[2]) / r > -0.5, `a face turned in at ${c.map((v) => v.toFixed(1))}`);
-  }
-  const dark = m.subMeshes.find((s) => s.textureRecord === CAPITAL_ART.dark);
-  for (let i = dark.startIndex; i < dark.startIndex + dark.primitiveCount * 3; i++) assert.ok(m.positions[m.indices[i] * 3] > WHITE_GOLD.plinthR * 0.9, 'the door on the east face');
-});
-
-test('TESA10 the walls: the outer wall\'s eight runs at its apothem with its corners cut, towers at every corner, open gates east and south under their lintels; the ring wall round the grounds open on its four axes; the bridges a deck a hand over the water from the gates to the pixel\'s edge', () => {
-  const C = imperialWallCorners();
-  assert.equal(C.length, 8);
-  for (const [x, z] of C) assert.ok(Math.max(Math.abs(x), Math.abs(z)) === IMPERIAL_WALL.apothem && Math.min(Math.abs(x), Math.abs(z)) === IMPERIAL_WALL.flat);
-  assert.ok(IMPERIAL_WALL.apothem > 3 * BLOCK_M && IMPERIAL_WALL.apothem - IMPERIAL_WALL.thick / 2 >= 3 * BLOCK_M, 'outside every city block');
-  const w = buildImperialWall();
-  sane(w);
-  const { lo, hi } = bounds(w);
-  assert.ok(hi[0] <= IMPERIAL_WALL.apothem + IMPERIAL_WALL.towerR + 1 && lo[0] >= -IMPERIAL_WALL.apothem - IMPERIAL_WALL.towerR - 1);
-  // nothing stands in either gate below its lintel
-  const inGate = (x, y, z) => y < IMPERIAL_WALL.gateH - 0.01 && y > -2.9 && ((Math.abs(x - IMPERIAL_WALL.apothem) < 3 && Math.abs(z) < IMPERIAL_WALL.gate / 2 - 0.01) || (Math.abs(z - IMPERIAL_WALL.apothem) < 3 && Math.abs(x) < IMPERIAL_WALL.gate / 2 - 0.01));
-  for (let t = 0; t < w.indices.length; t += 3) {
-    const c = [0, 1, 2].map((a) => (w.positions[w.indices[t] * 3 + a] + w.positions[w.indices[t + 1] * 3 + a] + w.positions[w.indices[t + 2] * 3 + a]) / 3);
-    assert.ok(!inGate(...c), `a face in a gate at ${c.map((v) => v.toFixed(1))}`);
-  }
-  const has = (x0, x1, z0, z1, ymin) => { for (let i = 0; i < w.positions.length; i += 3) { const [x, y, z] = [w.positions[i], w.positions[i + 1], w.positions[i + 2]]; if (x >= x0 && x <= x1 && z >= z0 && z <= z1 && y >= ymin) return true; } return false; };
-  const A0 = IMPERIAL_WALL.apothem, g = IMPERIAL_WALL.gateH, lin = (g + IMPERIAL_WALL.h) / 2;
-  assert.equal(crosses(w, [A0 - 6, g / 2, 0], [A0 + 6, g / 2, 0]), false, 'the east gate open');
-  assert.equal(crosses(w, [0, g / 2, A0 - 6], [0, g / 2, A0 + 6]), false, 'the south gate open');
-  assert.equal(crosses(w, [A0 - 6, lin, 0], [A0 + 6, lin, 0]), true, 'the east gate\'s lintel');
-  assert.equal(crosses(w, [0, lin, A0 - 6], [0, lin, A0 + 6]), true, 'the south gate\'s lintel');
-  assert.equal(crosses(w, [-A0 - 6, g / 2, 100], [-A0 + 6, g / 2, 100]), true, 'the west side walled');
-  assert.ok(has(IMPERIAL_WALL.apothem - 4, IMPERIAL_WALL.apothem + 4, -6, 6, IMPERIAL_WALL.gateH), 'the east lintel');
-  assert.ok(has(-6, 6, IMPERIAL_WALL.apothem - 4, IMPERIAL_WALL.apothem + 4, IMPERIAL_WALL.gateH), 'the south lintel');
-  assert.ok(has(-IMPERIAL_WALL.apothem - 1, -IMPERIAL_WALL.apothem + 1, -1, 1, IMPERIAL_WALL.towerH), 'the west side\'s tower');
-  // the merlons on the wall's outer edge: on the east and west runs between their towers, above the wall's top
-  for (let i = 0; i < w.positions.length; i += 3) {
-    const [x, y, z] = [w.positions[i], w.positions[i + 1], w.positions[i + 2]];
-    if (y > IMPERIAL_WALL.h + 0.1 && y < IMPERIAL_WALL.h + 1.7 && Math.abs(z) > 40 && Math.abs(z) < IMPERIAL_WALL.flat - 20 && Math.abs(Math.abs(x) - IMPERIAL_WALL.apothem) < 4) assert.ok(Math.abs(x) > IMPERIAL_WALL.apothem, `a merlon inside at ${x.toFixed(1)},${z.toFixed(1)}`);
-  }
-  const inner = buildImperialInnerWall();
-  sane(inner);
-  for (let i = 0; i < inner.positions.length; i += 3) {
-    const [x, y, z] = [inner.positions[i], inner.positions[i + 1], inner.positions[i + 2]], r = Math.hypot(x, z);
-    if (y < IMPERIAL_INNER.h - 0.1 && r > IMPERIAL_INNER.r - 2 && r < IMPERIAL_INNER.r + 2) assert.ok(Math.min(Math.abs(x), Math.abs(z)) >= IMPERIAL_INNER.gate / 2 - 0.05, 'its gates open');
-  }
-  for (const [x, z] of [[1, 0], [0, 1], [-1, 0], [0, -1]]) assert.equal(crosses(inner, [x * (IMPERIAL_INNER.r - 4), 2, z * (IMPERIAL_INNER.r - 4)], [x * (IMPERIAL_INNER.r + 4), 2, z * (IMPERIAL_INNER.r + 4)]), false, `the ring's gate ${x},${z} open`);
-  assert.equal(crosses(inner, [Math.cos(0.4) * (IMPERIAL_INNER.r - 4), 2, Math.sin(0.4) * (IMPERIAL_INNER.r - 4)], [Math.cos(0.4) * (IMPERIAL_INNER.r + 4), 2, Math.sin(0.4) * (IMPERIAL_INNER.r + 4)]), true, 'the ring walled between');
-  const br = buildImperialBridges();
-  sane(br);
-  const bb = bounds(br);
-  assert.ok(Math.abs(bb.hi[0] - IMPERIAL_BRIDGE.to) < 1e-3 && Math.abs(bb.hi[2] - IMPERIAL_BRIDGE.to) < 1e-3, 'to the pixel\'s edge both ways');
-  assert.equal(IMPERIAL_BRIDGE.from, IMPERIAL_WALL.apothem);
-  assert.ok(IMPERIAL_BRIDGE.to > 4 * BLOCK_M, 'past the pixel\'s edge, to the shore');
-});
-
 test('TESA10 the pictures: the port\'s own, 64 x 64, opaque, the same every time; the install puts the blocks, models and pictures on their doors once', () => {
   const a = capitalArt(), b = capitalArt();
   assert.deepEqual([...a.keys()].sort(), Object.values(CAPITAL_ART).sort());
@@ -354,7 +275,7 @@ test('TESA10 the host by source: the base and the blocks off the game\'s rows be
 
 test('TESA10 the host\'s ask: the capital on its pixel stood once, its region the pixel\'s; Arena\'s place on it its slot, and stood again when the slot changes; none elsewhere, and none with the door shut', () => {
   setTamrielFit({ ox: 38 * 15.5, oy: 57 * 15.5, ppu: 15.5 });
-  const kinds = [...new Set(IMPERIAL_CITY_PLAN.flat())].filter((c) => !['L', 'G'].includes(c) && !/^C\d$/.test(c));
+  const kinds = [...new Set(IMPERIAL_CITY_PLAN.flat())].filter((c) => c !== 'L' && c !== 'G' && !Object.hasOwn(CAPITALS[0].blocks, c));
   const names = new Map(kinds.map((k) => [k, [`${k}AA00.RMB`]]));
   const base = { ...city(9, ['X']), exterior: { exteriorData: { blockNames: ['X'] }, buildings: [] } };
   const make = (open, arena) => new Function('capitalOnPixel', 'synthesizeCapitalLocation', 'base', 'names', 'arena', `
@@ -372,7 +293,10 @@ test('TESA10 the host\'s ask: the capital on its pixel stood once, its region th
   assert.deepEqual([loc.regionIndex, loc.regionName, loc.politic, loc.climate.worldClimate], [23, 'Wrothgarian Mountains', 151, 231]);
   assert.equal(h.capitalLocationAt(2177, 612), loc, 'once');
   assert.equal(h.gen(), 1);
-  assert.equal(h.capitalLocationAt(2178, 612), null);
+  // PIN MOVED (TESA11): the pixel east of it the city's east slice - a location of its own, the Arena District's
+  const east = h.capitalLocationAt(2178, 612);
+  assert.deepEqual([east.name, east.capital.s, east.mapTableData.mapId], [IMPERIAL_SLICE_NAMES[5], 5, capitalPlaceId(0, 5)]);
+  assert.equal(h.capitalLocationAt(2179, 612), null);
   arena.on = true; arena.place = { province: 'Imperial', provinceIndex: 8, id: 0, kind: 'city-state', name: 'Imperial City' };
   const withArena = h.capitalLocationAt(2177, 612);
   assert.notEqual(withArena, loc, 'Arena landed: stood again');
@@ -493,12 +417,12 @@ test('TESA10b Solitude\'s plan: 8 x 8 - the Sea of Ghosts its north row and the 
   assert.equal(P[5][2], 'GRVE', 'the Hall of the Dead a graveyard');
   assert.deepEqual(sol.anchor, [2, 3]);
   assert.equal(capitalCarrier(sol), 'P0');
-  assert.equal(capitalCarrier(CAPITALS[0]), 'C0');
+  assert.equal(capitalCarrier(CAPITALS[0]), 'Ibb', 'PIN MOVED (TESA11): the Imperial City\'s own block on its anchor');
 });
 
 test('TESA10b Solitude\'s port blocks: the quay\'s stone to its edge and the sea past it, the terrace\'s and Castle Dour\'s stone; the terrace and its ramp, the warehouse, the north wall (its gate open), the east wall, the curtain (its gate open), its towers, its keep and the Emperor\'s Tower closed; the landmarks on the terrace\'s first block at the anchor', () => {
   const b = capitalPortBlocks(), own = b.filter((x) => x.name.startsWith('TESASO'));
-  assert.deepEqual(b.slice(0, 6).map((x) => x.name), [CAPITAL_BLOCKS.lake, CAPITAL_BLOCKS.garden, ...CAPITAL_BLOCKS.grounds], 'the Imperial City\'s first, its indices unmoved');
+  assert.deepEqual(b.slice(0, 2).map((x) => x.name), [CAPITAL_BLOCKS.lake, CAPITAL_BLOCKS.garden], 'PIN MOVED (TESA11): the lake and the garden first, the Imperial City\'s own after them');
   assert.deepEqual(own.map((x) => x.name), ['TESASOQ0.RMB', 'TESASOQ1.RMB', 'TESASOQ2.RMB', 'TESASOP0.RMB', 'TESASOP1.RMB', 'TESASOD0.RMB', 'TESASOD1.RMB', 'TESASOD2.RMB', 'TESASOD3.RMB'], 'in the plan\'s order');
   assert.deepEqual(b.map((x) => x.index), b.map((_, i) => CAPITAL_BLOCK_INDEX + i));
   const S = SOLITUDE, at = (name) => { for (let y = 0; y < 8; y++) for (let x = 0; x < 8; x++) if (SOLITUDE_BLOCKS[SOLITUDE_PLAN[y][x]]?.name === name) return [x, y]; return null; };
@@ -597,7 +521,7 @@ test('TESA10b the Blue Palace, the walls, Castle Dour and the docks: the palace 
 });
 
 test('TESA10b the landmarks turned north: a model drawn as the map reads (+z south) stands in the world\'s frame (+z north) - every z and normal\'s z negated, every face still wound along its normal; the installed models are the turned ones', () => {
-  for (const build of [buildWhiteGoldTower, buildImperialBridges, buildSolitudeArch, buildSolitudeDocks]) {
+  for (const build of [buildImperialTower, buildTalosBridge, buildSolitudeArch, buildSolitudeDocks]) {   // PIN MOVED (TESA11): the Imperial City's own
     const m = build(), n = northward(m);
     sane(n);
     assert.equal(n.positions.length, m.positions.length);

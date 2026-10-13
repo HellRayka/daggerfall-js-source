@@ -1,10 +1,9 @@
 // @ts-check
-// TESA10 (bible/03-World/Arena-Provinces.md TESA10) - THE CAPITALS' LANDMARKS: the port's own models of the Imperial City's
-// signatures - the White-Gold Tower, the towered outer wall of eight sides with its two gates, the ring wall round the
-// tower's grounds, and the two bridges over the lake - in metres, every model's origin the city's middle on its ground
-// (world/tamrielCapitals.js lays them as misc models of the heart's first block), and their pictures, made at boot from
-// noise under a pseudo-archive of the port's own (world/lefayArt.js's law). No game data: nothing of them comes from
-// ARENA2 or from any other game. Shapes of the port's own in the spirit of the city's look - never another game's mesh.
+// TESA10 (bible/03-World/Arena-Provinces.md TESA10) - THE CAPITALS' LANDMARKS on their doors: every capital's models
+// (TESA11: the Imperial City's, world/capitalImperial.js; Solitude's and the rest, their own modules) and their pictures,
+// made at boot from noise under a pseudo-archive of the port's own (world/lefayArt.js's law). No game data: nothing of them
+// comes from ARENA2 or from any other game. Shapes of the port's own in the spirit of each city's look - never another
+// game's mesh.
 //
 // installCapitals (scenes/modWorldData.js, beside installArena - behind no switch, as the arena's block is): the port
 // blocks on the world-data door, the models on the model door (climate-free: the white stone is white in every climate),
@@ -14,7 +13,8 @@ import { MeshBuilder } from './detStandIns.js';
 import { registerPortBlock, installWorldDataReplacement } from '../formats/worldDataReplacement.js';
 import { addVendorTextures } from '../systems/textureReplacement.js';
 import { CAPITAL_MODELS, capitalPortBlocks, BLOCK_M } from './tamrielCapitals.js';
-import { CAPITAL_ARCHIVE, CAPITAL_ART, art, taper, ring, ledge, wallRun, merlons, roundTower } from './capitalShapes.js';
+import { CAPITAL_ARCHIVE, CAPITAL_ART } from './capitalShapes.js';
+import { buildImperialTower, buildPalaceWall, buildEmperorsTombs, buildCityWall, buildDistrictWalls, buildColosseum, buildTempleOfTheOne, buildTalosStatue, buildImperialPrison, buildArcaneUniversity, buildWaterfront, buildTalosBridge } from './capitalImperial.js';   // TESA11
 import { buildSolitudeArch, buildBluePalace, buildSolitudeWall, buildCastleDour, buildSolitudeDocks } from './capitalSolitude.js';
 import { buildMournholdPlaza, buildHighFane, buildMournholdPalace, buildGreatBazaar, buildMournholdWall } from './capitalMournhold.js';
 import { buildAlinorPalace, buildCrystalTower, buildAlinorHarbour, buildAlinorWall } from './capitalAlinor.js';
@@ -23,148 +23,6 @@ import { buildManePalace, buildTwoMoonsTemple, buildTorvalQuay, buildTorvalWall 
 import { buildXanmeer, buildHist, buildHelstromWalks, buildPalisade } from './capitalHelstrom.js';
 
 export { CAPITAL_ARCHIVE, CAPITAL_ART };
-const MARBLE = art(CAPITAL_ART.marble), GOLD = art(CAPITAL_ART.gold), STONE = art(CAPITAL_ART.wallStone), BRIDGE = art(CAPITAL_ART.bridgeStone), DARK = art(CAPITAL_ART.dark);
-
-// ---------------------------------------------------------------- the White-Gold Tower
-
-/** Its measures, metres: an octagon throughout. */
-export const WHITE_GOLD = Object.freeze({ plinthR: 36, plinthH: 10, shaftR0: 25, shaftR1: 18, shaftTop: 200, galleryR: 26, galleryTop: 212, crownR0: 16, crownR1: 12, crownTop: 236, spireTop: 292, finR: 42, finTop: 150, finThick: 3.2 });
-/**
- * THE WHITE-GOLD TOWER: an octagonal plinth, a tapering shaft banded in gold every 40 m, eight buttress fins at its
- * corners climbing from the plinth's edge to 150 m, a gallery at 200 m, the crown above it and a gilt spire to 292 m; a
- * dark door at its foot on the east.
- */
-export function buildWhiteGoldTower() {
-  const mb = new MeshBuilder(), W = WHITE_GOLD, n = 8, phase = Math.PI / 8;
-  taper(mb, MARBLE, n, W.plinthR, -3, W.plinthR, W.plinthH, { phase, vRepeat: 6, uRepeat: 3 });
-  ring(mb, MARBLE, n, W.shaftR0, W.plinthR, W.plinthH, phase);
-  taper(mb, MARBLE, n, W.shaftR0, W.plinthH, W.shaftR1, W.shaftTop, { phase, vRepeat: 12, uRepeat: 2 });
-  for (let y = 40; y <= W.shaftTop; y += 40) {
-    const r = W.shaftR0 + (W.shaftR1 - W.shaftR0) * ((y - W.plinthH) / (W.shaftTop - W.plinthH));
-    ledge(mb, GOLD, n, r + 0.5, r, y - 1.2, y, phase);
-  }
-  // the fins: at each corner of the shaft's octagon, a slab from the plinth's edge narrowing up the shaft
-  for (let i = 0; i < n; i++) {
-    const a = (i / n) * Math.PI * 2 + phase, ux = Math.cos(a), uz = Math.sin(a), nx = -uz, nz = ux, t = W.finThick / 2;
-    const rAt = (y) => W.shaftR0 + (W.shaftR1 - W.shaftR0) * ((y - W.plinthH) / (W.shaftTop - W.plinthH));
-    const inB = [ux * (rAt(W.plinthH) - 1), W.plinthH, uz * (rAt(W.plinthH) - 1)], outB = [ux * W.finR, W.plinthH, uz * W.finR];
-    const inT = [ux * (rAt(W.finTop) - 1), W.finTop, uz * (rAt(W.finTop) - 1)], outT = [ux * (rAt(W.finTop) + 1.5), W.finTop, uz * (rAt(W.finTop) + 1.5)];
-    const off = (p, s) => [p[0] + nx * t * s, p[1], p[2] + nz * t * s];
-    for (const s of [1, -1]) mb.quad(MARBLE, off(inB, s), off(outB, s), off(outT, s), off(inT, s), [nx * s, 0, nz * s], [[0, 0], [2, 0], [2, -12], [0, -12]]);
-    // the outer edge's face: across the fin (n) by up the edge, turned to face away from the shaft
-    const e = [outT[0] - outB[0], outT[1] - outB[1], outT[2] - outB[2]];
-    let outN = [nz * e[1], -(nz * e[0] - nx * e[2]), -nx * e[1]];
-    const ol = Math.hypot(...outN) || 1;
-    outN = outN.map((v) => v / ol);
-    if (outN[0] * ux + outN[2] * uz < 0) outN = outN.map((v) => -v);
-    mb.quad(MARBLE, off(outB, 1), off(outB, -1), off(outT, -1), off(outT, 1), outN, [[0, 0], [0.4, 0], [0.4, -12], [0, -12]]);
-    mb.quad(GOLD, off(outT, 1), off(outT, -1), off(inT, -1), off(inT, 1), [0, 1, 0]);
-  }
-  ledge(mb, MARBLE, n, W.galleryR, W.shaftR1, W.shaftTop, W.galleryTop, phase);
-  ledge(mb, GOLD, n, W.galleryR + 0.4, W.galleryR, W.galleryTop - 1, W.galleryTop + 0.2, phase);
-  taper(mb, MARBLE, n, W.crownR0, W.galleryTop, W.crownR1, W.crownTop, { phase, vRepeat: 8 });
-  ledge(mb, GOLD, n, W.crownR1 + 0.6, W.crownR1, W.crownTop - 1.5, W.crownTop, phase);
-  taper(mb, GOLD, n, W.crownR1, W.crownTop, 0.05, W.spireTop, { phase, vRepeat: 10 });
-  // the door at its foot, facing east: a dark recess's face proud of the plinth by a hair
-  const dx = W.plinthR * Math.cos(Math.PI / 8) + 0.05;
-  mb.quad(DARK, [dx, 0, -2.6], [dx, 0, 2.6], [dx, 7.5, 2.6], [dx, 7.5, -2.6], [1, 0, 0]);
-  mb.quad(GOLD, [dx + 0.02, 7.5, -3.2], [dx + 0.02, 7.5, 3.2], [dx + 0.02, 8.4, 3.2], [dx + 0.02, 8.4, -3.2], [1, 0, 0]);
-  return mb.build();
-}
-
-// ---------------------------------------------------------------- the walls
-
-/** The outer wall's measures, metres from the middle: flat sides at `apothem` for `flat` either side of each axis, the
- *  corners cut from (flat, apothem) to (apothem, flat); the gates east (+x) and south (+z), `gate` wide. AUDIT-TESA A6-3:
- *  its towers clear of the city's blocks (3 blocks and a tower's radius out - a tower at 311 stood 5.8 m into a house's
- *  block). */
-export const IMPERIAL_WALL = Object.freeze({ apothem: 317, flat: 210, thick: 6, h: 20, towerR: 9, towerH: 30, gate: 12, gateH: 13 });
-/** The wall's corners, round from the east gate's side: the eight vertices of its eight sides. */
-export function imperialWallCorners(W = IMPERIAL_WALL) {
-  const A = W.apothem, F = W.flat;
-  return [[A, -F], [A, F], [F, A], [-F, A], [-A, F], [-A, -F], [-F, -A], [F, -A]];
-}
-/**
- * THE OUTER WALL: its eight runs with merlons on the outside, a round tower at every corner and at the middle of the north
- * and west sides, and on the east and south sides a gate between two towers - the run broken for its opening, a lintel
- * over it from the gate's height to the wall's top.
- */
-export function buildImperialWall(W = IMPERIAL_WALL) {
-  const mb = new MeshBuilder(), C = imperialWallCorners(W), g = W.gate / 2;
-  const runs = [];
-  for (let i = 0; i < C.length; i++) runs.push([C[(i + 1) % C.length], C[i]]);   // each run against the corners' turn: its merlons outward
-  for (const [p, q] of runs) {
-    const gateOn = p[0] === W.apothem && q[0] === W.apothem ? 'x' : p[1] === W.apothem && q[1] === W.apothem ? 'z' : null;
-    if (!gateOn) { wallRun(mb, STONE, p, q, W.thick, W.h); merlons(mb, STONE, p, q, W.thick, W.h); continue; }
-    // the side the gate stands in: two runs either side of it, and its lintel
-    const along = gateOn === 'x' ? 1 : 0, sign = Math.sign(q[along] - p[along]);
-    const a = [...p], b = [...p], c = [...p], d = [...q];
-    b[along] = -g * sign; c[along] = g * sign;
-    wallRun(mb, STONE, a, b, W.thick, W.h); merlons(mb, STONE, a, b, W.thick, W.h);
-    wallRun(mb, STONE, c, d, W.thick, W.h); merlons(mb, STONE, c, d, W.thick, W.h);
-    const lintel = new MeshBuilder();
-    wallRun(lintel, STONE, b, c, W.thick, W.h - W.gateH, 0);
-    for (const [, gr] of lintel.groups) for (let i = 1; i < gr.positions.length; i += 3) gr.positions[i] += W.gateH;
-    for (const [key, gr] of lintel.groups) { const into = mb._group([gr.archive, gr.record]); const base = into.positions.length / 3; into.positions.push(...gr.positions); into.normals.push(...gr.normals); into.uvs.push(...gr.uvs); into.indices.push(...gr.indices.map((ix) => ix + base)); void key; }
-    const t1 = [...b], t2 = [...c];
-    t1[along] -= sign * (W.towerR + 0.5); t2[along] += sign * (W.towerR + 0.5);
-    roundTower(mb, t1[0], t1[1], W.towerR, W.towerH);
-    roundTower(mb, t2[0], t2[1], W.towerR, W.towerH);
-  }
-  for (const [x, z] of C) roundTower(mb, x, z, W.towerR, W.towerH);
-  roundTower(mb, 0, -W.apothem, W.towerR, W.towerH);
-  roundTower(mb, -W.apothem, 0, W.towerR, W.towerH);
-  return mb.build();
-}
-/** The inner ring wall round the tower's grounds: a ring of `sides` at `r`, its four gates (the axes), a turret by each. */
-export const IMPERIAL_INNER = Object.freeze({ r: 96, sides: 32, thick: 3, h: 9, gate: 8 });
-export function buildImperialInnerWall(R = IMPERIAL_INNER) {
-  const mb = new MeshBuilder(), half = Math.asin((R.gate / 2 + 0.25) / R.r);   // the run's end corners clear of the gate's width
-  for (let i = 0; i < R.sides; i++) {
-    const a0 = (i / R.sides) * Math.PI * 2, a1 = ((i + 1) / R.sides) * Math.PI * 2;
-    // a run whose arc meets a gate's is cut back to the gate's edge; one inside a gate is none
-    const gates = [0, Math.PI / 2, Math.PI, 1.5 * Math.PI, 2 * Math.PI];
-    let s = a0, e = a1, skip = false;
-    for (const ga of gates) {
-      if (s >= ga - half && e <= ga + half) skip = true;
-      else if (s < ga + half && s > ga - half) s = ga + half;
-      else if (e > ga - half && e < ga + half) e = ga - half;
-    }
-    if (skip || e <= s) continue;
-    const p = [Math.cos(s) * R.r, Math.sin(s) * R.r], q = [Math.cos(e) * R.r, Math.sin(e) * R.r];
-    wallRun(mb, STONE, p, q, R.thick, R.h, 2, 4);
-  }
-  for (const ga of [0, Math.PI / 2, Math.PI, 1.5 * Math.PI]) {
-    for (const side of [1, -1]) {
-      const a = ga + side * (half + 0.06);
-      roundTower(mb, Math.cos(a) * R.r, Math.sin(a) * R.r, 3.2, R.h + 4, { sides: 12 });
-    }
-  }
-  return mb.build();
-}
-/** The bridges: east from the east gate and south from the south gate over the lake to the city's pixel's edge - a deck
- *  `w` wide a hand over the water, parapets either side, piers under it. */
-export const IMPERIAL_BRIDGE = Object.freeze({ from: IMPERIAL_WALL.apothem, to: 4 * BLOCK_M + 2, w: 10, deck: 0.3, parapet: 1.1, pier: 18 });
-export function buildImperialBridges(B = IMPERIAL_BRIDGE) {
-  const mb = new MeshBuilder(), hw = B.w / 2;
-  for (const axis of ['x', 'z']) {
-    const P = (s, t, y) => (axis === 'x' ? [s, y, t] : [t, y, s]);
-    const len = B.to - B.from, u = len / 6;
-    // the deck's top and its two edges
-    mb.quad(BRIDGE, P(B.from, -hw, B.deck), P(B.to, -hw, B.deck), P(B.to, hw, B.deck), P(B.from, hw, B.deck), [0, 1, 0], [[0, 0], [u, 0], [u, -B.w / 6], [0, -B.w / 6]]);
-    for (const side of [1, -1]) {
-      const n = axis === 'x' ? [0, 0, side] : [side, 0, 0];
-      mb.quad(BRIDGE, P(B.from, side * hw, -2), P(B.to, side * hw, -2), P(B.to, side * hw, B.deck + B.parapet), P(B.from, side * hw, B.deck + B.parapet), n, [[0, 0], [u, 0], [u, -0.5], [0, -0.5]]);
-      mb.quad(BRIDGE, P(B.from, side * (hw - 0.5), B.deck), P(B.to, side * (hw - 0.5), B.deck), P(B.to, side * (hw - 0.5), B.deck + B.parapet), P(B.from, side * (hw - 0.5), B.deck + B.parapet), [-n[0], 0, -n[2]], [[0, 0], [u, 0], [u, -0.2], [0, -0.2]]);
-      mb.quad(BRIDGE, P(B.from, side * (hw - 0.5), B.deck + B.parapet), P(B.to, side * (hw - 0.5), B.deck + B.parapet), P(B.to, side * hw, B.deck + B.parapet), P(B.from, side * hw, B.deck + B.parapet), [0, 1, 0]);
-    }
-    for (let s = B.from + B.pier; s < B.to - 4; s += B.pier) {
-      const c = P(s, 0, -1.2);
-      mb.box(BRIDGE, c, axis === 'x' ? [2.4, 3, B.w + 1.2] : [B.w + 1.2, 3, 2.4], 0.3);
-    }
-  }
-  return mb.build();
-}
 
 // ---------------------------------------------------------------- the pictures
 
@@ -315,10 +173,18 @@ export function installCapitals({ addTextures = addVendorTextures } = {}) {
   // AUDIT-TESA A6-2: each block built when first read, its capital's footprint with it - the models it stands under
   for (const b of capitalPortBlocks({ footprint: (cap) => capitalFootprint(cap) })) registerPortBlock(b.name, () => b.json, b.index);
   const builds = {
-    [CAPITAL_MODELS.whiteGoldTower]: buildWhiteGoldTower,
-    [CAPITAL_MODELS.imperialWall]: () => buildImperialWall(),
-    [CAPITAL_MODELS.imperialInnerWall]: () => buildImperialInnerWall(),
-    [CAPITAL_MODELS.imperialBridges]: () => buildImperialBridges(),
+    [CAPITAL_MODELS.whiteGoldTower]: () => buildImperialTower(),   // TESA11: the Imperial City's twelve
+    [CAPITAL_MODELS.palaceWall]: () => buildPalaceWall(),
+    [CAPITAL_MODELS.tombs]: () => buildEmperorsTombs(),
+    [CAPITAL_MODELS.cityWall]: () => buildCityWall(),
+    [CAPITAL_MODELS.districtWalls]: () => buildDistrictWalls(),
+    [CAPITAL_MODELS.colosseum]: () => buildColosseum(),
+    [CAPITAL_MODELS.templeOfTheOne]: () => buildTempleOfTheOne(),
+    [CAPITAL_MODELS.talosStatue]: () => buildTalosStatue(),
+    [CAPITAL_MODELS.prison]: () => buildImperialPrison(),
+    [CAPITAL_MODELS.university]: () => buildArcaneUniversity(),
+    [CAPITAL_MODELS.waterfront]: () => buildWaterfront(),
+    [CAPITAL_MODELS.talosBridge]: () => buildTalosBridge(),
     [CAPITAL_MODELS.solitudeArch]: () => buildSolitudeArch(),
     [CAPITAL_MODELS.bluePalace]: () => buildBluePalace(),
     [CAPITAL_MODELS.solitudeWall]: () => buildSolitudeWall(),

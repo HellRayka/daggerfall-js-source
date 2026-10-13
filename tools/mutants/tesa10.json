@@ -11,8 +11,8 @@
   {
     "name": "TESA10-id-low-bit",
     "file": "src/world/tamrielCapitals.js",
-    "old": "export const capitalPlaceId = (k) => ((CAPITAL_LANE << 20) | 0x80000 | k) >>> 0;",
-    "new": "export const capitalPlaceId = (k) => ((CAPITAL_LANE << 20) | k) >>> 0;",
+    "old": "export const capitalPlaceId = (k, so = 0) => ((CAPITAL_LANE << 20) | 0x80000 | (k + 16 * so)) >>> 0;",
+    "new": "export const capitalPlaceId = (k, so = 0) => ((CAPITAL_LANE << 20) | (k + 16 * so)) >>> 0;",
     "tests": [
       "test/tesa10_capitals.test.js"
     ]
@@ -29,8 +29,8 @@
   {
     "name": "TESA10-index-shared",
     "file": "src/world/tamrielCapitals.js",
-    "old": "export const capitalLocationIndex = (k) => -(CAPITAL_INDEX_BASE + k);",
-    "new": "export const capitalLocationIndex = (k) => -(40000000 + k);",
+    "old": "export const capitalLocationIndex = (k, so = 0) => -(CAPITAL_INDEX_BASE + k + 16 * so);",
+    "new": "export const capitalLocationIndex = (k, so = 0) => -(40000000 + k + 16 * so);",
     "tests": [
       "test/tesa10_capitals.test.js"
     ]
@@ -101,7 +101,7 @@
   {
     "name": "TESA10-blocks-first",
     "file": "src/world/tamrielCapitals.js",
-    "old": "        out.push(list[hash32(CAPITAL_SALT, k, x, r) % list.length]);",
+    "old": "        out.push(list[hash32(CAPITAL_SALT, k, x0 + x, r0 + r) % list.length]);",
     "new": "        out.push(list[0]);",
     "tests": [
       "test/tesa10_capitals.test.js"
@@ -110,8 +110,8 @@
   {
     "name": "TESA10-blocks-missing-kind",
     "file": "src/world/tamrielCapitals.js",
-    "old": "        if (!list?.length) return null;\n        out.push(",
-    "new": "        if (!list?.length) { out.push(CAPITAL_BLOCKS.garden); continue; }\n        out.push(",
+    "old": "        if (!list) return null;\n        out.push(",
+    "new": "        if (!list) { out.push(CAPITAL_BLOCKS.garden); continue; }\n        out.push(",
     "tests": [
       "test/tesa10_capitals.test.js"
     ]
@@ -137,7 +137,7 @@
   {
     "name": "TESA10-buildings-seed-kept",
     "file": "src/world/tamrielCapitals.js",
-    "old": "      out.push({ ...d, nameSeed: (hash32(CAPITAL_SALT, k, sector, r, 7) % 65535) + 1, sector, locationId });",
+    "old": "      out.push({ ...d, nameSeed: (hash32(CAPITAL_SALT, k, seedBase + sector, r, 7) % 65535) + 1, sector, locationId });",
     "new": "      out.push({ ...d, sector, locationId });",
     "tests": [
       "test/tesa10_capitals.test.js"
@@ -146,8 +146,8 @@
   {
     "name": "TESA10-buildings-seed-shared",
     "file": "src/world/tamrielCapitals.js",
-    "old": "nameSeed: (hash32(CAPITAL_SALT, k, sector, r, 7) % 65535) + 1,",
-    "new": "nameSeed: (hash32(CAPITAL_SALT, sector, r, 7) % 65535) + 1,",
+    "old": "nameSeed: (hash32(CAPITAL_SALT, k, seedBase + sector, r, 7) % 65535) + 1,",
+    "new": "nameSeed: (hash32(CAPITAL_SALT, seedBase + sector, r, 7) % 65535) + 1,",
     "tests": [
       "test/tesa10_capitals.test.js"
     ]
@@ -189,33 +189,6 @@
     ]
   },
   {
-    "name": "TESA10-grounds-plaza-grass",
-    "file": "src/world/tamrielCapitals.js",
-    "old": "const groundsTile = (r) => (r < IMPERIAL_GROUNDS.plaza || r > IMPERIAL_GROUNDS.ringOut ? 3 : 2);",
-    "new": "const groundsTile = (r) => (r > IMPERIAL_GROUNDS.ringOut ? 3 : 2);",
-    "tests": [
-      "test/tesa10_capitals.test.js"
-    ]
-  },
-  {
-    "name": "TESA10-grounds-foot-open",
-    "file": "src/world/tamrielCapitals.js",
-    "old": "  if (r <= IMPERIAL_GROUNDS.towerFoot) return true;",
-    "new": "  if (r <= IMPERIAL_GROUNDS.towerFoot / 2) return true;",
-    "tests": [
-      "test/tesa10_capitals.test.js"
-    ]
-  },
-  {
-    "name": "TESA10-grounds-gates-shut",
-    "file": "src/world/tamrielCapitals.js",
-    "old": "  return Math.abs(dx) > IMPERIAL_GROUNDS.gate && Math.abs(dz) > IMPERIAL_GROUNDS.gate;",
-    "new": "  return true;",
-    "tests": [
-      "test/tesa10_capitals.test.js"
-    ]
-  },
-  {
     "name": "TESA10-garden-bare",
     "file": "src/world/tamrielCapitals.js",
     "old": "return h % 5 === 0 ? GARDEN_TREES[(h >>> 3) % GARDEN_TREES.length] : -1;",
@@ -227,8 +200,8 @@
   {
     "name": "TESA10-models-every-block",
     "file": "src/world/tamrielCapitals.js",
-    "old": "        models: cell === carrier ? cap.models.map((id) => miscModelAt(id, at[0], at[1])) : [],",
-    "new": "        models: cap.models.map((id) => miscModelAt(id, at[0], at[1])),",
+    "old": "          models: cap.models.filter((id) => carriers.get(id) === cell).map((id) => miscModelAt(id, at[0], at[1])),",
+    "new": "          models: cap.models.map((id) => miscModelAt(id, at[0], at[1])),",
     "tests": [
       "test/tesa10_capitals.test.js"
     ]
@@ -272,7 +245,7 @@
   {
     "name": "TESA10-loc-index",
     "file": "src/world/tamrielCapitals.js",
-    "old": "    locationIndex: capitalLocationIndex(k),\n    hasDungeon",
+    "old": "    locationIndex: capitalLocationIndex(k, so),\n    hasDungeon",
     "new": "    hasDungeon",
     "tests": [
       "test/tesa10_capitals.test.js"
@@ -281,8 +254,8 @@
   {
     "name": "TESA10-loc-region-base",
     "file": "src/world/tamrielCapitals.js",
-    "old": "    regionIndex: where.regionIndex ?? base.regionIndex,\n    regionName: where.regionName ?? base.regionName,\n    politic: where.politic ?? base.politic,\n    climate: where.climate ?? base.climate,\n    locationIndex: capitalLocationIndex(k),",
-    "new": "    locationIndex: capitalLocationIndex(k),",
+    "old": "    regionIndex: where.regionIndex ?? base.regionIndex,\n    regionName: where.regionName ?? base.regionName,\n    politic: where.politic ?? base.politic,\n    climate: where.climate ?? base.climate,\n    locationIndex: capitalLocationIndex(k, so),",
+    "new": "    locationIndex: capitalLocationIndex(k, so),",
     "tests": [
       "test/tesa10_capitals.test.js"
     ]
@@ -290,8 +263,8 @@
   {
     "name": "TESA10-loc-record-id",
     "file": "src/world/tamrielCapitals.js",
-    "old": "{ recordElement: { ...base.exterior.recordElement, header: { ...base.exterior.recordElement.header, locationId: mapId } } } : {}),\n    },\n    capital:",
-    "new": "{ recordElement: base.exterior.recordElement } : {}),\n    },\n    capital:",
+    "old": "{ recordElement: { ...base.exterior.recordElement, header: { ...base.exterior.recordElement.header, locationId: mapId } } } : {}),\n    },\n    // TESA11: its slice",
+    "new": "{ recordElement: base.exterior.recordElement } : {}),\n    },\n    // TESA11: its slice",
     "tests": [
       "test/tesa10_capitals.test.js"
     ]
@@ -337,143 +310,6 @@
     "file": "src/world/tamrielCapitals.js",
     "old": "&& !isMain(id(l))).sort((a, b) => id(a) - id(b))[0] ?? null;",
     "new": "&& !isMain(id(l)))[0] ?? null;",
-    "tests": [
-      "test/tesa10_capitals.test.js"
-    ]
-  },
-  {
-    "name": "TESA10-tower-short",
-    "file": "src/world/capitalModels.js",
-    "old": "export const WHITE_GOLD = Object.freeze({ plinthR: 36, plinthH: 10, shaftR0: 25, shaftR1: 18, shaftTop: 200, galleryR: 26, galleryTop: 212, crownR0: 16, crownR1: 12, crownTop: 236, spireTop: 292,",
-    "new": "export const WHITE_GOLD = Object.freeze({ plinthR: 36, plinthH: 10, shaftR0: 25, shaftR1: 18, shaftTop: 200, galleryR: 26, galleryTop: 212, crownR0: 16, crownR1: 12, crownTop: 236, spireTop: 250,",
-    "tests": [
-      "test/tesa10_capitals.test.js"
-    ]
-  },
-  {
-    "name": "TESA10-tower-no-spire",
-    "file": "src/world/capitalModels.js",
-    "old": "  taper(mb, GOLD, n, W.crownR1, W.crownTop, 0.05, W.spireTop, { phase, vRepeat: 10 });",
-    "new": "  taper(mb, MARBLE, n, W.crownR1, W.crownTop, 0.05, W.spireTop, { phase, vRepeat: 10 });",
-    "tests": [
-      "test/tesa10_capitals.test.js"
-    ]
-  },
-  {
-    "name": "TESA10-tower-door-west",
-    "file": "src/world/capitalModels.js",
-    "old": "  const dx = W.plinthR * Math.cos(Math.PI / 8) + 0.05;",
-    "new": "  const dx = -W.plinthR * Math.cos(Math.PI / 8) - 0.05;",
-    "tests": [
-      "test/tesa10_capitals.test.js"
-    ]
-  },
-  {
-    "name": "TESA10-tower-fins-far",
-    "file": "src/world/capitalModels.js",
-    "old": "const inB = [ux * (rAt(W.plinthH) - 1), W.plinthH, uz * (rAt(W.plinthH) - 1)], outB = [ux * W.finR, W.plinthH, uz * W.finR];",
-    "new": "const inB = [ux * (rAt(W.plinthH) - 1), W.plinthH, uz * (rAt(W.plinthH) - 1)], outB = [ux * W.finR * 1.3, W.plinthH, uz * W.finR * 1.3];",
-    "tests": [
-      "test/tesa10_capitals.test.js"
-    ]
-  },
-  {
-    "name": "TESA10-fin-face-in",
-    "file": "src/world/capitalModels.js",
-    "old": "    if (outN[0] * ux + outN[2] * uz < 0) outN = outN.map((v) => -v);",
-    "new": "    if (outN[0] * ux + outN[2] * uz > 0) outN = outN.map((v) => -v);",
-    "tests": [
-      "test/tesa10_capitals.test.js"
-    ]
-  },
-  {
-    "name": "TESA10-wall-inside-blocks",
-    "file": "src/world/capitalModels.js",
-    "old": "export const IMPERIAL_WALL = Object.freeze({ apothem: 317,",
-    "new": "export const IMPERIAL_WALL = Object.freeze({ apothem: 309,",
-    "tests": [
-      "test/tesa10_capitals.test.js"
-    ]
-  },
-  {
-    "name": "TESA10-wall-gate-shut",
-    "file": "src/world/capitalModels.js",
-    "old": "    if (!gateOn) { wallRun(mb, STONE, p, q, W.thick, W.h); merlons(mb, STONE, p, q, W.thick, W.h); continue; }",
-    "new": "    { wallRun(mb, STONE, p, q, W.thick, W.h); merlons(mb, STONE, p, q, W.thick, W.h); continue; }",
-    "tests": [
-      "test/tesa10_capitals.test.js"
-    ]
-  },
-  {
-    "name": "TESA10-wall-no-lintel",
-    "file": "src/world/capitalModels.js",
-    "old": "    wallRun(lintel, STONE, b, c, W.thick, W.h - W.gateH, 0);",
-    "new": "    void lintel;",
-    "tests": [
-      "test/tesa10_capitals.test.js"
-    ]
-  },
-  {
-    "name": "TESA10-wall-lintel-low",
-    "file": "src/world/capitalModels.js",
-    "old": "    for (const [, gr] of lintel.groups) for (let i = 1; i < gr.positions.length; i += 3) gr.positions[i] += W.gateH;",
-    "new": "    for (const [, gr] of lintel.groups) for (let i = 1; i < gr.positions.length; i += 3) gr.positions[i] += 2;",
-    "tests": [
-      "test/tesa10_capitals.test.js"
-    ]
-  },
-  {
-    "name": "TESA10-wall-west-towerless",
-    "file": "src/world/capitalModels.js",
-    "old": "  roundTower(mb, -W.apothem, 0, W.towerR, W.towerH);",
-    "new": "",
-    "tests": [
-      "test/tesa10_capitals.test.js"
-    ]
-  },
-  {
-    "name": "TESA10-wall-corners-square",
-    "file": "src/world/capitalModels.js",
-    "old": "  return [[A, -F], [A, F], [F, A], [-F, A], [-A, F], [-A, -F], [-F, -A], [F, -A]];",
-    "new": "  return [[A, -A], [A, A], [A, A], [-A, A], [-A, A], [-A, -A], [-A, -A], [A, -A]];",
-    "tests": [
-      "test/tesa10_capitals.test.js"
-    ]
-  },
-  {
-    "name": "TESA10-inner-gates-shut",
-    "file": "src/world/capitalModels.js",
-    "old": "    if (skip || e <= s) continue;",
-    "new": "    if (e <= s) continue;",
-    "tests": [
-      "test/tesa10_capitals.test.js"
-    ],
-    "equivalent": true,
-    "why": "No run of the ring's 32 lies wholly inside a gate: a side spans 2*pi/32 (0.196 rad) and a gate 2*asin(4.25/96) (0.089), so `skip` is never set and the trim either side does the gate's work. Kept because a ring of more sides (a gate wider than a side) needs it."
-  },
-  {
-    "name": "TESA10-inner-gates-narrow",
-    "file": "src/world/capitalModels.js",
-    "old": "half = Math.asin((R.gate / 2 + 0.25) / R.r);",
-    "new": "half = Math.asin((R.gate / 2 - 0.5) / R.r);",
-    "tests": [
-      "test/tesa10_capitals.test.js"
-    ]
-  },
-  {
-    "name": "TESA10-bridge-short",
-    "file": "src/world/capitalModels.js",
-    "old": "export const IMPERIAL_BRIDGE = Object.freeze({ from: IMPERIAL_WALL.apothem, to: 4 * BLOCK_M + 2,",
-    "new": "export const IMPERIAL_BRIDGE = Object.freeze({ from: IMPERIAL_WALL.apothem, to: 4 * BLOCK_M - 40,",
-    "tests": [
-      "test/tesa10_capitals.test.js"
-    ]
-  },
-  {
-    "name": "TESA10-bridge-one-way",
-    "file": "src/world/capitalModels.js",
-    "old": "  for (const axis of ['x', 'z']) {\n    const P = (s, t, y) =>",
-    "new": "  for (const axis of ['x']) {\n    const P = (s, t, y) =>",
     "tests": [
       "test/tesa10_capitals.test.js"
     ]
@@ -562,7 +398,7 @@
   {
     "name": "TESA10-pin-unwired",
     "file": "src/world/arenaPlaces.js",
-    "old": "_coastal, capitalPin);",
+    "old": "_coastal, capitalPin, (bx, by) => !!capitalOnPixel(bx, by));",
     "new": "_coastal);",
     "tests": [
       "test/tesa10_capitals.test.js"
@@ -598,8 +434,8 @@
   {
     "name": "TESA10-host-stale-slot",
     "file": "src/scenes/world.js",
-    "old": "      if (at && had.capital.k === at.k && (had.arena?.id ?? null) === (slot?.id ?? null) && (had.arena?.provinceIndex ?? null) === (slot?.provinceIndex ?? null)\n        && !!had.arena?.port === !!slot?.port) return had;",
-    "new": "      if (at && had.capital.k === at.k) return had;",
+    "old": "      if (at && had.capital.k === at.k && had.capital.s === at.s && (had.arena?.id ?? null) === (slot?.id ?? null) && (had.arena?.provinceIndex ?? null) === (slot?.provinceIndex ?? null)\n        && !!had.arena?.port === !!slot?.port) return had;",
+    "new": "      if (at && had.capital.k === at.k && had.capital.s === at.s) return had;",
     "tests": [
       "test/tesa10_capitals.test.js"
     ]
@@ -688,8 +524,8 @@
   {
     "name": "TESA10b-pixel-any-land",
     "file": "src/world/tamrielCapitals.js",
-    "old": "  const own = (bx, by) => !inBay(bx, by) && provinceKeyBeyondBay(bx, by) === cap.province;",
-    "new": "  const own = (bx, by) => !inBay(bx, by) && provinceKeyBeyondBay(bx, by) !== null;",
+    "old": "  const one = (bx, by) => !inBay(bx, by) && provinceKeyBeyondBay(bx, by) === cap.province;",
+    "new": "  const one = (bx, by) => !inBay(bx, by) && provinceKeyBeyondBay(bx, by) !== null;",
     "tests": [
       "test/tesa10_capitals.test.js"
     ]
@@ -807,15 +643,6 @@
     "file": "src/world/capitalModels.js",
     "old": "  for (let i = 2; i < positions.length; i += 3) { positions[i] = -positions[i]; normals[i] = -normals[i]; }",
     "new": "  for (let i = 2; i < positions.length; i += 3) { positions[i] = -positions[i]; }",
-    "tests": [
-      "test/tesa10_capitals.test.js"
-    ]
-  },
-  {
-    "name": "TESA10b-merlons-inward",
-    "file": "src/world/capitalModels.js",
-    "old": "  for (let i = 0; i < C.length; i++) runs.push([C[(i + 1) % C.length], C[i]]);",
-    "new": "  for (let i = 0; i < C.length; i++) runs.push([C[i], C[(i + 1) % C.length]]);",
     "tests": [
       "test/tesa10_capitals.test.js"
     ]

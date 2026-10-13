@@ -119,7 +119,7 @@ test('AUDIT-TESA A6-2: a capital\'s gardens are its own blocks - each cell\'s, n
     cap.plan.forEach((row, r) => row.forEach((cell, x) => {
       if (cell !== 'G') return;
       const name = capitalGardenName(cap, x, r);
-      assert.match(name, /^TESG[A-Z]{2}\d\d\.RMB$/);
+      assert.match(name, /^TESG[A-Z]{2}[0-9a-n]{2}\.RMB$/, 'TESA11: base 36');
       assert.equal(names[(cap.plan.length - 1 - r) * row.length + x], name, `${cap.key} ${x},${r}`);
       assert.ok(all.some((b) => b.name === name), `${name} registered`);
     }));
@@ -139,7 +139,8 @@ test('AUDIT-TESA A6-2: a capital\'s gardens are its own blocks - each cell\'s, n
 });
 
 test('AUDIT-TESA A6-2: where a capital\'s models stand - a wall over a garden or an own block closes its ground and keeps its trees off it, a walkable slope and a deck\'s top do not, the gates stay open, no diagonal slips, no start marker under it', async () => {
-  const { capitalFootprint, installCapitals, IMPERIAL_WALL } = await import('../src/world/capitalModels.js');
+  const { capitalFootprint, installCapitals } = await import('../src/world/capitalModels.js');
+  const { IMPERIAL, polar } = await import('../src/world/imperialCity.js');
   const { capitalGardenName, anchorMetres, autoCentre, tileCentre, BLOCK_M, CAPITAL_CLOSED_BYTE } = await import('../src/world/tamrielCapitals.js');
   const { MOURNHOLD, ALINOR, HELSTROM } = await import('../src/world/capitalPlans.js');
   // the law on a made model: a wall's face, a ramp, a deck at a body's height
@@ -166,9 +167,12 @@ test('AUDIT-TESA A6-2: where a capital\'s models stand - a wall over a garden or
   installCapitals({ addTextures: () => 0 });
   const open = (fp, a, b) => { for (let k = 0; k <= 60; k++) if (fp(a[0] + ((b[0] - a[0]) * k) / 60, a[1] + ((b[1] - a[1]) * k) / 60)) return false; return true; };
   const fp = Object.fromEntries(CAPITALS.map((c) => [c.key, capitalFootprint(c)]));
-  const A0 = IMPERIAL_WALL.apothem;
-  assert.ok(open(fp['imperial-city'], [A0 - 6, 0], [A0 + 6, 0]) && open(fp['imperial-city'], [0, A0 - 6], [0, A0 + 6]), 'the Imperial City\'s gates');
-  assert.ok(!open(fp['imperial-city'], [-A0 - 6, 100], [-A0 + 6, 100]), 'its west side');
+  // PIN MOVED (TESA11): the Imperial City's city wall's four gates and its palace wall's six, walled between
+  const R = IMPERIAL.cityWall.r, rp = IMPERIAL.palaceWall.r;
+  for (const b of IMPERIAL.cityWall.gates) assert.ok(open(fp['imperial-city'], polar(b, R - 8), polar(b, R + 8)), `the Imperial City's gate at ${b}`);
+  assert.ok(!open(fp['imperial-city'], polar(50, R - 8), polar(50, R + 8)), 'its wall between');
+  for (const b of [30, 90, 150, 210, 270, 330]) assert.ok(open(fp['imperial-city'], polar(b, rp - 6), polar(b, rp + 6)), `the palace gate at ${b}`);
+  assert.ok(!open(fp['imperial-city'], polar(60, rp - 6), polar(60, rp + 6)), 'the palace wall between');
   const MW = MOURNHOLD.wall;
   for (const [x, z] of [[MW.half, 0], [-MW.half, 0], [0, MW.half], [0, -MW.half]]) {
     const ax = x ? 1 : 0, az = z ? 1 : 0;
@@ -302,11 +306,9 @@ test('AUDIT-TESA A4-F5/A7-5: a capital\'s pixel walks each ring\'s own cells - t
 });
 
 test('AUDIT-TESA A6-3: no landmark stands in one of Daggerfall\'s blocks a capital lays - its walls and their towers, its walks, all clear of them below a roof\'s height (the oak\'s canopy over them, 170 m up, is the city\'s)', async () => {
-  const { installCapitals, IMPERIAL_WALL, IMPERIAL_BRIDGE } = await import('../src/world/capitalModels.js');
+  const { installCapitals } = await import('../src/world/capitalModels.js');
   const { customModelFor } = await import('../src/world/customModels.js');
   const { BLOCK_M } = await import('../src/world/tamrielCapitals.js');
-  assert.ok(IMPERIAL_WALL.apothem - IMPERIAL_WALL.towerR >= 3 * BLOCK_M + 0.5, 'the Imperial City\'s towers outside its blocks');
-  assert.equal(IMPERIAL_BRIDGE.from, IMPERIAL_WALL.apothem, 'the bridges from its gates');
   installCapitals({ addTextures: () => 0 });
   for (const cap of CAPITALS) {
     const [AX, AR] = cap.anchor;
@@ -335,7 +337,7 @@ test('AUDIT-TESA A6-4: an inland capital lays no wet CUST block - each kind that
   assert.deepEqual(names.get('CUST').length, 3, 'the list handed untouched');
   assert.deepEqual(dryKinds(new Map([['CUST', ['CUSTAA00.RMB']]]), (n) => blocks[n]).get('CUST'), ['CUSTAA00.RMB'], 'all wet: the list whole');
   assert.equal(dryKinds(null, () => null), null);
-  assert.match(read('src/world/tamrielCapitals.js'), /const blockNames = capitalBlockNames\(plan, k, cap\.shore \? ctx\.names : dryKinds\(ctx\.names, ctx\.blockOf\)\);/);
+  assert.match(read('src/world/tamrielCapitals.js'), /const blockNames = capitalBlockNames\(plan, k, cap\.shore \? ctx\.names : dryKinds\(ctx\.names, ctx\.blockOf\), cap\.blocks, n > 1 \? \[sx \* 8, sy \* 8\] : \[0, 0\]\);/, 'PIN MOVED (TESA11): a slice\'s');
   void synthesizeCapitalLocation;
 });
 
