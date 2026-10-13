@@ -611,7 +611,44 @@ The owner: "skyrims solitude". The second capital, and the laws the next ones ne
 - **Arena's coastal place pinned beside the sea stays a port** (standArenaPixels: A.EXE's list, and the sea among the
   pinned pixel's eight): Solitude's place is a port on its docks. The capital's own harbour byte stays 0 - its ships
   are not yet.
-- **Not yet**: Mournhold, Alinor, Falinesti, Torval and Helstrom.
+- **Then**: TESA10c, the other five.
+
+
+## TESA10c - Mournhold, Alinor, Falinesti, Torval and Helstrom (2026-10-13)
+
+The owner: "Can we redesign each capital city as close to 1:1 with other games". The five capitals past the Bay that
+stand nowhere yet, each by TESA10b's laws (`world/capitalPlans.js`: their plans, districts, own blocks and measures;
+`world/capitalMournhold.js`, `capitalAlinor.js`, `capitalFalinesti.js`, `capitalTorval.js`, `capitalHelstrom.js`: their
+landmarks), each its signatures in a layout of the port's own - never another game's level design or mesh - its city
+blocks Daggerfall's own, its pictures the port's own (ochre, bronze, cloth, crystal, bark, leaves, sandstone, red tile,
+mossy stone). No game data.
+
+- **Mournhold** (Morrowind, inland): Plaza Brindisi Dorom at the heart - a ring of low white wall open on its four axes
+  round a fountain, the column at its middle with a gilt winged figure on it; the High Fane east of it, its great
+  bronze dome on its drum with a gilt lantern, four domed pavilions at its plinth's corners, its porch west to the
+  plaza; the Royal Palace north, three bronze domes along its roof and two domed towers at its front; the Great
+  Bazaar's stalls under striped awnings in the south-west; Godsreach's houses, the Craftsmen's Quarter, the temple
+  district; an ochre wall round the six by six with a gate in each side and domed round towers.
+- **Alinor** (Summerset, on the south shore): the Royal Palace of white stone at the city's north - its keep banded in
+  gold, gilt-gabled wings, four corner spires under gold cones and its great tower with a gilt crown (about 100 m); the
+  Crystal Tower on its isle in the harbour - six faces of crystal to 179 m, six lesser shards round it; the harbour's
+  quay and four piers; white walls on the three landward sides with slender gold-capped towers, the harbour open.
+- **Falinesti** (Valenwood, inland): the Great Graht-Oak at the heart of the city - its trunk from 34 m across its foot,
+  ten buttress roots over the grounds round it, nine great limbs out over the streets, a crown of leaves 320 m across
+  above the whole city, and three timber platforms round its trunk; no wall but the forest.
+- **Torval** (Elsweyr, on Topal Bay): the Mane's Palace - crenellated sandstone under a great red-tiled dome with a
+  gilt finial, a minaret at each corner; the Temple of the Two Moons on three terraces south of it, Masser's dome red
+  and the greater, Secunda's white, a stair north to the palace; the quay and piers on the bay; sandstone walls with
+  domed square towers on the landward sides.
+- **Helstrom** (Black Marsh, inland): the Great Xanmeer - five tiers of mossy stone to 30 m, a stair up each face, a
+  shrine on its top; the Hist on its isle in the canal that crosses the city, twisted, its sap gilt on its bark; two
+  boardwalks over the canal; marsh water and hummocks round the city, and a palisade of sharpened logs broken for its
+  north and south gates and the canal, a watchtower on stilts at each corner.
+- **Their pixels** (the freeware's trace): Mournhold (3293, 550) and Falinesti (1247, 1449) and Helstrom (3355, 1108)
+  on their own points; Alinor (7, 1533) on the shore, the sea south; Torval moved off Valenwood's land to Elsweyr's
+  shore (1922, 1704), the sea south. Tested on TAMRIEL1's shape where no trace is set: each on its own province's
+  land, the shore capitals beside the sea, no two on one.
+- **Measured**: their landmarks draw in the stand-in view as laid. Not yet seen in the game.
 
 ## The arc - what comes next
 

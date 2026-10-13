@@ -16,6 +16,11 @@ import { addVendorTextures } from '../systems/textureReplacement.js';
 import { CAPITAL_MODELS, capitalPortBlocks, BLOCK_M } from './tamrielCapitals.js';
 import { CAPITAL_ARCHIVE, CAPITAL_ART, art, taper, ring, ledge, wallRun, merlons, roundTower } from './capitalShapes.js';
 import { buildSolitudeArch, buildBluePalace, buildSolitudeWall, buildCastleDour, buildSolitudeDocks } from './capitalSolitude.js';
+import { buildMournholdPlaza, buildHighFane, buildMournholdPalace, buildGreatBazaar, buildMournholdWall } from './capitalMournhold.js';
+import { buildAlinorPalace, buildCrystalTower, buildAlinorHarbour, buildAlinorWall } from './capitalAlinor.js';
+import { buildGrahtOak } from './capitalFalinesti.js';
+import { buildManePalace, buildTwoMoonsTemple, buildTorvalQuay, buildTorvalWall } from './capitalTorval.js';
+import { buildXanmeer, buildHist, buildHelstromWalks, buildPalisade } from './capitalHelstrom.js';
 
 export { CAPITAL_ARCHIVE, CAPITAL_ART };
 const MARBLE = art(CAPITAL_ART.marble), GOLD = art(CAPITAL_ART.gold), STONE = art(CAPITAL_ART.wallStone), BRIDGE = art(CAPITAL_ART.bridgeStone), DARK = art(CAPITAL_ART.dark);
@@ -218,6 +223,21 @@ export function capitalArt() {
   const grain = noise(0x7c01, 12);
   out.set(CAPITAL_ART.timber, picture((x, y) => (y % 8 === 0 ? [52, 36, 24] : mix([90, 62, 38], [136, 98, 62], grain(x * 0.25, y * 2) * 0.8 + ((x + Math.floor(y / 8) * 23) % 32 === 0 ? -0.5 : 0)))));
   out.set(CAPITAL_ART.nordStone, ashlar(0x3c33, [118, 118, 114], [58, 58, 56], 10, 20, 0.45));
+  out.set(CAPITAL_ART.ochre, ashlar(0x3d44, [196, 150, 92], [120, 86, 52], 12, 24, 0.35));
+  const patina = noise(0x7d01, 6);
+  out.set(CAPITAL_ART.bronze, picture((x, y) => mix([120, 78, 40], [92, 146, 120], patina(x, y) * 0.8 + (y % 8 === 0 ? 0.2 : 0))));
+  out.set(CAPITAL_ART.cloth, picture((x) => (Math.floor(x / 8) % 2 ? [176, 46, 38] : [222, 186, 92])));
+  const facet = noise(0x7e01, 4);
+  out.set(CAPITAL_ART.crystal, picture((x, y) => mix([150, 210, 226], [236, 250, 255], facet(x, y) * 0.7 + (Math.abs(((x + y) % 32) - 16) < 1 ? 0.5 : 0))));
+  const furrow = noise(0x7f01, 10);
+  out.set(CAPITAL_ART.bark, picture((x, y) => mix([58, 42, 28], [112, 86, 58], furrow(x * 3, y * 0.4) * 0.9)));
+  const leaf = noise(0x7f02, 16), shade = noise(0x7f03, 4);
+  out.set(CAPITAL_ART.leaves, picture((x, y) => mix([34, 72, 26], [112, 156, 58], leaf(x, y) * 0.65 + shade(x, y) * 0.35)));
+  out.set(CAPITAL_ART.sandstone, ashlar(0x3e55, [212, 176, 124], [150, 118, 78], 10, 22, 0.3));
+  const glaze = noise(0x8001, 6);
+  out.set(CAPITAL_ART.terracotta, picture((x, y) => (y % 5 === 0 ? [120, 54, 30] : mix([184, 86, 44], [222, 128, 70], glaze(x, y)))));
+  const moss = noise(0x8101, 8), stone = ashlar(0x3f66, [92, 104, 84], [48, 56, 44], 14, 28, 0.5);
+  out.set(CAPITAL_ART.mossStone, picture((x, y) => { const i = (y * CAPITAL_ART_SIZE + x) * 4, c = [stone.data[i], stone.data[i + 1], stone.data[i + 2]]; return moss(x, y) > 0.55 ? mix(c, [40, 96, 36], 0.4) : c; }));
   return out;
 }
 
@@ -252,6 +272,24 @@ export function installCapitals({ addTextures = addVendorTextures } = {}) {
     [CAPITAL_MODELS.solitudeWall]: () => buildSolitudeWall(),
     [CAPITAL_MODELS.castleDour]: () => buildCastleDour(),
     [CAPITAL_MODELS.solitudeDocks]: () => buildSolitudeDocks(),
+    [CAPITAL_MODELS.mournholdPlaza]: () => buildMournholdPlaza(),
+    [CAPITAL_MODELS.highFane]: () => buildHighFane(),
+    [CAPITAL_MODELS.mournholdPalace]: () => buildMournholdPalace(),
+    [CAPITAL_MODELS.greatBazaar]: () => buildGreatBazaar(),
+    [CAPITAL_MODELS.mournholdWall]: () => buildMournholdWall(),
+    [CAPITAL_MODELS.alinorPalace]: () => buildAlinorPalace(),
+    [CAPITAL_MODELS.crystalTower]: () => buildCrystalTower(),
+    [CAPITAL_MODELS.alinorHarbour]: () => buildAlinorHarbour(),
+    [CAPITAL_MODELS.alinorWall]: () => buildAlinorWall(),
+    [CAPITAL_MODELS.grahtOak]: () => buildGrahtOak(),
+    [CAPITAL_MODELS.manePalace]: () => buildManePalace(),
+    [CAPITAL_MODELS.twoMoonsTemple]: () => buildTwoMoonsTemple(),
+    [CAPITAL_MODELS.torvalQuay]: () => buildTorvalQuay(),
+    [CAPITAL_MODELS.torvalWall]: () => buildTorvalWall(),
+    [CAPITAL_MODELS.xanmeer]: () => buildXanmeer(),
+    [CAPITAL_MODELS.hist]: () => buildHist(),
+    [CAPITAL_MODELS.helstromWalks]: () => buildHelstromWalks(),
+    [CAPITAL_MODELS.palisade]: () => buildPalisade(),
   };
   for (const [id, build] of Object.entries(builds)) registerCustomModel(Number(id), () => northward(build()), () => true, { climateFree: true });
   let made = null;

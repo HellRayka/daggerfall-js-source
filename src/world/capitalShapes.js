@@ -9,6 +9,7 @@ export const CAPITAL_ARCHIVE = 38400;
 export const CAPITAL_ART = Object.freeze({
   marble: 0, gold: 1, wallStone: 2, roof: 3, bridgeStone: 4, dark: 5,
   rock: 6, blueSlate: 7, timber: 8, nordStone: 9,
+  ochre: 10, bronze: 11, cloth: 12, crystal: 13, bark: 14, leaves: 15, sandstone: 16, terracotta: 17, mossStone: 18,
 });
 /** A picture's [archive, record]. */
 export const art = (record) => [CAPITAL_ARCHIVE, record];

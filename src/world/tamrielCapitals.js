@@ -47,6 +47,10 @@ import { mapPixelToLongitudeLatitude, LOCATION_TYPES } from '../formats/mapsFile
 import { hash32, BLOCK_M } from './spawnedDungeons.js';
 import { pictureToBay, tamrielFit, inBay } from './tamrielFrame.js';
 import { provinceKeyBeyondBay, tamrielLandVersion } from './tamrielLand.js';
+import {
+  MOURNHOLD_PLAN, MOURNHOLD_DISTRICTS, MOURNHOLD_BLOCKS, ALINOR_PLAN, ALINOR_DISTRICTS, ALINOR_BLOCKS, FALINESTI_PLAN, FALINESTI_DISTRICTS,
+  FALINESTI_BLOCKS, TORVAL_PLAN, TORVAL_DISTRICTS, TORVAL_BLOCKS, HELSTROM_PLAN, HELSTROM_DISTRICTS, HELSTROM_BLOCKS,
+} from './capitalPlans.js';
 
 /** The capitals' lane - after the country places' 64 (0x300-0x33f) and the lairs' (0x340). */
 export const CAPITAL_LANE = 0x341;
@@ -66,6 +70,11 @@ export const CAPITAL_BLOCKS = Object.freeze({
 export const CAPITAL_MODELS = Object.freeze({
   whiteGoldTower: 910100, imperialWall: 910101, imperialInnerWall: 910102, imperialBridges: 910103,
   solitudeArch: 910110, bluePalace: 910111, solitudeWall: 910112, castleDour: 910113, solitudeDocks: 910114,
+  mournholdPlaza: 910120, highFane: 910121, mournholdPalace: 910122, greatBazaar: 910123, mournholdWall: 910124,
+  alinorPalace: 910130, crystalTower: 910131, alinorHarbour: 910132, alinorWall: 910133,
+  grahtOak: 910140,
+  manePalace: 910150, twoMoonsTemple: 910151, torvalQuay: 910152, torvalWall: 910153,
+  xanmeer: 910160, hist: 910161, helstromWalks: 910162, palisade: 910163,
 });
 /** RMB geometry: a block's side in its own units and in metres, its ground tiles, its automap cells. */
 export const RMB_UNITS = 4096;
@@ -191,6 +200,16 @@ export const CAPITALS = Object.freeze([
     anchor: Object.freeze([4, 4]), blocks: IMPERIAL_BLOCKS, models: Object.freeze([CAPITAL_MODELS.whiteGoldTower, CAPITAL_MODELS.imperialWall, CAPITAL_MODELS.imperialInnerWall, CAPITAL_MODELS.imperialBridges]) }),
   Object.freeze({ key: 'solitude', name: 'Solitude', province: 'Skyrim', at: Object.freeze([136, 26]), shore: true, plan: SOLITUDE_PLAN, districts: SOLITUDE_DISTRICTS,
     anchor: Object.freeze([2, 3]), blocks: SOLITUDE_BLOCKS, models: Object.freeze([CAPITAL_MODELS.solitudeArch, CAPITAL_MODELS.bluePalace, CAPITAL_MODELS.solitudeWall, CAPITAL_MODELS.castleDour, CAPITAL_MODELS.solitudeDocks]) }),
+  Object.freeze({ key: 'mournhold', name: 'Mournhold', province: 'Morrowind', at: Object.freeze([250, 92]), shore: false, plan: MOURNHOLD_PLAN, districts: MOURNHOLD_DISTRICTS,
+    anchor: Object.freeze([4, 4]), blocks: MOURNHOLD_BLOCKS, models: Object.freeze([CAPITAL_MODELS.mournholdPlaza, CAPITAL_MODELS.highFane, CAPITAL_MODELS.mournholdPalace, CAPITAL_MODELS.greatBazaar, CAPITAL_MODELS.mournholdWall]) }),
+  Object.freeze({ key: 'alinor', name: 'Alinor', province: 'Sumurset', at: Object.freeze([38, 154]), shore: true, plan: ALINOR_PLAN, districts: ALINOR_DISTRICTS,
+    anchor: Object.freeze([4, 2]), blocks: ALINOR_BLOCKS, models: Object.freeze([CAPITAL_MODELS.alinorPalace, CAPITAL_MODELS.crystalTower, CAPITAL_MODELS.alinorHarbour, CAPITAL_MODELS.alinorWall]) }),
+  Object.freeze({ key: 'falinesti', name: 'Falinesti', province: 'Valenwood', at: Object.freeze([118, 150]), shore: false, plan: FALINESTI_PLAN, districts: FALINESTI_DISTRICTS,
+    anchor: Object.freeze([4, 4]), blocks: FALINESTI_BLOCKS, models: Object.freeze([CAPITAL_MODELS.grahtOak]) }),
+  Object.freeze({ key: 'torval', name: 'Torval', province: 'Elsweyr', at: Object.freeze([156, 168]), shore: true, plan: TORVAL_PLAN, districts: TORVAL_DISTRICTS,
+    anchor: Object.freeze([4, 3]), blocks: TORVAL_BLOCKS, models: Object.freeze([CAPITAL_MODELS.manePalace, CAPITAL_MODELS.twoMoonsTemple, CAPITAL_MODELS.torvalQuay, CAPITAL_MODELS.torvalWall]) }),
+  Object.freeze({ key: 'helstrom', name: 'Helstrom', province: 'BlackMarsh', at: Object.freeze([254, 128]), shore: false, plan: HELSTROM_PLAN, districts: HELSTROM_DISTRICTS,
+    anchor: Object.freeze([4, 3]), blocks: HELSTROM_BLOCKS, models: Object.freeze([CAPITAL_MODELS.xanmeer, CAPITAL_MODELS.hist, CAPITAL_MODELS.helstromWalks, CAPITAL_MODELS.palisade]) }),
 ]);
 
 /** A capital's map id, its location index, and whether a map id is a capital's. */
