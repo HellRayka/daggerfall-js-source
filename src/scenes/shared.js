@@ -898,6 +898,12 @@ export function countrysideOn(search) {
   return pageParam('country', search) !== 'off';
 }
 
+/** TESA10 (bible/03-World/Arena-Provinces.md): THE CAPITALS' KILL DOOR - `?capitals=off` stands no capital the port
+ *  builds; Arena's place of its name stands as any of Arena's places. No Features row: the capitals are the land's own. */
+export function capitalsOn(search) {
+  return pageParam('capitals', search) !== 'off';
+}
+
 /** VERGE1: THE CLEAR ROADSIDES' SWITCH - the Features row (`roadVerges`) on the enhanced skin, and on for everyone
  *  online whatever their skin: where the wild's flats stand is the room's ground (realForestsOn's shape). `?verges=off`
  *  the kill door, offline. The world host reads it once, at its mount. */

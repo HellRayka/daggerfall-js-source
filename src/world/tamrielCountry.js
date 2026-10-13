@@ -31,6 +31,7 @@ import { srand, rand, getSeed, setSeed } from '../formats/dfRandom.js';
 import { firstName, surname, GENDERS, BANK_TYPES } from '../characters/nameHelper.js';
 import { TAVERNS_A, TAVERNS_B } from './buildingNames.js';
 import { BAY_W, BAY_H } from './tamrielFrame.js';
+import { CAPITAL_LANE } from './tamrielCapitals.js';   // TESA10: the capitals' lane, after the lairs'
 
 /** The pixel hash's salt. Changing it moves every place of the countryside. */
 export const COUNTRY_SALT = 0xc0c7;
@@ -58,10 +59,11 @@ export const countryPlaceId = (n) => (((COUNTRY_LANE + (n >>> 19)) << 20) | 0x80
  *  grid at most, so its cell's index (19 bits) with 0x80000 set is its low 20: no two of them share a dungeon's identity
  *  (net/nodeLaw.js DUNGEON_ID_MAX, DFU's MapId & 0xfffff), and none a Bay place's. */
 export const LAIR_LANE = COUNTRY_LANE + COUNTRY_LANES;
-/** Is a map id a place the countryside made - a country place's (TESA7) or a lair's (TESA8)? */
+/** Is a map id a place the port made past the Bay - a country place's (TESA7), a lair's (TESA8) or a capital's (TESA10)?
+ *  No house is sold in one and no deed read (scenes/worldModes.js): each answers the clamp's region. */
 export function isCountryPlaceId(id) {
   const v = Number(id) >>> 0, lane = (v >>> 20) & 0xfff;
-  return lane >= COUNTRY_LANE && lane <= LAIR_LANE && (v & 0x80000) !== 0;
+  return lane >= COUNTRY_LANE && lane <= CAPITAL_LANE && (v & 0x80000) !== 0;
 }
 /** An ordinal's location index: its own negative. */
 export const countryLocationIndex = (n) => -(COUNTRY_INDEX_BASE + n);

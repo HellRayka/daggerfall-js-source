@@ -287,6 +287,9 @@ import { arenaTemplates, arenaTemplateOf, synthesizeArenaLocation, ARENA_LOAD_WA
 import { fitBayToPicture } from '../world/tamrielLand.js';   // TAMRIEL3: where the Bay stands on it
 import { countryTemplates, countryCounts, bayLand, countryRates, countryPick, countryName, countryNameSeed, createCountryGround, synthesizeCountryLocation } from '../world/tamrielCountry.js';   // TESA7: the countryside past the Bay
 import { countrysideOn } from './shared.js';   // TESA7: its kill door
+import { capitalsOn } from './shared.js';   // TESA10: the capitals' kill door
+import { capitalOnPixel, capitalBase, cityBlockNames, synthesizeCapitalLocation } from '../world/tamrielCapitals.js';   // TESA10: the capitals, built by hand
+import { tamrielFit } from '../world/tamrielFrame.js';   // TESA10: the fit the capitals stand by - its move sweeps them
 import { lairTemplates, lairPools, lairPick, lairCellOf, lairSite, lairLayout, lairName, lairNameSeed, synthesizeLairLocation, lairPlaceId, LAIR_TYPES } from '../world/tamrielDungeons.js';   // TESA8: the lairs past the Bay
 import { arenaPathsAt } from '../world/arenaRoads.js';   // TESA7: no country place on an Arena road
 import { provinceKeyBeyondBay } from '../world/tamrielLand.js';   // TESA3: the province a pixel past the Bay stands on
@@ -1573,6 +1576,26 @@ export async function bootWorld(canvas, renderer, params, status) {
     queue.push(...again.sort(nearestFirstFrom(state.current)));
     console.log(`[arena] ${again.length} pixel(s) beyond the Bay built again for Arena's places`);
   }
+  /** TESA10: THE CAPITALS' SWEEP (sweepArenaPixels' shape) - on the frame, when the fit moves (the trace landing after a
+   *  pixel built: a capital's pixel is the fit's), every built pixel past the Bay where a capital stands now and none
+   *  stood as it built, or the reverse, is built again. */
+  let _capitalSwept = null;
+  function sweepCapitalPixels() {
+    const fit = tamrielFit();
+    if (fit === _capitalSwept) return;
+    _capitalSwept = fit;
+    const again = [];
+    for (const [, p] of built) {
+      if (onTheBay(p.px, p.py)) continue;
+      if (!!capitalOnPixel(p.px, p.py) !== !!locationIndex.get(`${p.px},${p.py}`)?.capital) again.push({ px: p.px, py: p.py });
+    }
+    if (!again.length) return;
+    const under = `${state.current.x},${state.current.y}`;
+    if (walkMode && playerSpawned && again.some((k) => `${k.px},${k.py}` === under)) _seasonHoldKey = under;
+    for (const k of again) destroyPixel(k.px, k.py, { collectLoose: false });
+    queue.push(...again.sort(nearestFirstFrom(state.current)));
+    console.log(`[capitals] ${again.length} pixel(s) beyond the Bay built again for the capitals`);
+  }
   /** TESA4: ARENA'S ROADS - the towns to the kernels whenever the places that stand move (a trace, a fit, a data set, the
    *  room's word), on the frame and not between builds alone: the build is the worker's, and the pixels built meanwhile
    *  are painted again when it lands (below). */
@@ -1749,6 +1772,11 @@ export async function bootWorld(canvas, renderer, params, status) {
   const _lairTemplates = _countryTemplates ? lairTemplates(_classicRows ?? _hubRows.map(classicRow).filter(Boolean), isMainStoryDungeon) : null;
   const _lairCounts = _lairTemplates ? countryCounts(_lairTemplates, (x, y) => maps.getClimateIndex(x, y)) : null;
   const _lairPools = _lairTemplates ? lairPools(_lairTemplates) : null;
+  // TESA10 (world/tamrielCapitals.js): THE CAPITALS' BASE AND THEIR BLOCKS - the city a capital stands on the shape of, and
+  // every classic city block the game's cities lay, by kind (a district's houses, shops, guilds and temples) - off the same
+  // rows, before they go. The land past the Bay streamed, `?capitals` open; online too.
+  const _capitalBase = tamrielLand && capitalsOn() ? capitalBase(_classicRows ?? _hubRows.map(classicRow).filter(Boolean), isMainStoryDungeon) : null;
+  const _capitalNames = _capitalBase ? cityBlockNames(_classicRows ?? _hubRows.map(classicRow).filter(Boolean)) : null;
   // TESA2 (world/arenaLocations.js): THE ARENA PLACES' TEMPLATES - the cities, hamlets, villages, labyrinths and keeps an
   // Arena place may clone, off the same rows (the game's own, as MAPS.BSA holds them), kept before the rows go
   const _arenaTemplates = arenaStands ? arenaTemplates(_classicRows ?? _hubRows.map(classicRow).filter(Boolean), isMainStoryDungeon) : null;
@@ -2488,7 +2516,7 @@ export async function bootWorld(canvas, renderer, params, status) {
    *  the Overworld (tvSpawnGone) had it gone. */
   function _locationToBuild(px, py) {
     if (etherSea && inEther(px, py)) return etherPlaceAt(px, py);   // ETHER-PLACES: an isle's place, or the open sea's none
-    if ((_arenaTemplates || _countryTemplates) && !onTheBay(px, py)) return (_arenaTemplates && arenaLocationAt(px, py)) || countryLocationAt(px, py) || lairLocationAt(px, py);   // TESA2: Arena's; TESA7-8: the land's
+    if ((_arenaTemplates || _countryTemplates || _capitalBase) && !onTheBay(px, py)) return capitalLocationAt(px, py) || (_arenaTemplates && arenaLocationAt(px, py)) || countryLocationAt(px, py) || lairLocationAt(px, py);   // TESA10: a capital; TESA2: Arena's; TESA7-8: the land's
     const key = `${px},${py}`;
     const loc = locationIndex.get(key);
     if (loc?.spawned && _spawnLedger.expired(key, _spawnClock()) && !_insideSpawn(key)) {
@@ -2591,6 +2619,29 @@ export async function bootWorld(canvas, renderer, params, status) {
     const blocks = lairLayout(_lairPools.get(dungeonType), pick.template.dungeon.blocks.filter((b) => !/^b/i.test(b.blockName)).length, lairPlaceId(c));
     if (!blocks) return null;
     const loc = synthesizeLairLocation(pick.template, { c, px, py, type: pick.type, name, blocks }, { regionIndex, regionName: REGION_NAMES[regionIndex], politic: 128 + regionIndex, climate: getWorldClimateSettings(maps.getClimateIndex(px, py)) });
+    _locIndexGen += 1;
+    locationIndex.set(key, loc);
+    return loc;
+  }
+  /** TESA10 (world/tamrielCapitals.js): THE CAPITAL A PIXEL PAST THE BAY STANDS - its own, laid out by its plan (its
+   *  districts of the game's city blocks round the port's own landmarks), the region and climate the pixel's, and where
+   *  Arena's place of its name stands on it (world/arenaPlaces.js standArenaPixels' pin) that place's slot (the Arena
+   *  sweep and the port readers read it) - stood in the index once, and again when the place on it changes; or null. */
+  function capitalLocationAt(px, py) {
+    const at = _capitalBase ? capitalOnPixel(px, py) : null;
+    const key = `${px},${py}`, had = locationIndex.get(key);
+    const place = at && _arenaTemplates ? arenaPlaceOnPixel(px, py) : null;
+    const slot = place ? Object.freeze({ province: place.province, provinceIndex: place.provinceIndex, id: place.id, kind: place.kind, port: !!place.port }) : null;
+    if (had?.capital) {
+      if (at && had.capital.k === at.k && (had.arena?.id ?? null) === (slot?.id ?? null) && (had.arena?.provinceIndex ?? null) === (slot?.provinceIndex ?? null)) return had;
+      _locIndexGen += 1;
+      locationIndex.delete(key);
+    }
+    if (!at) return null;
+    const regionIndex = maps.getRegionIndexAt(px, py);
+    const loc = synthesizeCapitalLocation(at, { base: _capitalBase, names: _capitalNames, blockOf: (name) => blocks.getBlockByName(name), px, py, arena: slot,
+      where: { regionIndex, regionName: REGION_NAMES[regionIndex], politic: 128 + regionIndex, climate: getWorldClimateSettings(maps.getClimateIndex(px, py)) } });
+    if (!loc) return null;
     _locIndexGen += 1;
     locationIndex.set(key, loc);
     return loc;
@@ -34494,6 +34545,7 @@ const _pixelOrder = [];   // NEAR-FIRST: the frame's pixel walk, nearest first -
     if (_sdLate.size && !building) sweepSdLate();   // SD2b: the Hollow's pixel, the same way
     if (_arenaTemplates) handArenaRoads();   // TESA4: their roads to the terrain worker, as the places that stand move
     if (_arenaTemplates && !building) sweepArenaPixels();   // TESA2: Arena's places landed or changed - their pixels, the same way
+    if (_capitalBase && !building) sweepCapitalPixels();   // TESA10: the fit moved - the capitals' pixels, the same way
     if (_arenaRoadsStale.size && !building) sweepArenaRoads();   // TESA4: and their roads
     if (seasonsActive) seasons.tick();   // SIB1: RefreshSeasonAfterLoad's second half, the frame after a load
     refreshHomeLooks();   // HOME-LOOK: a look landed or changed repaints the home where it stands

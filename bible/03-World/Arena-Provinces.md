@@ -511,6 +511,66 @@ each is laid out to a plan of its own from Daggerfall's dungeon blocks.
   Ulrik's Hold - a Nord's name, a castle's frame - on its template's castle ground (CASTAA06.RMB, 18 entrance doors);
   the player walks in through its gate and stands in its dungeon: its own plan built, one exit, 140 action objects.
 
+## TESA10 - the capitals, built by hand (2026-10-12)
+
+The owner: *"Can we redesign each capital city as close to 1:1 with other games. For example, oblivion's capital, skyrims
+solitude, etc"*; asked whether to build from another game's files, *"You build them yourself. No files needed"*. A capital
+past the Bay is no clone of a Bay city: its grid is laid out by hand, its districts of Daggerfall's own city blocks (the
+player's BLOCKS.BSA - every house, shop, guild and temple with its interior and its people) round landmarks of the port's
+own. Each capital's signatures in a layout of the port's own - never a copy of another game's level design or meshes. The
+Imperial City is the first; Solitude (its arch over the water, the Blue Palace, Castle Dour) is next.
+
+- **Where** (`world/tamrielCapitals.js` capitalPixel, capitalOnPixel): the capital's point on Daggerfall's map of Tamriel
+  (TAMRIEL1's CITIES, `world/tamrielGeography.js` - the port's own reading of the picture) on the live fit: the Imperial
+  City's (178, 96) is Bay pixel (2177, 612) on the freeware's fit. Every client's the same pixel, Arena attached or not.
+  With Arena attached, Arena's place of the capital's name and province stands on it too (`world/arenaPlaces.js`
+  standArenaPixels' `pinned`, capitalPin: before any other place takes it, `pinned: true`), so Arena's roads (TESA4), its
+  map ink and the journey all lead to the city the port built. The fit moving (the trace landing after a pixel built)
+  builds the capitals' pixels again (`scenes/world.js` sweepCapitalPixels, sweepArenaPixels' shape).
+- **The Imperial City's plan** (IMPERIAL_CITY_PLAN): an island city in a ring of water. The 8 x 8 grid's outer ring is the
+  lake (port blocks all water); inside it a 6 x 6 city; its four corners and the Arboretum gardens (port blocks of grass
+  and the climate's trees); the 2 x 2 at its heart the White-Gold Tower's grounds (port blocks: the plaza's stone round the
+  Tower's foot, Green Emperor Way's grass, the street's stone outside the ring wall); round them 26 of Daggerfall's city
+  blocks by district - the Market District (a general store, an armorer, a jeweller, an alchemist, the bank), Talos Plaza
+  District (a tavern, a general store and its streets of houses), the Waterfront District (a pawnbroker, a tavern and the
+  thieves' block), the Arena District (the Fighters Guild, an armorer), the Temple District (a temple), the Elven Gardens
+  District (houses), and the Arcane University (the Mages Guild, a library, a bookseller). Each block of a district's kind
+  off the cell's hash among every block of that kind the game's cities lay (cityBlockNames: never a wall or a palace).
+- **The buildings are the blocks' own** (capitalBuildings): Daggerfall names, staffs and serves a building off its
+  location's list drawn by type in grid order (`systems/talkTopics.js` drawNamedBuildings); a capital's list is each
+  classic block's own records (its RMB's building data - its guild's faction, its temple's, its shop's quality) in that
+  order, the named ones alone, under name seeds of the capital's - so every building draws its own record, named afresh.
+  On the freeware: 45 named buildings, the Mages Guild (40), the Fighters Guild (41) and a temple among them.
+- **The landmarks** (`world/capitalModels.js`, the port's own models in metres, every one's origin the city's middle on
+  its ground, laid as misc models of the heart's first block by DFU's own record law): the WHITE-GOLD TOWER - an octagon
+  from a 36 m plinth, its shaft tapering from 25 m to 18 m and banded in gold every 40 m, eight buttress fins climbing its
+  corners to 150 m, a gallery at 200 m, a crown and a gilt spire to 292 m, a dark door on the east; the OUTER WALL - eight
+  sides at 311 m from the middle (just outside every city block), its corners cut across the four corner gardens, a round
+  tower at every corner and at the middle of the north and west sides, its gates east and south between two towers each
+  under their lintels; the RING WALL round the grounds at 96 m, open on its four axes, a turret by each gate; the BRIDGES -
+  east from Talos Plaza and south from the Arena District, a deck a hand over the lake to the pixel's edge, parapets and
+  piers. Their pictures are the port's own, made at boot from noise (CAPITAL_ARCHIVE 38400: marble, gold, wall stone,
+  roof slate, bridge stone, the door's dark). No game data. The walkers' navgrid is closed under the Tower's foot and the
+  ring wall's band (the grounds' automap), its gates open.
+- **The location** (synthesizeCapitalLocation): the plan's grid on a city's shape (capitalBase: the first plain TownCity
+  of the game's rows in map-id order), its own id (CAPITAL_LANE 0x341, after the lairs', the ordinal in the low 20 with
+  0x80000), its own index (-41,000,000 and down), the pixel's longitude and latitude, the region and climate the pixel
+  answers, no dungeon, no harbour, `capital`, and Arena's slot where Arena's place stands on it. A place the port made:
+  no house is sold in it and no deed read (`isCountryPlaceId`).
+- **The doors** (`world/capitalModels.js` installCapitals, from `scenes/modWorldData.js` beside installArena - behind no
+  switch, as the arena's block is): the six port blocks at fixed indices from 900200, the four models (climate-free), the
+  six pictures. `?capitals=off` stands none: Arena's place of the name stands as any.
+- **The host** (`scenes/world.js` capitalLocationAt): `_locationToBuild` past the Bay asks the capital first, then Arena's
+  place, the countryside and the lairs. Stood in the index once; stood again when Arena's place on it changes.
+- **Measured** (2026-10-13, the freeware with the trace's fit (38, 57) x15.5, in the browser): the pixel (2177, 612)
+  stands the Imperial City - 8 x 8 blocks, 45 named buildings (the Mages Guild, the Fighters Guild and a temple among
+  them), its port blocks resolving at their indices (TESALAKE 900200, TESAWGT0 900202); 7170 water tiles in its tilemap
+  (the lake ring's 28 blocks). Not yet seen rendered in the game; the landmarks render in a stand-in view.
+- **Known fault**: Daggerfall's block rows run from the SOUTH (DFU lays a location's blocks at Unity +z, north, by the
+  row; the port keeps +z north), and the plan's rows are written north to south - so the city stands mirrored north to
+  south of its plan's names, and its +z gate and bridge face north. The next change flips the plan's rows into the grid
+  and mirrors the landmarks to match.
+
 ## The arc - what comes next
 
 - **The provinces as regions of their own** - their own chat rooms, banks, law, prices and quest sites. The save's shape,
@@ -526,16 +586,45 @@ each is laid out to a plan of its own from Daggerfall's dungeon blocks.
 - **Roads, the rest** - TESA4 stands the roads between Arena's places, TESA5 joins them to the Bay's and TESA6 makes
   the coastal cities ports. Still to come: the landforms' cut along the roads, the maps' ink of them, Arena's ports on
   the contract board and the ship passage.
-- **The owner's four asks of 2026-10-12, the rest** - TESA9, Morrowind of Morrowind's own (the
-  player's Morrowind.esm read for Vvardenfell's towns at their places and Morrowind's ground, plants, rocks and buildings
-  across the province: the owner chose "Real towns + MW look"); TESA10, the capitals built by hand ("You build them
-  yourself. No files needed": the Imperial City's White-Gold Tower in its walled ring on Lake Rumare, Solitude's arch
-  over the water, the Blue Palace and Castle Dour, and Arena's capitals of the rest) - their signature landmarks in a
-  layout of the port's own, never a copy of another game's level design.
+- **The capitals, the rest** - Solitude (Skyrim: the arch over the Karth's mouth, the Blue Palace, Castle Dour, the docks),
+  then Mournhold, Alinor, Falinesti, Torval and Helstrom, each its own plan and landmarks; the Imperial City's
+  Waterfront docks and its Arena's colosseum; houses for sale in a capital (its own region's deed key first).
+- **Morrowind of Morrowind's own** (TESA9) - set aside by the owner, 2026-10-12: "Dont worry about morrowind".
 - **The countryside and the lairs, the rest** - their places on the held map and the travel map, roads to them, and quest
   sites in them.
 
 ## Pins
+
+`test/tesa10_capitals.test.js` (14, TESA10): the id (the capitals' lane after the lairs', the ordinal in the low 20 with
+0x80000, a place the port made, nothing past it, the index past the lairs'); the pixel (TAMRIEL1's own point, its centre
+on the live fit - (2177, 612) on the freeware's - one capital a pixel, kept a fit and moved with it) and the pin (Arena's
+place of the capital's name and province, no other, nor a capital not yet built); standArenaPixels' `pinned` (the pinned
+place first on its pixel, the place that had it moved to the next, a pin on the Bay ignored, no pin no change, the
+installed set wired to capitalPin); the plan (the lake ring, the four corner gardens, the heart's four, 26 classic blocks
+of fifteen kinds, every cell of the city but its corner gardens one district); the blocks (the cities' names by kind,
+sorted, never a wall or a palace, nor a hamlet's; the port's own names for lake, garden and grounds, a classic off the
+cell's hash, none for a missing kind); the buildings (each block's own named records to its count in grid order under the
+capital's seeds, its sector and location; houses and walls none; the block untouched); the port blocks (their indices
+from 900200, the lake's water, the garden's grass and a tree in about five, the grounds' plaza stone, Green Emperor Way's
+grass and the street's stone by the distance from the middle, the Tower's foot and the ring band closed with four gates
+open, the landmarks in the heart's first block at the city's middle by the classic layout law, a misc record's units,
+the stamp's two flips pinned at their source and through the block converter); the location (its grid and buildings,
+its ids in the row, the exterior and its record, the pixel's longitude and latitude, the host's region, no dungeon, no
+harbour, `capital`, Arena's slot or none, none without a base or with a kind missing, the base untouched, capitalBase's
+first plain city in map-id order); the Tower (its height, its reach, marble, gold and the door's dark on the east), the
+walls (the eight corners, outside every block, the gates open under their lintels, the west side's tower, the ring wall's
+four gates) and the bridges (both ways to the pixel's edge, from the wall) - every model finite, its normals unit, every
+face wound along its normal; the pictures (six, 64 x 64, opaque, deterministic, the marble pale, the gold warm) and the
+install (the blocks, models and pictures once, the loader's call beside installArena); the host by source (the door,
+the rows before they go, the capital before Arena's place) and run (stood once, the pixel's region, Arena's slot when it
+lands and stood again, none on another pixel, out when the fit moves, the door shut) and its sweep (a moved fit builds
+again the pixels a capital came to or went from, the Bay's never, once a fit). Mutants `tools/mutants/tesa10.json`
+(76, all dead). PIN MOVED: `test/tesa2_arena.test.js`, `test/tesa7_country.test.js`, `test/tesa8_lairs.test.js` (the
+build's order; the capitals' lane a place the port made), `test/spawneddungeons.test.js` (the build's window 640 -> 700,
+its harness's `_capitalBase`), `test/fb0929h_spawnplate.test.js` (its harness's `_capitalBase`); `tools/mutants/tesa2.json`'s
+TESA2-no-arm and TESA2-the-nameless-stand, `tesa7.json`'s TESA7-host-arena-last, TESA7-host-no-country,
+TESA7-host-not-indexed and the three id records, and `tesa8.json`'s TESA8-host-no-lairs re-aimed by content, all judged
+dead again.
 
 `test/tesa8_lairs.test.js` (10, TESA8): the cell (8 x 8 of the countryside's grid, 2^19 of them, its four edges and a
 point none, its site inside it off its hash); the id (the lairs' lane after the country places', the cell in the low 20

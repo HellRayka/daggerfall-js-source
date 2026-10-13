@@ -48,7 +48,7 @@ test('TESA8 the cell: 8 x 8 pixels of the countryside\'s grid, 2^19 of them; one
   }
   assert.equal(lows.size, 7, 'a dungeon\'s identity (MapId & 0xfffff) one a cell');
   assert.ok(new Set([0, 9, 2 ** 24].map((n) => countryPlaceId(n) >>> 20)).size >= 1 && ![0, 9, 2 ** 24, 2 ** 25 - 1].some((n) => (countryPlaceId(n) >>> 20) === LAIR_LANE), 'no country place in the lairs\' lane');
-  assert.equal(isCountryPlaceId((LAIR_LANE + 1) << 20 | 0x80000), false);
+  assert.equal(isCountryPlaceId((LAIR_LANE + 2) << 20 | 0x80000), false);   // PIN MOVED (TESA10): the capitals' lane, the next, a place the port made too
   assert.ok(countryOrdinal(2179, -359) >= 0);
 });
 
@@ -250,7 +250,7 @@ test('TESA8 the host by source: the lairs\' templates, count and pools off the g
   assert.match(W, /const bayLandNow = \(\) => \(_bayLand \?\?= bayLand\(/);
   assert.match(W, /const countryRatesNow = \(\) => \(_countryRates \?\?= countryRates\(_countryCounts, bayLandNow\(\)\)\);/);
   assert.match(W, /const lairRatesNow = \(\) => \(_lairRates \?\?= countryRates\(_lairCounts, bayLandNow\(\), LAIR_TYPES\)\);/);
-  assert.match(W, /return \(_arenaTemplates && arenaLocationAt\(px, py\)\) \|\| countryLocationAt\(px, py\) \|\| lairLocationAt\(px, py\);/);
+  assert.match(W, /return capitalLocationAt\(px, py\) \|\| \(_arenaTemplates && arenaLocationAt\(px, py\)\) \|\| countryLocationAt\(px, py\) \|\| lairLocationAt\(px, py\);/);   // PIN MOVED (TESA10): a capital first
   assert.match(W, /if \(had\?\.country && !had\.country\.dungeon\) \{/, 'the countryside leaves a lair to its own');
 });
 

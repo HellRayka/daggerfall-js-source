@@ -34,6 +34,7 @@ import { tamrielTrace, tamrielLandVersion, PROVINCE_OF_ID } from './tamrielLand.
 import { PICTURE_W, PICTURE_H, pictureToBay, bayToPicture, inBay, tamrielFit } from './tamrielFrame.js';
 import { arenaGlobalCityId } from '../formats/arenaCityData.js';
 import { COASTAL_CITY_COUNT } from '../formats/arenaExe.js';
+import { capitalPin } from './tamrielCapitals.js';   // TESA10: a capital's place stands on the capital
 
 /** The cloud's scales about its province rectangle's centre. */
 export const FIT_SCALES = Object.freeze(Array.from({ length: 11 }, (_, i) => (600 + i * 50) / 1000));   // 0.60 .. 1.10
@@ -224,14 +225,27 @@ function nearestPixel(x, y, reach, ok, from = 0) {
  * neighbours, never the Bay's), within SHORE_REACH, ring by ring as above - and is a PORT (`port: true`). Arena says the
  * city is on the coast; the coast is the picture's, and the fit draws a cloud's coastal ring in from it. One with no
  * shore in reach stands as any place does, no port.
+ *
+ * TESA10: A CAPITAL'S PLACE STANDS ON THE CAPITAL. A place `pinned` names a pixel for (world/tamrielCapitals.js
+ * capitalPin: the capital the port builds of its name) stands on that pixel exactly, before any other place takes it
+ * (`pinned: true`) - so its roads, its ink and the journey lead to the city the port built there.
  * @param {ReturnType<typeof placeArenaLocations>} model @param {import('./tamrielLand.js').TamrielTrace} trace
- * @param {?ArrayLike<number>} [coastal]
+ * @param {?ArrayLike<number>} [coastal] @param {((place: any) => ({ px: number, py: number } | null)) | null} [pinned]
  */
-export function standArenaPixels(model, trace, coastal = null) {
+export function standArenaPixels(model, trace, coastal = null, pinned = null) {
   const stood = [], unstood = [], byPixel = new Map(), lands = new Map();
   const coast = new Set(Array.from(coastal ?? []));
+  const pins = new Map();
+  for (const p of pinned ? model.places : []) {
+    const at = p.name ? pinned(p) : null;
+    if (!at || inBay(at.px, at.py) || byPixel.has(`${at.px},${at.py}`)) continue;
+    const placed = { ...p, bx: at.px, by: at.py, pinned: true };
+    pins.set(p, placed);
+    byPixel.set(`${at.px},${at.py}`, placed);
+  }
   for (const p of model.places) {
     if (!p.name) continue;
+    if (pins.has(p)) { stood.push(pins.get(p)); continue; }
     const [x, y] = pictureToBay(p.px, p.py);
     if (inBay(x, y)) continue;
     let own = lands.get(p.province);
@@ -337,7 +351,7 @@ export function arenaPixels() {
   if (_model.fit !== fit || _model.coast !== _coastal) {
     _model.fit = fit;
     _model.coast = _coastal;
-    _model.pixels = standArenaPixels(model, /** @type {any} */ (tamrielTrace()), _coastal);
+    _model.pixels = standArenaPixels(model, /** @type {any} */ (tamrielTrace()), _coastal, capitalPin);   // TESA10: the capitals' places on the capitals
   }
   return _model.pixels;
 }

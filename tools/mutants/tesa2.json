@@ -38,8 +38,8 @@
   {
     "name": "TESA2-the-nameless-stand",
     "file": "src/world/arenaPlaces.js",
-    "old": "  for (const p of model.places) {\n    if (!p.name) continue;\n    const [x, y] = pictureToBay(p.px, p.py);\n    if (inBay(x, y)) continue;\n    let own",
-    "new": "  for (const p of model.places) {\n    const [x, y] = pictureToBay(p.px, p.py);\n    if (inBay(x, y)) continue;\n    let own",
+    "old": "  for (const p of model.places) {\n    if (!p.name) continue;\n    if (pins.has(p)) { stood.push(pins.get(p)); continue; }\n    const [x, y] = pictureToBay(p.px, p.py);",
+    "new": "  for (const p of model.places) {\n    if (pins.has(p)) { stood.push(pins.get(p)); continue; }\n    const [x, y] = pictureToBay(p.px, p.py);",
     "tests": [
       "test/tesa2_arena.test.js"
     ]
@@ -173,7 +173,7 @@
   {
     "name": "TESA2-no-arm",
     "file": "src/scenes/world.js",
-    "old": "    if ((_arenaTemplates || _countryTemplates) && !onTheBay(px, py)) return (_arenaTemplates && arenaLocationAt(px, py)) || countryLocationAt(px, py) || lairLocationAt(px, py);   // TESA2: Arena's; TESA7-8: the land's\n",
+    "old": "    if ((_arenaTemplates || _countryTemplates || _capitalBase) && !onTheBay(px, py)) return capitalLocationAt(px, py) || (_arenaTemplates && arenaLocationAt(px, py)) || countryLocationAt(px, py) || lairLocationAt(px, py);   // TESA10: a capital; TESA2: Arena's; TESA7-8: the land's\n",
     "new": "\n",
     "tests": [
       "test/tesa2_arena.test.js"

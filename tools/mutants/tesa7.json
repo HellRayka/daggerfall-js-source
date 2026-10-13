@@ -74,8 +74,8 @@
   {
     "name": "TESA7-is-id-lane-floor",
     "file": "src/world/tamrielCountry.js",
-    "old": "return lane >= COUNTRY_LANE && lane <= LAIR_LANE && (v & 0x80000) !== 0;",
-    "new": "return lane <= LAIR_LANE && (v & 0x80000) !== 0;",
+    "old": "return lane >= COUNTRY_LANE && lane <= CAPITAL_LANE && (v & 0x80000) !== 0;",
+    "new": "return lane <= CAPITAL_LANE && (v & 0x80000) !== 0;",
     "tests": [
       "test/tesa7_country.test.js"
     ]
@@ -83,7 +83,7 @@
   {
     "name": "TESA7-is-id-lane-ceiling",
     "file": "src/world/tamrielCountry.js",
-    "old": "return lane >= COUNTRY_LANE && lane <= LAIR_LANE && (v & 0x80000) !== 0;",
+    "old": "return lane >= COUNTRY_LANE && lane <= CAPITAL_LANE && (v & 0x80000) !== 0;",
     "new": "return lane >= COUNTRY_LANE && (v & 0x80000) !== 0;",
     "tests": [
       "test/tesa7_country.test.js"
@@ -92,8 +92,8 @@
   {
     "name": "TESA7-is-id-low-bit",
     "file": "src/world/tamrielCountry.js",
-    "old": "return lane >= COUNTRY_LANE && lane <= LAIR_LANE && (v & 0x80000) !== 0;",
-    "new": "return lane >= COUNTRY_LANE && lane <= LAIR_LANE;",
+    "old": "return lane >= COUNTRY_LANE && lane <= CAPITAL_LANE && (v & 0x80000) !== 0;",
+    "new": "return lane >= COUNTRY_LANE && lane <= CAPITAL_LANE;",
     "tests": [
       "test/tesa7_country.test.js"
     ]
@@ -470,8 +470,8 @@
   {
     "name": "TESA7-host-arena-last",
     "file": "src/scenes/world.js",
-    "old": "return (_arenaTemplates && arenaLocationAt(px, py)) || countryLocationAt(px, py) || lairLocationAt(px, py);",
-    "new": "return countryLocationAt(px, py) || (_arenaTemplates && arenaLocationAt(px, py)) || lairLocationAt(px, py);",
+    "old": "return capitalLocationAt(px, py) || (_arenaTemplates && arenaLocationAt(px, py)) || countryLocationAt(px, py) || lairLocationAt(px, py);",
+    "new": "return capitalLocationAt(px, py) || countryLocationAt(px, py) || (_arenaTemplates && arenaLocationAt(px, py)) || lairLocationAt(px, py);",
     "tests": [
       "test/tesa7_country.test.js"
     ]
@@ -479,8 +479,8 @@
   {
     "name": "TESA7-host-no-country",
     "file": "src/scenes/world.js",
-    "old": "return (_arenaTemplates && arenaLocationAt(px, py)) || countryLocationAt(px, py) || lairLocationAt(px, py);",
-    "new": "return (_arenaTemplates && arenaLocationAt(px, py)) || lairLocationAt(px, py);",
+    "old": "return capitalLocationAt(px, py) || (_arenaTemplates && arenaLocationAt(px, py)) || countryLocationAt(px, py) || lairLocationAt(px, py);",
+    "new": "return capitalLocationAt(px, py) || (_arenaTemplates && arenaLocationAt(px, py)) || lairLocationAt(px, py);",
     "tests": [
       "test/tesa7_country.test.js"
     ]
@@ -551,8 +551,8 @@
   {
     "name": "TESA7-host-not-indexed",
     "file": "src/scenes/world.js",
-    "old": "    if (!loc) return null;\n    _locIndexGen += 1;\n    locationIndex.set(key, loc);",
-    "new": "    if (!loc) return null;\n    _locIndexGen += 1;",
+    "old": "    const loc = synthesizeCountryLocation(pick.template, { px, py, type: pick.type, name }, { regionIndex, regionName: REGION_NAMES[regionIndex], politic: 128 + regionIndex, climate: getWorldClimateSettings(maps.getClimateIndex(px, py)) });\n    if (!loc) return null;\n    _locIndexGen += 1;\n    locationIndex.set(key, loc);",
+    "new": "    const loc = synthesizeCountryLocation(pick.template, { px, py, type: pick.type, name }, { regionIndex, regionName: REGION_NAMES[regionIndex], politic: 128 + regionIndex, climate: getWorldClimateSettings(maps.getClimateIndex(px, py)) });\n    if (!loc) return null;\n    _locIndexGen += 1;",
     "tests": [
       "test/tesa7_country.test.js"
     ]

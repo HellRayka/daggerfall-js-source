@@ -59,7 +59,7 @@ test('TESA7 the id: a pixel\'s ordinal on the fixed grid, its lane among the 64 
     ids.add(id);
   }
   assert.equal(ids.size, 8, 'one id a pixel');
-  for (const other of [spawnedMapId(1, 5, 5), spawnedMapId(7, 999, 499), arenaPlaceId({ provinceIndex: 8, id: 47 }), etherPlaceId({ cx: 3, cy: 4 }), 0x60000000 | 1234, 499999, (0x300 << 20) | 5, (0x341 << 20) | 0x80000, (0x340 << 20) | 5, (0x2ff << 20) | 0x80000]) {
+  for (const other of [spawnedMapId(1, 5, 5), spawnedMapId(7, 999, 499), arenaPlaceId({ provinceIndex: 8, id: 47 }), etherPlaceId({ cx: 3, cy: 4 }), 0x60000000 | 1234, 499999, (0x300 << 20) | 5, (0x342 << 20) | 0x80000, (0x340 << 20) | 5, (0x2ff << 20) | 0x80000]) {
     assert.equal(isCountryPlaceId(other), false, `0x${(other >>> 0).toString(16)}`);
   }
 });
@@ -238,7 +238,7 @@ test('TESA7 the host: the templates and the count off the game\'s rows before th
   assert.ok(W.indexOf('const _countryCounts = _countryTemplates') < W.indexOf('  _classicRows = null;   // read, let go'), 'before the rows go');
   assert.match(W, /const bayLandNow = \(\) => \(_bayLand \?\?= bayLand\(\(x, y\) => maps\.getClimateIndex\(x, y\), \(x, y, c\) => isWaterPixel\(c, woods\.getHeightMapValue\(x, y\)\)\)\);\n\s+const countryRatesNow = \(\) => \(_countryRates \?\?= countryRates\(_countryCounts, bayLandNow\(\)\)\);/);   // PIN MOVED (TESA8): the Bay's land read once for the lairs' rates too
   assert.match(W, /const _countryGround = _countryTemplates \? createCountryGround\(woods\) : null;/);
-  assert.match(W, /if \(\(_arenaTemplates \|\| _countryTemplates\) && !onTheBay\(px, py\)\) return \(_arenaTemplates && arenaLocationAt\(px, py\)\) \|\| countryLocationAt\(px, py\)( \|\| lairLocationAt\(px, py\))?;/);   // PIN MOVED (TESA8): then the lair's (tesa8_lairs)
+  assert.match(W, /if \(\(_arenaTemplates \|\| _countryTemplates \|\| _capitalBase\) && !onTheBay\(px, py\)\) return capitalLocationAt\(px, py\) \|\| \(_arenaTemplates && arenaLocationAt\(px, py\)\) \|\| countryLocationAt\(px, py\) \|\| lairLocationAt\(px, py\);/);   // PIN MOVED (TESA8): then the lair's (tesa8_lairs); PIN MOVED (TESA10): a capital first (tesa10_capitals)
   const tp = W.slice(W.indexOf('    window.__tesaPlace = (x, y) => {'), W.indexOf('    window.__arena = () => {'));
   assert.match(tp, /country: loc\?\.country \?\? null, type: loc\?\.mapTableData\?\.locationType \?\? null \};/, 'the probe reads it');
   const M = read('src/scenes/worldModes.js');
@@ -303,7 +303,7 @@ test('TESA7 the build\'s order past the Bay: Arena\'s place where one stands, el
   const src = lift('  function _locationToBuild(px, py) {');
   const make = new Function('arena', 'country', `
     const etherSea = false, inEther = () => false, etherPlaceAt = () => null, onTheBay = (x, y) => x >= 0 && y >= 0 && x < 1000 && y < 500;
-    const _arenaTemplates = arena ? {} : null, _countryTemplates = {}, locationIndex = new Map([['5,5', { name: 'Daggerfall' }]]);
+    const _arenaTemplates = arena ? {} : null, _countryTemplates = {}, _capitalBase = null, capitalLocationAt = () => null, locationIndex = new Map([['5,5', { name: 'Daggerfall' }]]);
     const arenaLocationAt = (x) => (x === 2000 ? { name: 'Winterhold' } : null), countryLocationAt = () => country;
     const _spawnLedger = { expired: () => false }, _spawnClock = () => 0, _insideSpawn = () => false, spawnedDungeonAt = () => null;
     let _locIndexGen = 0;
