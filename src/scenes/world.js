@@ -288,7 +288,7 @@ import { fitBayToPicture } from '../world/tamrielLand.js';   // TAMRIEL3: where 
 import { countryTemplates, countryCounts, bayLand, countryRates, countryPick, countryName, countryNameSeed, createCountryGround, synthesizeCountryLocation } from '../world/tamrielCountry.js';   // TESA7: the countryside past the Bay
 import { countrysideOn } from './shared.js';   // TESA7: its kill door
 import { capitalsOn } from './shared.js';   // TESA10: the capitals' kill door
-import { capitalOnPixel, capitalBase, cityBlockNames, synthesizeCapitalLocation } from '../world/tamrielCapitals.js';   // TESA10: the capitals, built by hand
+import { capitalOnPixel, capitalBase, cityBlockNames, synthesizeCapitalLocation, setCapitalsStanding } from '../world/tamrielCapitals.js';   // TESA10: the capitals, built by hand
 import { tamrielFit } from '../world/tamrielFrame.js';   // TESA10: the fit the capitals stand by - its move sweeps them
 import { lairTemplates, lairPools, lairPick, lairCellOf, lairSite, lairLayout, lairName, lairNameSeed, synthesizeLairLocation, lairPlaceId, LAIR_TYPES } from '../world/tamrielDungeons.js';   // TESA8: the lairs past the Bay
 import { arenaPathsAt } from '../world/arenaRoads.js';   // TESA7: no country place on an Arena road
@@ -1778,6 +1778,7 @@ export async function bootWorld(canvas, renderer, params, status) {
   // rows, before they go. The land past the Bay streamed, `?capitals` open; online too.
   const _capitalBase = tamrielLand && capitalsOn() ? capitalBase(_classicRows ?? _hubRows.map(classicRow).filter(Boolean), isMainStoryDungeon) : null;
   const _capitalNames = _capitalBase ? cityBlockNames(_classicRows ?? _hubRows.map(classicRow).filter(Boolean)) : null;
+  setCapitalsStanding(!!_capitalBase);   // TESA10d: the map's journey to a capital, Arena attached or not
   // TESA2 (world/arenaLocations.js): THE ARENA PLACES' TEMPLATES - the cities, hamlets, villages, labyrinths and keeps an
   // Arena place may clone, off the same rows (the game's own, as MAPS.BSA holds them), kept before the rows go
   const _arenaTemplates = arenaStands ? arenaTemplates(_classicRows ?? _hubRows.map(classicRow).filter(Boolean), isMainStoryDungeon) : null;

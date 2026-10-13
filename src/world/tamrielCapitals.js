@@ -265,6 +265,17 @@ function capitalPixels() {
 export function capitalOnPixel(px, py) {
   return capitalPixels().byPixel.get(`${px},${py}`) ?? null;
 }
+let _standing = false, _version = 0;
+/** TESA10d: does a host stand the capitals - the world host with the land past the Bay and the capitals' door open (its
+ *  boot says so; Arena attached or not). The map's journey to a capital reads it; a change moves the version, so the
+ *  ink is made again. */
+export function setCapitalsStanding(on) {
+  if (!!on === _standing) return;
+  _standing = !!on;
+  _version++;
+}
+export const capitalsStanding = () => _standing;
+export const capitalsVersion = () => _version;
 /** ARENA (world/arenaPlaces.js standArenaPixels' `pinned`): the pixel an Arena place of a capital's name stands on - the
  *  capital's - or null for any other place, or a capital with no pixel. */
 export function capitalPin(place) {

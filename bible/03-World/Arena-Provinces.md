@@ -650,6 +650,16 @@ mossy stone). No game data.
   land, the shore capitals beside the sea, no two on one.
 - **Measured**: their landmarks draw in the stand-in view as laid. Not yet seen in the game.
 
+## TESA10d - a capital is a journey, Arena or none (2026-10-13)
+
+The owner: "Do we really need Arena attached?" - no. The capitals stand on their own (the port's plans and landmarks,
+Daggerfall's blocks); only the map's journey to one went through Arena's places. Now where a host stands the capitals
+(`world/tamrielCapitals.js` setCapitalsStanding, from the world host's boot: the land past the Bay and the capitals'
+door open), each capital the held map inks - TAMRIEL1's cities with no Arena, Arena's places with it - stands on the
+capital's pixel and a press on it is the journey there (`ui/tamrielInk.js` capitalJourney, `ui/heldMap.js`'s press as
+TESA2's). The ink is made again when the standing changes. In the game: open the map, zoom out past the Bay, press
+the capital.
+
 ## The arc - what comes next
 
 - **The provinces as regions of their own** - their own chat rooms, banks, law, prices and quest sites. The save's shape,

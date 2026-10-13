@@ -36,6 +36,7 @@ import { pictureToBay, bayToPicture, inBay, BAY_W, BAY_H, tamrielFit, tamrielFra
 import { tamrielTrace, tamrielLandVersion, provinceKeyAt, PROVINCE_OF_ID } from '../world/tamrielLand.js';
 // TESA1: Arena's places, where the player attached their Arena and the trace stands them (world/arenaPlaces.js)
 import { arenaPlaces, arenaPlacesVersion, arenaPixels, arenaStanding } from '../world/arenaPlaces.js';
+import { capitalPin, capitalsStanding, capitalsVersion } from '../world/tamrielCapitals.js';   // TESA10d: a capital's journey, Arena or none
 import { makeNoise, octaveNoise } from './introMap.js';   // the intro's own seeded value noise - ONE home for it
 import { PEN, NAME_FACE, HALO_PEN, penOf, toPaper, paintGlyph, roundCorners, spacedName, boundarySegments, linkSegments } from './inkMap.js';
 import { simplifyChain } from './overworldModel.js';   // TAMRIEL3: the coast's chain thinned as the overworld's are
@@ -440,9 +441,16 @@ export function arenaInkCities(model) {
     if (!p.name) continue;
     const [x, y] = pictureToBay(p.px, p.py);
     if (inBay(x, y)) continue;
-    out.push({ name: p.name, province: p.province, capital: capital.has(`${p.province}|${p.name}`), kind: p.kind, x, y, pixel: stood.get(`${p.provinceIndex}|${p.id}`) ?? null });
+    out.push({ name: p.name, province: p.province, capital: capital.has(`${p.province}|${p.name}`), kind: p.kind, x, y, pixel: stood.get(`${p.provinceIndex}|${p.id}`) ?? capitalJourney(p) });
   }
   return out;
+}
+
+/** TESA10d: the pixel a city of a capital's name and province is a journey to - the capital's, where a host stands the
+ *  capitals (world/tamrielCapitals.js capitalsStanding) - or null. */
+function capitalJourney(city) {
+  const at = capitalsStanding() ? capitalPin(city) : null;
+  return at ? { x: at.px, y: at.py } : null;
 }
 
 /** The continent's city within CITY_HIT_PX of a sheet point (paper pixels at the view's scale), or null - the hover's
@@ -498,10 +506,14 @@ export function buildTamrielInk({ bayCoast = [] } = {}) {
     .filter((s) => !traced || !provinceKeyAt(...bayToPicture(s.x, s.y)));   // a sea's name on the picture's land is left off
   // TESA1: Arena's places where the player's Arena stands them on the trace; TAMRIEL1's authored cities else
   const arena = traced ? arenaPlaces() : null;
-  const cities = arena ? arenaInkCities(arena) : CITIES.map((c) => { const at = placeCity(c); if (!at) return null; const [x, y] = pictureToBay(at[0], at[1]); return { name: c.name, province: c.province, capital: !!c.capital, kind: null, x, y }; })
+  const cities = arena ? arenaInkCities(arena) : CITIES.map((c) => {
+    const pixel = capitalJourney(c);   // TESA10d: a capital the world stands is inked on its pixel, and the press travels there
+    if (pixel) return { name: c.name, province: c.province, capital: !!c.capital, kind: null, x: pixel.x + 0.5, y: pixel.y + 0.5, pixel };
+    const at = placeCity(c); if (!at) return null; const [x, y] = pictureToBay(at[0], at[1]); return { name: c.name, province: c.province, capital: !!c.capital, kind: null, x, y };
+  })
     .filter((c) => c && !inBay(c.x, c.y));
   const frame = tamrielFrameInBay();
-  return { coast, borders, rivers, carets, provinces, seas, cities, frame, joined: stitched.joined, bayEnds: ends.length, traced: !!traced, arena: !!arena, version: tamrielLandVersion(), arenaVersion: arenaPlacesVersion() };
+  return { coast, borders, rivers, carets, provinces, seas, cities, frame, joined: stitched.joined, bayEnds: ends.length, traced: !!traced, arena: !!arena, version: tamrielLandVersion(), arenaVersion: arenaPlacesVersion(), capitalsVersion: capitalsVersion() };
 }
 
 /** ONE model a data set and a trace: keyed by the Bay model's own coast array (the window mints one per WOODS
@@ -510,8 +522,8 @@ const _inks = new WeakMap();
 const _noBay = { ink: null };
 export function tamrielInkFor(bayModel) {
   const key = bayModel?.coast;
-  const v = tamrielLandVersion(), a = arenaPlacesVersion();   // TESA1: Arena's places attached or removed rebuild it too
-  const stale = (ink) => !ink || ink.version !== v || ink.arenaVersion !== a;
+  const v = tamrielLandVersion(), a = arenaPlacesVersion(), c = capitalsVersion();   // TESA1: Arena's places attached or removed rebuild it too; TESA10d: the capitals standing
+  const stale = (ink) => !ink || ink.version !== v || ink.arenaVersion !== a || ink.capitalsVersion !== c;
   if (!key) { if (stale(_noBay.ink)) _noBay.ink = buildTamrielInk(); return _noBay.ink; }
   let ink = _inks.get(key);
   if (stale(ink)) { ink = buildTamrielInk({ bayCoast: key }); _inks.set(key, ink); }

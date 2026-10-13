@@ -209,8 +209,8 @@
   {
     "name": "TESA1-the-ink-stale",
     "file": "src/ui/tamrielInk.js",
-    "old": "  const stale = (ink) => !ink || ink.version !== v || ink.arenaVersion !== a;",
-    "new": "  const stale = (ink) => !ink || ink.version !== v;",
+    "old": "  const stale = (ink) => !ink || ink.version !== v || ink.arenaVersion !== a || ink.capitalsVersion !== c;",
+    "new": "  const stale = (ink) => !ink || ink.version !== v || ink.capitalsVersion !== c;",
     "tests": [
       "test/tesa1_arena.test.js"
     ]

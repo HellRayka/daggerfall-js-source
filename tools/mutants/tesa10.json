@@ -963,5 +963,50 @@
     "tests": [
       "test/tesa6_ports.test.js"
     ]
+  },
+  {
+    "name": "TESA10d-journey-always",
+    "file": "src/ui/tamrielInk.js",
+    "old": "  const at = capitalsStanding() ? capitalPin(city) : null;",
+    "new": "  const at = capitalPin(city);",
+    "tests": [
+      "test/tesa10_capitals.test.js"
+    ]
+  },
+  {
+    "name": "TESA10d-version-still",
+    "file": "src/world/tamrielCapitals.js",
+    "old": "  _standing = !!on;\n  _version++;\n}\nexport const capitalsStanding",
+    "new": "  _standing = !!on;\n}\nexport const capitalsStanding",
+    "tests": [
+      "test/tesa10_capitals.test.js"
+    ]
+  },
+  {
+    "name": "TESA10d-ink-stale",
+    "file": "src/ui/tamrielInk.js",
+    "old": " || ink.capitalsVersion !== c;",
+    "new": ";",
+    "tests": [
+      "test/tesa10_capitals.test.js"
+    ]
+  },
+  {
+    "name": "TESA10d-host-never",
+    "file": "src/scenes/world.js",
+    "old": "  setCapitalsStanding(!!_capitalBase);",
+    "new": "  setCapitalsStanding(false);",
+    "tests": [
+      "test/tesa10_capitals.test.js"
+    ]
+  },
+  {
+    "name": "TESA10d-inked-at-point",
+    "file": "src/ui/tamrielInk.js",
+    "old": "    if (pixel) return { name: c.name, province: c.province, capital: !!c.capital, kind: null, x: pixel.x + 0.5, y: pixel.y + 0.5, pixel };\n",
+    "new": "",
+    "tests": [
+      "test/tesa10_capitals.test.js"
+    ]
   }
 ]

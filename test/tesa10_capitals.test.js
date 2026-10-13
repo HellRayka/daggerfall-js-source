@@ -596,3 +596,29 @@ test('TESA10b the landmarks turned north: a model drawn as the map reads (+z sou
   const docks = customModelFor(CAPITAL_MODELS.solitudeDocks), drawn = buildSolitudeDocks();
   assert.ok(Math.abs(bounds(docks).hi[2] + bounds(drawn).lo[2]) < 1e-6, 'the docks north of the anchor in the world');
 });
+
+test('TESA10d the map\'s journey, Arena or none: where a host stands the capitals, each capital the map inks stands on its pixel and is a journey there; no other city is; none while no host stands them; the ink made again when that changes', async () => {
+  const { buildTamrielInk, tamrielInkFor } = await import('../src/ui/tamrielInk.js');
+  const { setCapitalsStanding, capitalsStanding, capitalsVersion } = await import('../src/world/tamrielCapitals.js');
+  setTamrielFit({ ox: 38 * 15.5, oy: 57 * 15.5, ppu: 15.5 });
+  try {
+    assert.equal(capitalsStanding(), false);
+    const v = capitalsVersion();
+    const before = tamrielInkFor(null);
+    assert.ok(before.cities.every((c) => !c.pixel), 'no host: no journey');
+    setCapitalsStanding(true); setCapitalsStanding(true);
+    assert.equal(capitalsVersion(), v + 1, 'the version moves once, on the change');
+    assert.notEqual(tamrielInkFor(null), before, 'the ink made again');
+    const ink = buildTamrielInk();
+    for (const cap of CAPITALS) {
+      const c = ink.cities.find((x) => x.name === cap.name && x.province === cap.province);
+      const p = capitalPixel(cap);
+      if (inBay(p.px, p.py)) continue;
+      assert.ok(c, cap.name);
+      assert.deepEqual(c.pixel, { x: p.px, y: p.py }, `${cap.name}: its journey`);
+      assert.deepEqual([c.x, c.y], [p.px + 0.5, p.py + 0.5], `${cap.name}: inked on its pixel`);
+    }
+    assert.ok(ink.cities.filter((c) => c.pixel).every((c) => CAPITALS.some((cap) => cap.name === c.name)), 'no other city a journey');
+    assert.match(W, /setCapitalsStanding\(!!_capitalBase\);/);
+  } finally { setCapitalsStanding(false); }
+});
