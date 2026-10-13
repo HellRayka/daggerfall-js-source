@@ -230,7 +230,8 @@ test('TESA1 the store: Arena\'s own (not ARENA2\'s - KEEP\'s diet and the recove
   const clear = ds.slice(ds.indexOf('export async function clearStoredData()'), ds.indexOf('// ---- M-EXT'));
   assert.doesNotMatch(clear, /ARENA_STORE/, 're-picking ARENA2 does not take Arena away');
   assert.match(ds, /return storeAssets\(ARENA_STORE, files, isArenaFile, \(f, base\) => normalizeName\(base\)\);/);
-  assert.match(ds, /doneText: \(n\) => \(n \? 'Arena\\u2019s places will stand on the map of Tamriel' : 'no CITYDATA\.65 in that folder'\),/);
+  // PIN MOVED (AUDIT-TESA A1-6): and what a folder without A.EXE costs
+  assert.match(ds, /doneText: \(n\) => \(!n \? 'no CITYDATA\.65 in that folder' : _arenaCoast \? 'Arena\\u2019s places will stand on the map of Tamriel, its coastal cities ports'\n\s+: 'Arena\\u2019s places will stand on the map of Tamriel - no A\.EXE in that folder: no ports, and online no places'\),/);
   assert.match(ds, /msg\.textContent = \(typeof doneText === 'function' \? doneText\(count\) : doneText\) \?\?/);
   // node has no IndexedDB: the read fails, the registration installs nothing and answers 0
   setArenaCityData(parseArenaCityData(mintCityData([])));

@@ -182,8 +182,8 @@
   {
     "name": "TESA1-the-bay-inked",
     "file": "src/ui/tamrielInk.js",
-    "old": "    if (inBay(x, y)) continue;\n    out.push(",
-    "new": "    if (inBay(x, -1)) continue;\n    out.push(",
+    "old": "    if (inBay(x, y)) continue;\n    const st =",
+    "new": "    if (inBay(x, -1)) continue;\n    const st =",
     "tests": [
       "test/tesa1_arena.test.js"
     ]

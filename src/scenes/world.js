@@ -283,9 +283,9 @@ import { landformsOn, tamrielLandOn, tamrielTraceOn, etherSeaOn, etherCrossOutOn
 import { preloadTamrielTrace } from '../ui/tamrielTrace.js';   // TAMRIEL3: Daggerfall's own map of Tamriel, off the player's two files
 import { arenaPlaces, arenaPixels, arenaPlaceOnPixel, setArenaCityData, setArenaStanding, setArenaRoom } from '../world/arenaPlaces.js';   // TESA1: Arena's places on it; TESA2: the pixels they stand on
 import { arenaRoadsLayer, layerTouches, setArenaRoads, arenaJoins } from '../world/arenaRoads.js';   // TESA4: the roads between them; TESA5: their crossings onto the Bay's
-import { arenaTemplates, arenaTemplateOf, synthesizeArenaLocation, ARENA_LOAD_WAIT_MS, ARENA_PLACES_TEXT, arenaRoadTowns } from '../world/arenaLocations.js';   // TESA2: the places stood, each a Daggerfall town or dungeon cloned
+import { arenaTemplates, arenaTemplateOf, synthesizeArenaLocation, ARENA_LOAD_WAIT_MS, ARENA_PLACES_TEXT, arenaRoadTowns, isArenaPlaceId } from '../world/arenaLocations.js';   // TESA2: the places stood, each a Daggerfall town or dungeon cloned
 import { fitBayToPicture } from '../world/tamrielLand.js';   // TAMRIEL3: where the Bay stands on it
-import { countryTemplates, countryCounts, bayLand, countryRates, countryPick, countryName, countryNameSeed, createCountryGround, synthesizeCountryLocation } from '../world/tamrielCountry.js';   // TESA7: the countryside past the Bay
+import { countryTemplates, countryCounts, bayLand, countryRates, countryPick, countryName, countryNameSeed, createCountryGround, synthesizeCountryLocation, isCountryPlaceId } from '../world/tamrielCountry.js';   // TESA7: the countryside past the Bay
 import { countrysideOn } from './shared.js';   // TESA7: its kill door
 import { capitalsOn } from './shared.js';   // TESA10: the capitals' kill door
 import { capitalOnPixel, capitalBase, cityBlockNames, synthesizeCapitalLocation, setCapitalsStanding } from '../world/tamrielCapitals.js';   // TESA10: the capitals, built by hand
@@ -297,7 +297,7 @@ import { provinceByKey } from '../world/tamrielGeography.js';   // TESA3: its na
 import { provinceNameBank } from '../world/tamrielPeople.js';   // TESA3: its people's names
 import { groundWoods, groundClimateIndex } from '../world/tamrielGround.js';   // TAMRIEL2: the continent's ground round the Bay, for the kernels and the far ring
 import { etherWoods, etherClimateIndex, etherPoliticIndex, etherFrame, inEther, inEtherLaw, isleAt, islesNear, veilhaven, ETHER_HARBOUR_REACH, ETHER_SEA_NAME, CROSS_X, CROSS_LAND_PX, etherLight, ETHER_KEY_TINT } from '../world/ethericSea.js';   // ETHER-SEA: the Etheric Sea's ground and its box
-import { etherTemplates, etherTemplateOf, synthesizeEtherLocation, ETHER_REGION, ETHER_REGION_NAME } from '../world/etherPlaces.js';   // ETHER-PLACES: the isles' towns and ruins
+import { etherTemplates, etherTemplateOf, synthesizeEtherLocation, ETHER_REGION, ETHER_REGION_NAME, isEtherPlaceId } from '../world/etherPlaces.js';   // ETHER-PLACES: the isles' towns and ruins
 import { tamrielFrameInBay, inBay as onTheBay } from '../world/tamrielFrame.js';   // TAMRIEL2: the frame the world streams over, and the Bay's own ground
 import { createLandforms, landformLiftField, landformSites, landformClimates, cliffFadeAt } from '../world/landforms.js';   // LANDFORM1-3: the shaped ground, and what it lifts a point by; AUDIT LANDFORMS II I1: the lift's fade beside the sea
 import { vergeClear, natureReach, pathTileMask, lptFitCap } from '../world/roadVerge.js';   // VERGE1: a wild flat's footprint off the roads; LPT-FIT: every Low Poly tree's crown off them
@@ -1578,17 +1578,22 @@ export async function bootWorld(canvas, renderer, params, status) {
   }
   /** TESA10: THE CAPITALS' SWEEP (sweepArenaPixels' shape) - on the frame, when the fit or the land moves (the trace
    *  landing after a pixel built: a capital's pixel is the fit's and its province's land's), every built pixel past the
-   *  Bay where a capital stands now and none stood as it built, or the reverse, is built again. */
+   *  Bay where a capital stands now and none stood as it built, or the reverse, is built again. AUDIT-TESA A7-1: and,
+   *  once the land has moved, every built pixel past the Bay the countryside and the lairs roll (their ground, climate
+   *  and province are the land's) - all but Arena's places, sweepArenaPixels' own. */
   let _capitalSwept = null, _capitalSweptLand = -1;
   function sweepCapitalPixels() {
     const fit = tamrielFit(), land = tamrielLandVersion();
     if (fit === _capitalSwept && land === _capitalSweptLand) return;
+    const moved = _capitalSwept !== null;   // the first frame's ask is the fit the pixels were built by
     _capitalSwept = fit;
     _capitalSweptLand = land;
     const again = [];
     for (const [, p] of built) {
       if (onTheBay(p.px, p.py)) continue;
-      if (!!capitalOnPixel(p.px, p.py) !== !!locationIndex.get(`${p.px},${p.py}`)?.capital) again.push({ px: p.px, py: p.py });
+      const had = locationIndex.get(`${p.px},${p.py}`), cap = !!capitalOnPixel(p.px, p.py);
+      const rolled = moved && !!(_countryTemplates || _lairTemplates) && !cap && !had?.capital && !had?.arena;
+      if (rolled || cap !== !!had?.capital) again.push({ px: p.px, py: p.py });
     }
     if (!again.length) return;
     const under = `${state.current.x},${state.current.y}`;
@@ -1778,7 +1783,7 @@ export async function bootWorld(canvas, renderer, params, status) {
   // rows, before they go. The land past the Bay streamed, `?capitals` open; online too.
   const _capitalBase = tamrielLand && capitalsOn() ? capitalBase(_classicRows ?? _hubRows.map(classicRow).filter(Boolean), isMainStoryDungeon) : null;
   const _capitalNames = _capitalBase ? cityBlockNames(_classicRows ?? _hubRows.map(classicRow).filter(Boolean)) : null;
-  setCapitalsStanding(!!_capitalBase);   // TESA10d: the map's journey to a capital, Arena attached or not
+  setCapitalsStanding(!!_capitalBase);   // TESA10d: a capital on the map (a portal's end there - TESA-NO-FAST), Arena attached or not
   // TESA2 (world/arenaLocations.js): THE ARENA PLACES' TEMPLATES - the cities, hamlets, villages, labyrinths and keeps an
   // Arena place may clone, off the same rows (the game's own, as MAPS.BSA holds them), kept before the rows go
   const _arenaTemplates = arenaStands ? arenaTemplates(_classicRows ?? _hubRows.map(classicRow).filter(Boolean), isMainStoryDungeon) : null;
@@ -2554,6 +2559,7 @@ export async function bootWorld(canvas, renderer, params, status) {
     const key = `${px},${py}`;
     const place = arenaPlaceOnPixel(px, py);
     const had = locationIndex.get(key);
+    if (had?.capital) return capitalLocationAt(px, py);   // AUDIT-TESA A4-F2: a capital's pixel is the capital's - never cloned over
     if (had?.arena) {
       if (place && had.arena.provinceIndex === place.provinceIndex && had.arena.id === place.id && had.arena.port === !!place.port) return had;   // TESA6: a city made a port is cloned again
       _locIndexGen += 1;
@@ -2635,7 +2641,8 @@ export async function bootWorld(canvas, renderer, params, status) {
     const place = at && _arenaTemplates ? arenaPlaceOnPixel(px, py) : null;
     const slot = place ? Object.freeze({ province: place.province, provinceIndex: place.provinceIndex, id: place.id, kind: place.kind, port: !!place.port }) : null;
     if (had?.capital) {
-      if (at && had.capital.k === at.k && (had.arena?.id ?? null) === (slot?.id ?? null) && (had.arena?.provinceIndex ?? null) === (slot?.provinceIndex ?? null)) return had;
+      if (at && had.capital.k === at.k && (had.arena?.id ?? null) === (slot?.id ?? null) && (had.arena?.provinceIndex ?? null) === (slot?.provinceIndex ?? null)
+        && !!had.arena?.port === !!slot?.port) return had;   // AUDIT-TESA A4-F2: its place made a port, its slot too
       _locIndexGen += 1;
       locationIndex.delete(key);
     }
@@ -6388,7 +6395,8 @@ export async function bootWorld(canvas, renderer, params, status) {
           const h = heightAt(x + locOrigin[0] + t[0], z + locOrigin[2] + t[2]);
           return Number.isFinite(h) ? h - t[1] + 2.0 * 0.025 : locOrigin[1];
         };
-        const livingTown = livingTownsIndex().get(py * 1000 + px) ?? {
+        // AUDIT-TESA A2-3: the index is keyed by the Bay's pixel id (y * 1000 + x) - past the Bay a key aliases a Bay row
+        const livingTown = (onTheBay(px, py) ? livingTownsIndex().get(py * 1000 + px) : null) ?? {
           mapId: (dfLocation.mapTableData?.mapId ?? 0) >>> 0, name: dfLocation.name, px, py,
           type: dfLocation.mapTableData?.locationType, region: dfLocation.regionIndex, people: climate?.people,
           blocks: loc.width * loc.height, port: hasPort(dfLocation.mapTableData?.mapId),
@@ -6452,7 +6460,7 @@ export async function bootWorld(canvas, renderer, params, status) {
           // People; the NAME bank = the REGION's (MobilePersonNPC.cs:214).
           // REGIONAL-FOLK: and a Redguard region's walkers are Redguards.
           race: walkerRace(climate?.people, dfLocation.regionIndex),
-          nameBank: getNameBankOfRegion(dfLocation.regionIndex),
+          nameBank: provinceNameBank(provinceAt(px, py)?.key) ?? getNameBankOfRegion(dfLocation.regionIndex),   // AUDIT-TESA A2-5: past the Bay the province's people, never the Bay region's
           makePerson: (archive, guard) => {
             const person = new MobilePerson(nav, {
               archive, guard,
@@ -7884,7 +7892,9 @@ export async function bootWorld(canvas, renderer, params, status) {
     isBuildingQuestResource: (mapID, buildingKey) => topicTree.isBuildingQuestResource(mapID, buildingKey),
     // AUDIT DISC28 QS-K1: DaggerfallBankManager.IsHouseOwned - DISC28-K's re-stamp (discovery.js restampQuestName)
     // never renames the player's own house, whose stored name is the purchase's, not a quest's
-    ownsHouse: (buildingKey) => isHouseOwned(playerEntity.houses ?? [], _questRegionIndex(), buildingKey),
+    // AUDIT-TESA A5-F3: never in a place the port made (an isle's, an Arena place's, the countryside's, a lair, a capital) -
+    // each answers a region a Bay town's deed is keyed by, so the same key would own a house there (worldModes houseOwnedAt)
+    ownsHouse: (buildingKey) => { const id = _questLoc()?.mapTableData?.mapId ?? 0; return !isEtherPlaceId(id) && !isArenaPlaceId(id) && !isCountryPlaceId(id) && isHouseOwned(playerEntity.houses ?? [], _questRegionIndex(), buildingKey); },
   };
   const townTalk = createTownTalk({
     talkEngine: () => talkEngineRef,
@@ -7978,7 +7988,7 @@ export async function bootWorld(canvas, renderer, params, status) {
     // AUDIT-RR2 G22: `travelOptionsEnabled` asks TO's "hasPort" (RoleplayRealism.cs:635-644; TravelOptionsMapWindow.cs:870-873 - the hand-written port list), else the flag - SEAT2b part two: a members' Harbour at a seat among them (travelPorts.js hasPortFor)
     // AUDIT CAPTAIN'S SEA P10: past the Veil an isle's place is a port by its own kind - TO's list knows only the Bay's, and a
     // ruin kept its template's port byte
-    shipLocation: () => { const loc = _questLoc(); return loc ? { locationLoaded: true, portTown: (loc.ether ? loc.etherKind === 'port' : modSetting('travel-options', 'Enabled') === true ? hasPortFor(loc.mapTableData?.mapId) : (loc.exterior?.exteriorData?.portTownAndUnknown ?? 0) !== 0), onShip: isOnShip(playerEntity, playerEntity.boardShipPosition ?? null, playerTravelPixel()) } : { locationLoaded: false, onShip: false }; },   // DISC13-D: `locationLoaded`, the key isShipAvailable reads - `loaded` left shipPorts answering every port as the wilderness   // AUDIT CAPTAIN'S SEA P10: an isle's place a port by its kind, whatever Travel Options says
+    shipLocation: () => { const loc = _questLoc(); return loc ? { locationLoaded: true, portTown: (loc.ether ? loc.etherKind === 'port' : loc.arena || loc.capital ? !!loc.arena?.port : modSetting('travel-options', 'Enabled') === true ? hasPortFor(loc.mapTableData?.mapId) : (loc.exterior?.exteriorData?.portTownAndUnknown ?? 0) !== 0), onShip: isOnShip(playerEntity, playerEntity.boardShipPosition ?? null, playerTravelPixel()) } : { locationLoaded: false, onShip: false }; },   // DISC13-D: `locationLoaded`, the key isShipAvailable reads - `loaded` left shipPorts answering every port as the wilderness   // AUDIT CAPTAIN'S SEA P10: an isle's place a port by its kind, whatever Travel Options says   // AUDIT-TESA A4-F4: and a place past the Bay by its Arena place's port (TESA6) - Travel Options' list names none there
     // RR2: EnhancedRiding's reads - the look, the ground, the module's settings
     lookPitch: () => cam.pitch, lookYaw: () => cam.yaw, groundHeightAt: (x, z) => heightAt(x, z),
     enhancedRiding: () => (rrRidingOn() ? { terrainFollowing: rrRidingSetting('followTerrainEnabled') === true, softenFollow: rrRidingSetting('followTerrainSoftenFactor') ?? 8 } : null),
@@ -8432,8 +8442,8 @@ export async function bootWorld(canvas, renderer, params, status) {
     // half of the travel map's visibility law; fast-travel arrivals
     // land here too, so one writer covers both.
     if (dfLocation) {
-      discoverLocation(dfLocation.mapTableData.mapId, {
-        regionName: maps.getRegionName(dfLocation.regionIndex), locationName: dfLocation.name,
+      discoverLocation(dfLocation.mapTableData.mapId, {   // AUDIT-TESA A1-2: an Arena place's name never rides a save (the realm's, the cloud's) - its map id alone
+        regionName: maps.getRegionName(dfLocation.regionIndex), locationName: dfLocation.arena && !dfLocation.capital ? '' : dfLocation.name,
       });
     }
     if (!cur || !dfLocation || !cur.locBlocks) { _talkPlayerPos = () => null; townTalk.setTopics(null); return; }
@@ -8604,6 +8614,13 @@ export async function bootWorld(canvas, renderer, params, status) {
   let _portalRestores = 0; const portalGates = createPortalGates({   // _portalRestores: the restore count the portals last ended at (save.js restoresSoFar) - one line, so the cites below it hold
     renderer, audio, toScene: (p) => campToScene(p), toWire: (p) => campToWire(p),
     destOf: (x, y) => {
+      if (!onTheBay(x, y)) {
+        // AUDIT-TESA A2-2: past the Bay, the place this world stands there (named off this player's own files - no name
+        // rides the wire), else the province the pixel is land of
+        const here = locationIndex.get(`${x},${y}`) ?? capitalLocationAt(x, y) ?? (_arenaTemplates ? arenaLocationAt(x, y) : null);
+        const province = provinceByKey(provinceKeyBeyondBay(x, y));
+        return here?.name ? { pixel: { x, y }, name: here.name } : province ? { pixel: { x, y }, name: province.name } : null;
+      }
       const s = travelLocationSummaryAt(mapDict, x, y);
       const loc = s ? maps.getLocation(s.regionIndex, s.mapIndex) : null;
       return loc?.name ? { pixel: { x, y }, name: loc.name } : null;
@@ -10361,10 +10378,12 @@ export async function bootWorld(canvas, renderer, params, status) {
       const loc = isle ? etherPlaceAt(isle.px, isle.py) : null;
       if (loc?.exterior?.exteriorData) town = { id: `ether:${isle.key}`, loc, x: isle.px, y: isle.py, name: isle.name, reach: ETHER_HARBOUR_REACH };   // AUDIT CAPTAIN'S SEA H1/P2: its isle's shore, ETHER_PORT_SHORE_M about the town
       const aq = !isle && !onTheBay(p.x, p.y) ? arenaPortNear(p.x, p.y) : null;   // TESA6: an Arena port's town, its harbour sounded as any port's
-      const aloc = aq ? arenaLocationAt(aq.bx, aq.by) : null;
-      if (aloc?.exterior?.exteriorData) town = { id: `arena:${aq.bx},${aq.by}`, loc: aloc, x: aq.bx, y: aq.by, name: aq.name };
+      const aloc = aq ? capitalLocationAt(aq.bx, aq.by) || arenaLocationAt(aq.bx, aq.by) : null;   // AUDIT-TESA A4-F2: a capital's own
+      // AUDIT-TESA A4-F3: its book key the town's own map id (masked, past every Bay id), as docksBerthOf reads it - the
+      // Docks row and the docks' wait read the berth back by it
+      if (aloc?.exterior?.exteriorData) town = { id: maskMapId(aloc.mapTableData?.mapId ?? 0), loc: aloc, x: aq.bx, y: aq.by, name: aq.name };
       for (let dy = -1; dy <= 1 && !town && !isle; dy++) for (let dx = -1; dx <= 1 && !town; dx++) {
-        if (!csaIsPortTown(p.x + dx, p.y + dy)) continue;
+        if (!onTheBay(p.x + dx, p.y + dy) || !csaIsPortTown(p.x + dx, p.y + dy)) continue;   // AUDIT-TESA A2-3: the Bay's rows by the Bay's ids alone
         const summary = travelLocationSummaryAt(mapDict, p.x + dx, p.y + dy);
         const loc = summary ? maps.getLocation(summary.regionIndex, summary.locationIndex ?? summary.mapIndex) : null;
         if (loc?.exterior?.exteriorData) town = { id: summary.id, loc, x: p.x + dx, y: p.y + dy, name: maps.getRegion(summary.regionIndex)?.mapNames?.[summary.mapIndex] ?? null };
@@ -16004,6 +16023,12 @@ export async function bootWorld(canvas, renderer, params, status) {
         // the dead woke at a Bay temple a crossing away (the ship and her hold left past the Veil)
         const port = etherRisePort(px.x, px.y);
         land = { x: port.px, y: port.py }; kind = 'city';
+      } else if (!onTheBay(px.x, px.y)) {
+        // AUDIT-TESA A2-4: past the Bay the clamp's region is the Alik'r Desert's, a continent away - the nearest town the
+        // world stands past the Bay (a capital, an Arena town, the countryside's), else where they fell
+        const town = nearestTownPastTheBay(px);
+        if (town) land = town;
+        kind = 'city';
       } else {
         const mapTable = maps.getRegion(_questRegionIndex())?.mapTable ?? [];
         // SEA-RISE: the open sea's region holds none of the three - the nearest in any region, never the seafloor
@@ -16971,7 +16996,8 @@ export async function bootWorld(canvas, renderer, params, status) {
           // AUDIT OH-F B5: a save in the drowned dungeon wakes nearest ITS door, the pit - not the borrowed template's
           const ohSaved = extras.modData?.[OCEAN_HOLES_VENDOR];
           const from = ohSaved?.Active && Number.isFinite(ohSaved.PitMapX) && Number.isFinite(ohSaved.PitMapY) ? { x: ohSaved.PitMapX, y: ohSaved.PitMapY } : pixel;
-          const wake = inEther(from.x, from.y) ? { kind: 'dungeon', mapPixel: { x: from.x, y: from.y } } : undergroundWakeSpot(maps.getRegion(maps.getRegionIndexAt(from.x, from.y))?.mapTable ?? [], from);   // ETHER-PLACES: an isle's ruin wakes at its own door - the region's search would read the Alik'r's past the map
+          // AUDIT-TESA A2-4: past the Bay the clamp's region is the Alik'r Desert's, a continent away - wake at its own door, as an isle's
+          const wake = inEther(from.x, from.y) || !onTheBay(from.x, from.y) ? { kind: 'dungeon', mapPixel: { x: from.x, y: from.y } } : undergroundWakeSpot(maps.getRegion(maps.getRegionIndexAt(from.x, from.y))?.mapTable ?? [], from);   // ETHER-PLACES: an isle's ruin wakes at its own door - the region's search would read the Alik'r's past the map
           await _teleportToPixel(wake.mapPixel.x, wake.mapPixel.y, null, { modEvent: 'load', reposition: REPOSITION.RandomStartMarker });
           // WOD6 (audit): a load all the same - SaveLoadManager.OnLoad, last, at the landed player
           { const s = walkMode && playerSpawned; const f = s ? player.pos : cam.pos; wodOnLoad([f[0], f[1] + (s ? player.height / 2 : 0), f[2]]); }
@@ -17510,7 +17536,7 @@ export async function bootWorld(canvas, renderer, params, status) {
         return arr ? (arr[y * 1000 + x] & 0xff) : 0;
       },
       locationAt: (x, y) => {
-        const summary = travelLocationSummaryAt(mapDict, x, y);
+        const summary = onTheBay(x, y) ? travelLocationSummaryAt(mapDict, x, y) : null;   // AUDIT-TESA A2-3: past the Bay a pixel id aliases a Bay row
         return summary ? { locationType: summary.locationType, mapId: summary.mapID ?? summary.mapId, discovered: travelCheckDiscovered(summary) } : null;
       },
       locationColorOf: (t) => {
@@ -17644,7 +17670,7 @@ export async function bootWorld(canvas, renderer, params, status) {
     // through it, and the rect the pixel build stored (null until the
     // terrain is built, which is the C#'s `GetTerrainFromPixel` null).
     locationTileRect: (pixel) => {
-      const summary = travelLocationSummaryAt(mapDict, pixel.x, pixel.y);
+      const summary = onTheBay(pixel.x, pixel.y) ? travelLocationSummaryAt(mapDict, pixel.x, pixel.y) : null;   // AUDIT-TESA A2-3
       if (!summary) return null;
       const loc = maps.getLocation(summary.regionIndex, summary.locationIndex ?? summary.mapIndex);
       if (!loc) return null;
@@ -20045,6 +20071,27 @@ export async function bootWorld(canvas, renderer, params, status) {
     (modes?.questOverlay ?? null) === win || (townTalk?.overlay ?? null) === win;
   // QUEST-POPUP-PAUSE: offline, this host's quest box on top holds the foes (questFoeHost.js questBoxHoldsFoes)
   const _questBoxHoldsFoes = () => questBoxHoldsFoes(_questBoxWin, { online: onlineOn, onTop: _liveQuestOverlay });
+  /** AUDIT-TESA A2-4: THE NEAREST TOWN PAST THE BAY to a pixel there - of every place the index stands past the Bay (a
+   *  capital, an Arena town, the countryside's city, town or village), the nearest within TOWN_RISE_REACH pixels - or
+   *  null. The online death's rise past the Bay, as the region's search is the Bay's. */
+  const TOWN_RISE_REACH = 48;
+  const TOWN_KINDS = new Set([LOCATION_TYPES.TownCity, LOCATION_TYPES.TownHamlet, LOCATION_TYPES.TownVillage]);
+  function nearestTownPastTheBay(px) {
+    let best = null, bd = TOWN_RISE_REACH + 1e-9;
+    for (const [key, l] of locationIndex) {
+      if (!l || !TOWN_KINDS.has(l.mapTableData?.locationType) || !(l.capital || l.arena || l.country)) continue;
+      const [x, y] = key.split(',').map(Number);
+      if (onTheBay(x, y)) continue;
+      const d = Math.hypot(x - px.x, y - px.y);
+      if (d < bd) { bd = d; best = { x, y }; }
+    }
+    return best;
+  }
+  /** AUDIT-TESA A2-1: a place by its region's name and its own - MAPS.BSA's, else one the world stands of its own (an
+   *  isle's, an Arena place's, a country place's or a lair, a capital: in no MAPS.BSA table, found in the index it stands
+   *  in). A quest's local site in any of them is found, revealed, timed and respawned at as a Bay place's. */
+  const placeByName = (regionName, locationName) => maps.getLocationByName(regionName, locationName)
+    ?? [...locationIndex.values()].find((l) => (l?.ether || l?.arena || l?.country || l?.capital) && l.name === locationName && l.regionName === regionName) ?? null;
   const questWorld = {
     // AUDIT 28 W4 SELF-AUDIT (F-B2): DFU's smaller-dungeon law lives
     // INSIDE MapsFile.GetLocation, so quest marker enumeration walks
@@ -20062,7 +20109,7 @@ export async function bootWorld(canvas, renderer, params, status) {
       // the page flag off `params`, not `onlineOn` - that const is declared far below, and a quest parsed at chargen
       // asks for its dungeon before it is ("Parsing quest FAILED! Cannot access 'onlineOn' before initialization")
       getLocation: { value: (r, l) => dungeonLocationFor(maps.getLocation(r, l), { questMachine: questBridge?.machine, online: params.has('online') }) },   // AUDIT WORLD34 B2: online, the room's one layout (SD-ONLINE: the world's size for it)
-      getLocationByName: { value: (rn, ln) => dungeonLocationFor(maps.getLocationByName(rn, ln), { questMachine: questBridge?.machine, online: params.has('online') }) },
+      getLocationByName: { value: (rn, ln) => dungeonLocationFor(placeByName(rn, ln), { questMachine: questBridge?.machine, online: params.has('online') }) },   // AUDIT-TESA A2-1: the clock's travel time to a site past the Bay
     }),
     getBlock: (name) => blocks.getBlockByName(name),
     // NPC1: the =symbol_ macro's flat caption. The quest machine has
@@ -20201,9 +20248,9 @@ export async function bootWorld(canvas, renderer, params, status) {
     discoverLocation: (regionName, locationName) => {
       // AUDIT CAPTAIN'S SEA P8: an isle's place is in no MAPS.BSA table - found in the index it stands in (a guild's local
       // job in an isle town threw here on its first tick, and the quest was removed)
-      const loc = maps.getLocationByName(regionName, locationName) ?? (etherSea ? [...locationIndex.values()].find((l) => l?.ether && l.name === locationName && l.regionName === regionName) ?? null : null);
+      const loc = placeByName(regionName, locationName);   // AUDIT-TESA A2-1: past the Bay too (an Arena town's guild job threw here and was removed)
       if (!loc?.loaded && !loc?.ether) throw new Error(`Error finding location ${regionName} : ${locationName}`);
-      return discoverLocation(loc.mapTableData.mapId, { regionName: loc.regionName, locationName: loc.name });   // QREPAIR: whether it was new, for the repair's count (RevealLocation reads nothing back)
+      return discoverLocation(loc.mapTableData.mapId, { regionName: loc.regionName, locationName: loc.arena && !loc.capital ? '' : loc.name });   // QREPAIR: whether it was new, for the repair's count (RevealLocation reads nothing back)
     },
     /** RevealLocation's readmap note - PlayerNotebook.AddNote(string). */
     addNote: (text) => questBridge?.notebook?.addNote(text),
@@ -20402,7 +20449,7 @@ export async function bootWorld(canvas, renderer, params, status) {
     respawnPlayerAtSite: (place) => {
       const sd = place?.siteDetails;
       if (!sd || _respawning) return false;
-      const loc = maps.getLocationByName(sd.regionName, sd.locationName);
+      const loc = placeByName(sd.regionName, sd.locationName);   // AUDIT-TESA A2-1: a site past the Bay too
       if (!loc?.loaded) return false;
       _respawning = true;
       _respawnAtSite(loc)
@@ -26613,7 +26660,8 @@ export async function bootWorld(canvas, renderer, params, status) {
       px: px.x, py: px.y,
       in: mode === 'dungeon' ? 1 : mode === 'interior' ? 2 : 0,
       ...(online?.layer ? { ly: online.layer } : {}),   // SCALE5d: the layer of the place I stand in, so a mate who comes asks for it
-      loc: ident?.kind === 'dungeon' ? (ident.name ?? '') : (loc?.name ?? ''),
+      // AUDIT-TESA A1-1: an Arena place's name is the player's own file's - never on the wire (a capital's is the port's)
+      loc: loc?.arena && !loc.capital ? '' : ident?.kind === 'dungeon' ? (ident.name ?? '') : (loc?.name ?? ''),
       // AUDIT SOC B5: fatigue in the DIGITS a sheet shows (ui/charsheet.js: the stored pool is x FATIGUE_MULTIPLIER) - a
       // member's card said 3200/6400 where their own sheet said 50/100
       h: playerEntity.health ?? 0, hm: playerEntity.maxHealth ?? 0, f: Math.trunc((playerEntity.fatigue ?? 0) / FATIGUE_MULTIPLIER), fm: Math.trunc(maxFatigue(playerEntity) / FATIGUE_MULTIPLIER), m: playerEntity.magicka ?? 0, mm: playerEntity.maxMagicka ?? 0,
@@ -27696,7 +27744,7 @@ export async function bootWorld(canvas, renderer, params, status) {
       ...travelFareDeps(),
       getPlayerPixel: playerTravelOrigin,
       getClimateIndex: (x, yy) => maps.getClimateIndex(x, yy),
-      locationSummary: () => travelLocationSummaryAt(mapDict, to.x, to.y),
+      locationSummary: () => (onTheBay(to.x, to.y) ? travelLocationSummaryAt(mapDict, to.x, to.y) : null),   // AUDIT-TESA A2-3
     });
     pop.speedCautious = !!opts?.speedCautious; pop.sleepModeInn = !!opts?.sleepModeInn; pop.travelShip = !!opts?.travelShip;
     pop.enforceShipRestriction();
@@ -29836,6 +29884,7 @@ export async function bootWorld(canvas, renderer, params, status) {
   // what test/audit24_wave37.test.js asserts, both ways.
   var modes = createWorldModes({
     climbFeel,   // CLIMB4: the one body's climb camera - the modal frames take it after their own motor step
+    provinceBank: () => provinceBankHere(),   // AUDIT-TESA A2-5: past the Bay a building's people are the province's (TESA3's bank)
     outsideView,   // RW1: the street through a building's glass (render/realWindows.js)
     seatedPeers: () => seatedPeerFeet(),   // CARDS2b (AUDIT CARDS B3): the others' seated feet, in this room's scene - their seats are taken
     cardOnline: { ok: () => !!online?.holdemOk, send: (w) => !!online?.sendHoldem(w), id: () => online?.id ?? null, welcomes: () => online?.holdemWelcomes ?? 0, room: () => online?.room ?? null },   // CARDS5: the relay that deals - a word to the room's card table, and who I am at it; CARDS6: the room a stake names
@@ -30777,7 +30826,10 @@ export async function bootWorld(canvas, renderer, params, status) {
   // TESA2: a save made in an Arena town loads into it - the places stand once the data and the trace have landed, so
   // with the player's Arena attached a load waits for both, ARENA_LOAD_WAIT_MS at most (a trace that never lands costs
   // that and no more)
+  // AUDIT-TESA A7-1: and every place past the Bay moves with the trace - a capital (Arena attached or not), the
+  // countryside's, a lair - so with any of them standing a load waits for the trace whatever Arena's data says
   if (_arenaTemplates && params.has('load')) await arenaReady.then((n) => (n ? Promise.race([arenaTraced, new Promise((r) => setTimeout(r, ARENA_LOAD_WAIT_MS))]) : 0));
+  if ((_countryTemplates || _capitalBase) && params.has('load')) await Promise.race([arenaTraced, new Promise((r) => setTimeout(r, ARENA_LOAD_WAIT_MS))]);
   let _loadedGame = false;   // EOTB-IL: which of StartGameBehaviour's two events this boot is
   if (params.has('classicload') && peekPendingClassicSave()) {
     // SAV3: the classic import takes the load's place in the boot walk
@@ -31185,6 +31237,12 @@ const _pixelOrder = [];   // NEAR-FIRST: the frame's pixel walk, nearest first -
     const hall = wildHallAt(wildActiveNow(), px, py) ? wildHallStand(px, py) : null;
     if (hall) return { pixel: { x: px, y: py }, name: hall.name, mapId: spawnedHallMapId(px, py), regionIndex: maps.getRegionIndexAt(px, py), locationIndex: -1, loc: hall };
     const loc = locationIndex.get(`${px},${py}`);
+    // AUDIT-TESA A2-3: past the Bay a pixel id aliases a Bay row - the place the world stands there is its own summary,
+    // known once discovered (entering it discovers it), so the Overworld walks to its door as to a Bay place's
+    if (!onTheBay(px, py)) {
+      const id = (loc?.mapTableData?.mapId ?? 0) >>> 0;
+      return loc?.name && id && hasDiscoveredLocationId(id) ? { pixel: { x: px, y: py }, name: loc.name, mapId: id, regionIndex: loc.regionIndex, locationIndex: loc.locationIndex, loc } : null;
+    }
     const row = loc?.name ? travelLocationSummaryAt(mapDict, px, py) : null;
     if (!row || !travelCheckDiscovered(row)) return null;   // DFU's own law: an undiscovered place has no name to go to
     return { pixel: { x: px, y: py }, name: loc.name, mapId: row.mapID, regionIndex: row.regionIndex, locationIndex: row.mapIndex, loc };

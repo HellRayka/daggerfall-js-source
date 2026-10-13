@@ -30,7 +30,8 @@ import { hash32, spawnPlateauFloor, SPAWN_DRY_ELEVATION } from './spawnedDungeon
 import { srand, rand, getSeed, setSeed } from '../formats/dfRandom.js';
 import { firstName, surname, GENDERS, BANK_TYPES } from '../characters/nameHelper.js';
 import { TAVERNS_A, TAVERNS_B } from './buildingNames.js';
-import { BAY_W, BAY_H } from './tamrielFrame.js';
+import { BAY_W, BAY_H, tamrielFit } from './tamrielFrame.js';
+import { tamrielLandVersion } from './tamrielLand.js';   // AUDIT-TESA A7-1: the ground's reads kept a land
 import { CAPITAL_LANE } from './tamrielCapitals.js';   // TESA10: the capitals' lane, after the lairs'
 
 /** The pixel hash's salt. Changing it moves every place of the countryside. */
@@ -223,7 +224,10 @@ export function countryName(type, bank, seed) {
  *  own key (the spawns' cache keys a Bay pixel, y * 1000 + x, which past the Bay two pixels share). */
 export function createCountryGround(woods) {
   const dry = new Map();
+  let fit = null, land = -1;
   return (px, py) => {
+    // AUDIT-TESA A7-1: the ground past the Bay is the trace's and the fit's - when either moves, read afresh
+    if (fit !== tamrielFit() || land !== tamrielLandVersion()) { dry.clear(); fit = tamrielFit(); land = tamrielLandVersion(); }
     const key = `${px},${py}`;
     let d = dry.get(key);
     if (d === undefined) dry.set(key, d = spawnPlateauFloor(woods, px, py) > SPAWN_DRY_ELEVATION);

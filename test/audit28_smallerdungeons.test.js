@@ -177,7 +177,7 @@ test('AUDIT 28 F-B2: the quest layer\'s maps sizes getLocation/getLocationByName
   const wrap = world.slice(at, at + 2600);
   assert.match(wrap, /maps: Object\.create\(maps, \{/, 'the quest maps is a wrap over the raw maps');
   assert.match(wrap, /getLocation: \{ value: \(r, l\) => dungeonLocationFor\(maps\.getLocation\(r, l\), \{ questMachine: questBridge\?\.machine, online: params\.has\('online'\) \}\) \},/);
-  assert.match(wrap, /getLocationByName: \{ value: \(rn, ln\) => dungeonLocationFor\(maps\.getLocationByName\(rn, ln\), \{ questMachine: questBridge\?\.machine, online: params\.has\('online'\) \}\) \},/);   // the page flag, not the late const (a quest parsed at chargen reaches it first)
+  assert.match(wrap, /getLocationByName: \{ value: \(rn, ln\) => dungeonLocationFor\(placeByName\(rn, ln\), \{ questMachine: questBridge\?\.machine, online: params\.has\('online'\) \}\) \},/);   // the page flag, not the late const (a quest parsed at chargen reaches it first)   // PIN MOVED (AUDIT-TESA A2-1): a site past the Bay by name too (placeByName: MAPS.BSA's first)
   // The prototype delegation keeps every other maps method reachable -
   // the quest layer also calls getClimateIndex, getRegion,
   // getRmbBlockName and readLocationIdFast on this object.

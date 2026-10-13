@@ -452,7 +452,7 @@
   {
     "name": "TESA7-door-shut",
     "file": "src/scenes/shared.js",
-    "old": "  return pageParam('country', search) !== 'off';",
+    "old": "  return pageParam('country', search) !== 'off' || isOnlinePage(search);",
     "new": "  return true;",
     "tests": [
       "test/tesa7_country.test.js"

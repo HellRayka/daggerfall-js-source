@@ -1412,8 +1412,8 @@
   {
     "name": "ACS-P8-index",
     "file": "src/scenes/world.js",
-    "old": "?? (etherSea ? [...locationIndex.values()].find((l) => l?.ether && l.name === locationName && l.regionName === regionName) ?? null : null);",
-    "new": "?? null;",
+    "old": "    ?? [...locationIndex.values()].find((l) => (l?.ether || l?.arena || l?.country || l?.capital) && l.name === locationName && l.regionName === regionName) ?? null;",
+    "new": "    ?? null;",
     "tests": [
       "test/auditcaptsea.test.js"
     ]

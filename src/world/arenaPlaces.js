@@ -228,7 +228,7 @@ function nearestPixel(x, y, reach, ok, from = 0) {
  *
  * TESA10: A CAPITAL'S PLACE STANDS ON THE CAPITAL. A place `pinned` names a pixel for (world/tamrielCapitals.js
  * capitalPin: the capital the port builds of its name) stands on that pixel exactly, before any other place takes it
- * (`pinned: true`) - so its roads, its ink and the journey lead to the city the port built there; a city of `coastal`
+ * (`pinned: true`) - so its roads, its ink and a portal's end lead to the city the port built there; a city of `coastal`
  * pinned beside the picture's sea a port still (TESA10b).
  * @param {ReturnType<typeof placeArenaLocations>} model @param {import('./tamrielLand.js').TamrielTrace} trace
  * @param {?ArrayLike<number>} [coastal] @param {((place: any) => ({ px: number, py: number } | null)) | null} [pinned]

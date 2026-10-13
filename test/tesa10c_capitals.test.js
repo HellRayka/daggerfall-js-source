@@ -4,7 +4,7 @@
 import { test, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { CAPITALS, CAPITAL_MODELS, CAPITAL_BLOCKS, CAPITAL_BLOCK_INDEX, BLOCK_M, capitalPixel, capitalCarrier, capitalPortBlocks, anchorMetres, capitalDistrict, tileCentre, autoCentre } from '../src/world/tamrielCapitals.js';
+import { CAPITALS, CAPITAL_MODELS, CAPITAL_BLOCKS, CAPITAL_BLOCK_INDEX, BLOCK_M, capitalPixel, capitalCarrier, capitalPortBlocks, anchorMetres, capitalDistrict, tileCentre, autoCentre, CAPITAL_CLOSED_BYTE } from '../src/world/tamrielCapitals.js';
 import {
   MOURNHOLD, ALINOR, FALINESTI, TORVAL, HELSTROM, MOURNHOLD_PLAN, ALINOR_PLAN, FALINESTI_PLAN, TORVAL_PLAN, HELSTROM_PLAN,
 } from '../src/world/capitalPlans.js';
@@ -103,7 +103,7 @@ test('TESA10c the port blocks: every capital\'s own after the lake and the garde
   assert.deepEqual(b.slice(0, 2).map((x) => x.name), [CAPITAL_BLOCKS.lake, CAPITAL_BLOCKS.garden]);
   assert.equal(new Set(b.map((x) => x.name)).size, b.length);
   assert.deepEqual(b.map((x) => x.index), b.map((_, i) => CAPITAL_BLOCK_INDEX + i));
-  assert.equal(b.length, 2 + CAPITALS.reduce((n, c) => n + Object.keys(c.blocks).length, 0));
+  assert.equal(b.length, 2 + CAPITALS.reduce((n, c) => n + Object.keys(c.blocks).length + c.plan.flat().filter((x) => x === 'G').length, 0), 'AUDIT-TESA A6-2: and every capital\'s gardens after them');
   const tile = (key, dx, dz) => capOf(key).blocks[Object.keys(capOf(key).blocks)[0]].tile(dx, dz);
   const closed = (key, dx, dz) => capOf(key).blocks[Object.keys(capOf(key).blocks)[0]].closed(dx, dz);
   assert.deepEqual([tile('alinor', 0, ALINOR.quay.edge - 1), tile('alinor', 0, ALINOR.quay.edge + 1)], [3, 0]);
@@ -126,7 +126,7 @@ test('TESA10c the port blocks: every capital\'s own after the lake and the garde
   // a block's own metres to the anchor's, through the law every capital's blocks are laid by
   const mh = capOf('mournhold'), [cx, r] = [3, 3], blk = b.find((x) => x.name === mh.blocks.M0.name);
   const A = blk.json.RmbBlock.FldHeader.AutoMapData, T = blk.json.RmbBlock.FldHeader.GroundData.GroundTiles;
-  for (let ay = 0; ay < 64; ay++) for (let ax = 0; ax < 64; ax++) { const [x, z] = autoCentre(ax, ay); assert.equal(A[ay * 64 + ax], mh.blocks.M0.closed(...anchorMetres(mh, cx, r, x, z)) ? 1 : 0); }
+  for (let ay = 0; ay < 64; ay++) for (let ax = 0; ax < 64; ax++) { const [x, z] = autoCentre(ax, ay); assert.equal(A[ay * 64 + ax], mh.blocks.M0.closed(...anchorMetres(mh, cx, r, x, z)) ? CAPITAL_CLOSED_BYTE : 0); }   // PIN MOVED (AUDIT-TESA A6-5)
   for (let ty = 0; ty < 16; ty++) for (let tx = 0; tx < 16; tx++) { const [x, z] = tileCentre(tx, ty); assert.equal(T[ty * 16 + tx].TileBitfield, mh.blocks.M0.tile(...anchorMetres(mh, cx, r, x, z))); }
   void BLOCK_M;
 });

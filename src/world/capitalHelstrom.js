@@ -68,7 +68,7 @@ export function buildHist(H = HELSTROM) {
 
 /** THE BOARDWALKS: timber decks over the canal on their posts, a rail either side. */
 export function buildHelstromWalks(H = HELSTROM) {
-  const mb = new MeshBuilder(), C = H.canal, len = C.z1 - C.z0 + 8, zc = (C.z0 + C.z1) / 2;
+  const mb = new MeshBuilder(), C = H.canal, len = C.z1 - C.z0 + 1, zc = (C.z0 + C.z1) / 2;   // AUDIT-TESA A6-3: half a metre onto each bank - 4 m stood in a house's block
   for (const x of H.walks) {
     hall(mb, TIMBER, x, zc, H.walkW, len, H.walkDeck - 0.35, H.walkDeck, 0.5);
     for (let z = C.z0 + 2; z < C.z1; z += 7) for (const s of [1, -1]) mb.box(TIMBER, [x + s * (H.walkW / 2 - 0.3), (H.walkDeck - 3) / 2, z], [0.5, H.walkDeck + 3, 0.5], 0.5);

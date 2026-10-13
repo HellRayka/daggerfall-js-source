@@ -152,7 +152,8 @@ into, a dungeon to go down - and the held map takes the player there.
   nearest centre in a ring; else none. The Bay's own ground stands none (Daggerfall's places stand there), and a nameless
   dungeon none. `arenaPixels` keeps the set once a trace and a fit and makes it again when either moves;
   `arenaPlaceOnPixel` is the build's ask. On the freeware data all 248 stand on the pixel under their own point - none
-  moved, none shared, none left.
+  moved, none shared, none left. (Since TESA10 a capital's place stands on the capital the port built instead - its pin;
+  AUDIT-TESA A7-2 moved the data test to say so.)
 - **The clone** (`world/arenaLocations.js`): a NON-MUTATING clone of one of Daggerfall's own places - the Etheric Sea's and
   the spawned dungeons' law (`world/etherPlaces.js`, `world/spawnedDungeons.js`) - by the place's kind: a city-state a CITY
   (MAPS.BSA's TownCity, 30 to 49 blocks: 407 of them), a town a HAMLET (TownHamlet, 4 to 12: 1,200), a village a VILLAGE
@@ -322,7 +323,9 @@ ROADS 1-21, the dials untouched) over Arena's places and draws what it routes on
 
 On the freeware: 233 towns and villages, 150 roads and 56 tracks routed (four pairs not - Vvardenfell's, an island), 19,563
 road pixels and 5,813 track pixels, none on the Bay. Recorded: the roads stop at the Bay's edge and at the coast - no
-road joins the Bay's network yet, and no port.
+road joins the Bay's network yet, and no port. (Those counts are TESA4's. The capitals' pins (TESA10) and the shore towns'
+routing (AUDIT-TESA A3-1) move them; they are not measured again here - the data test holds TESA4's numbers until the
+player's own files run it: AUDIT-TESA A7-2, open.)
 
 ## TESA5 - the crossings onto the Bay's roads (2026-10-12)
 
@@ -527,7 +530,7 @@ Imperial City is the first; Solitude (its arch over the water, the Blue Palace, 
   City's (178, 96) is Bay pixel (2177, 612) on the freeware's fit. Every client's the same pixel, Arena attached or not.
   With Arena attached, Arena's place of the capital's name and province stands on it too (`world/arenaPlaces.js`
   standArenaPixels' `pinned`, capitalPin: before any other place takes it, `pinned: true`), so Arena's roads (TESA4), its
-  map ink and the journey all lead to the city the port built. The fit moving (the trace landing after a pixel built)
+  map ink and a portal's end all lead to the city the port built (TESA-NO-FAST: no journey from the map). The fit moving (the trace landing after a pixel built)
   builds the capitals' pixels again (`scenes/world.js` sweepCapitalPixels, sweepArenaPixels' shape).
 - **The Imperial City's plan** (IMPERIAL_CITY_PLAN): an island city in a ring of water. The 8 x 8 grid's outer ring is the
   lake (port blocks all water); inside it a 6 x 6 city; its four corners and the Arboretum gardens (port blocks of grass
@@ -560,7 +563,8 @@ Imperial City is the first; Solitude (its arch over the water, the Blue Palace, 
   answers, no dungeon, no harbour, `capital`, and Arena's slot where Arena's place stands on it. A place the port made:
   no house is sold in it and no deed read (`isCountryPlaceId`).
 - **The doors** (`world/capitalModels.js` installCapitals, from `scenes/modWorldData.js` beside installArena - behind no
-  switch, as the arena's block is): the six port blocks at fixed indices from 900200, the four models (climate-free), the
+  switch, as the arena's block is): the six port blocks at fixed indices from 900200 (900400 since AUDIT-TESA - past the
+  Shadow Realm's 900200), the four models (climate-free), the
   six pictures. `?capitals=off` stands none: Arena's place of the name stands as any.
 - **The host** (`scenes/world.js` capitalLocationAt): `_locationToBuild` past the Bay asks the capital first, then Arena's
   place, the countryside and the lairs. Stood in the index once; stood again when Arena's place on it changes.
@@ -658,11 +662,31 @@ The owner: "Do we really need Arena attached?" - no. The capitals stand on their
 Daggerfall's blocks). Where a host stands the capitals (`world/tamrielCapitals.js` setCapitalsStanding, from the world
 host's boot: the land past the Bay and the capitals' door open), each capital the held map inks - TAMRIEL1's cities with
 no Arena, Arena's places with it - stands on the capital's pixel, and on the teleport map a press on it is a Portal
-Stone's portal there (`ui/tamrielInk.js` capitalJourney, `ui/heldMap.js`'s press as TESA2's - TESA-NO-FAST: never a
+Stone's portal there (`ui/tamrielInk.js` capitalStandsAt, `ui/heldMap.js`'s press as TESA2's - TESA-NO-FAST: never a
 journey from the travel map). The ink is made again when the standing changes. In the game: use a Portal Stone, zoom
 out past the Bay, press the capital; or walk.
 
-## The arc - what comes next
+## AUDIT-TESA - the arc, audited (2026-10-13)
+
+The owner: "Lets do a comprehensive audit across everything so far". `01-Overview/Audit-TESA.md` is the record - seven
+lanes, every finding's verdict. What it changed here, by id:
+
+- **Arena's names** (A1-1, A1-2): an Arena place's automap key is its map id (`systems/automap.js` automapKeyOf), the
+  party pose and a discovery carry no name of it - a capital's name is the port's and stays.
+- **A quest's site past the Bay** (A2-1): `scenes/world.js` placeByName - MAPS.BSA's, else the place the world stands.
+- **The capitals' ground** (A6-1 to A6-5): start markers on each carrier block; each capital's gardens its own blocks
+  (`capitalGardenName`, `TESG<tag><row><column>.RMB`), and every block of a capital closed where its models stand at a
+  body's height (`world/capitalModels.js` capitalFootprint), its trees off them - built when first read; the blocks
+  from 900400; the Imperial City's wall at 317 and Solitude's walls out of the houses' blocks, Helstrom's walks to the
+  banks; an inland capital's CUST blocks its dry ones (`dryKinds`); a closed cell's byte 0xfe (`CAPITAL_CLOSED_BYTE`).
+- **The world host** (A7-1, A2-3, A2-4, A2-5, A4-F2 to A4-F4, A5-F3): the load's wait whenever a place past the Bay
+  stands; the countryside and the lairs rolled again when the land moves; the rise past the Bay at the nearest town
+  standing there; the province's people's names in its towns and buildings; a capital's pixel never cloned over; the
+  harbour book by map id; the Bay's pixel ids read on the Bay alone; a ship's port past the Bay its Arena place's; no
+  deed read in a place the port made.
+- **The roads** (A3-1): a shore town's cell its land. **The switches** (A7-8): `?capitals=off` and `?country=off`
+  offline alone.
+
 
 - **The provinces as regions of their own** - their own chat rooms, banks, law, prices and quest sites. The save's shape,
   the relay's whitelist and the account services' validators move together: the owner's call.
@@ -830,7 +854,7 @@ kinds' types, the dungeon test, the exclusions, map-id order, the province's own
 place); the clone (every id field, the pixel, the region handed, no harbour, the template untouched); the map (the pixel
 carried only where a host stands them, the hit, the press's arm by source); the host by source (online and off since TESA-ONLINE, the arm, one
 clone a pixel, the key, the sweep, the load's wait, /tp, no house); and, where ARENA_PATH and ARENA2_PATH name the data,
-all 248 stood under their own points, MAPS.BSA's five template counts and Winterhold's 6 x 7 city. Mutants
+all 248 stood under their own points (a capital's on the capital since AUDIT-TESA A7-2), MAPS.BSA's five template counts and Winterhold's 6 x 7 city. Mutants
 `tools/mutants/tesa2.json` (28, all dead). PIN MOVED: `test/tamriel.test.js` (a press beyond the Bay picks an Arena place
 the world stands, and nothing else) and `test/auditcaptsea.test.js` (the house rule names an Arena town beside an isle's).
 Re-aimed by content, each judged dead again: `tools/mutants/auditcaptsea.json`'s ACS-P3-spawn-filter and ACS-P9-deed

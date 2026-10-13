@@ -20,8 +20,8 @@
   {
     "name": "TESA10c-helstrom-no-models",
     "file": "src/world/tamrielCapitals.js",
-    "old": "    anchor: Object.freeze([4, 3]), blocks: HELSTROM_BLOCKS, models: Object.freeze([CAPITAL_MODELS.xanmeer, CAPITAL_MODELS.hist, CAPITAL_MODELS.helstromWalks, CAPITAL_MODELS.palisade]) }),",
-    "new": "    anchor: Object.freeze([4, 3]), blocks: HELSTROM_BLOCKS, models: Object.freeze([CAPITAL_MODELS.xanmeer, CAPITAL_MODELS.hist, CAPITAL_MODELS.helstromWalks]) }),",
+    "old": "CAPITAL_MODELS.helstromWalks, CAPITAL_MODELS.palisade]) }),",
+    "new": "CAPITAL_MODELS.helstromWalks]) }),",
     "tests": [
       "test/tesa10c_capitals.test.js"
     ]

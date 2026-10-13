@@ -795,7 +795,7 @@ const SOURCE_CITES = [
   ['bible/01-Overview/Port-Ledger.md', /`world\.js:(?:"[^"]+"(?:\.\."[^"]+")?|\d+(?:-\d+)?)`, `exterior\.js:"([^"]+)"(?:\.\."([^"]+)")?` pass `getNameBankOfRegion`/,
     EX, /nameBank: getNameBankOfRegion\(dfLocation\.regionIndex\),/],
   ['bible/01-Overview/Port-Ledger.md', /`world\.js:"([^"]+)"(?:\.\."([^"]+)")?`, `exterior\.js:(?:"[^"]+"(?:\.\."[^"]+")?|\d+(?:-\d+)?)` pass `getNameBankOfRegion`/,
-    WO, /nameBank: getNameBankOfRegion\(dfLocation\.regionIndex\),/],
+    WO, /nameBank: provinceNameBank\(provinceAt\(px, py\)\?\.key\) \?\? getNameBankOfRegion\(dfLocation\.regionIndex\),/],   // PIN MOVED (AUDIT-TESA A2-5)
   ['bible/01-Overview/Port-Ledger.md', /rig sprite \(`exterior\.js:"([^"]+)"(?:\.\."([^"]+)")?`/, EX, /drawCharacterSprite\(renderer, canvas, rig/],
   // ROAD-G G1 (review): BOTH ends, because the half-shifted range is
   // exactly the defect this file exists to catch - the leading number

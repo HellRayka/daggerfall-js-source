@@ -9,7 +9,7 @@
 // installCapitals (scenes/modWorldData.js, beside installArena - behind no switch, as the arena's block is): the port
 // blocks on the world-data door, the models on the model door (climate-free: the white stone is white in every climate),
 // the pictures on the texture door.
-import { registerCustomModel } from './customModels.js';
+import { registerCustomModel, customModelFor } from './customModels.js';
 import { MeshBuilder } from './detStandIns.js';
 import { registerPortBlock, installWorldDataReplacement } from '../formats/worldDataReplacement.js';
 import { addVendorTextures } from '../systems/textureReplacement.js';
@@ -75,8 +75,10 @@ export function buildWhiteGoldTower() {
 // ---------------------------------------------------------------- the walls
 
 /** The outer wall's measures, metres from the middle: flat sides at `apothem` for `flat` either side of each axis, the
- *  corners cut from (flat, apothem) to (apothem, flat); the gates east (+x) and south (+z), `gate` wide. */
-export const IMPERIAL_WALL = Object.freeze({ apothem: 311, flat: 210, thick: 6, h: 20, towerR: 9, towerH: 30, gate: 12, gateH: 13 });
+ *  corners cut from (flat, apothem) to (apothem, flat); the gates east (+x) and south (+z), `gate` wide. AUDIT-TESA A6-3:
+ *  its towers clear of the city's blocks (3 blocks and a tower's radius out - a tower at 311 stood 5.8 m into a house's
+ *  block). */
+export const IMPERIAL_WALL = Object.freeze({ apothem: 317, flat: 210, thick: 6, h: 20, towerR: 9, towerH: 30, gate: 12, gateH: 13 });
 /** The wall's corners, round from the east gate's side: the eight vertices of its eight sides. */
 export function imperialWallCorners(W = IMPERIAL_WALL) {
   const A = W.apothem, F = W.flat;
@@ -142,7 +144,7 @@ export function buildImperialInnerWall(R = IMPERIAL_INNER) {
 }
 /** The bridges: east from the east gate and south from the south gate over the lake to the city's pixel's edge - a deck
  *  `w` wide a hand over the water, parapets either side, piers under it. */
-export const IMPERIAL_BRIDGE = Object.freeze({ from: 311, to: 4 * BLOCK_M + 2, w: 10, deck: 0.3, parapet: 1.1, pier: 18 });
+export const IMPERIAL_BRIDGE = Object.freeze({ from: IMPERIAL_WALL.apothem, to: 4 * BLOCK_M + 2, w: 10, deck: 0.3, parapet: 1.1, pier: 18 });
 export function buildImperialBridges(B = IMPERIAL_BRIDGE) {
   const mb = new MeshBuilder(), hw = B.w / 2;
   for (const axis of ['x', 'z']) {
@@ -252,6 +254,55 @@ export function northward(m) {
   return { ...m, positions, normals, indices };
 }
 
+// ---------------------------------------------------------------- where the models stand
+
+/** AUDIT-TESA A6-2: the heights over the ground a body stands across - a face of a model crossing one is in its way. */
+const BODY_PLANES = Object.freeze([0.5, 1.0, 1.6]);
+/** An automap cell's side (world/tamrielCapitals.js autoCentre: 64 to a block). */
+const CELL = BLOCK_M / 64;
+/**
+ * WHERE A CAPITAL'S MODELS STAND (AUDIT-TESA A6-2): the automap cells of the anchor's metres (x east, z south - cells of
+ * 1.6 m from the anchor, a grid point, so the blocks' own) a face of its models crosses at a body's height: each
+ * triangle steeper than a walkable slope, cut at BODY_PLANES, the cut walked in quarter cells; two cells meeting at a
+ * corner alone joined by one between, so no walker slips through a wall's diagonal. `meshOf(id)` a model in the world's
+ * frame (+z north: the model door's - customModelFor's, built once and the renderer's too).
+ * @param {any} cap a CAPITALS entry @param {(id: number) => any} [meshOf]
+ * @returns {(x: number, z: number) => boolean}
+ */
+export function capitalFootprint(cap, meshOf = (id) => customModelFor(id)) {
+  const cells = new Set(), key = (i, j) => (i + 4096) * 8192 + (j + 4096);
+  const mark = (x, z) => cells.add(key(Math.floor(x / CELL), Math.floor(z / CELL)));
+  for (const id of cap.models) {
+    const m = meshOf(id);
+    if (!m) continue;
+    const p = m.positions, ix = m.indices;
+    for (let t = 0; t < ix.length; t += 3) {
+      const v = [ix[t] * 3, ix[t + 1] * 3, ix[t + 2] * 3];
+      const [a, b, c] = v;
+      const ux = p[b] - p[a], uy = p[b + 1] - p[a + 1], uz = p[b + 2] - p[a + 2], wx = p[c] - p[a], wy = p[c + 1] - p[a + 1], wz = p[c + 2] - p[a + 2];
+      const nx = uy * wz - uz * wy, ny = uz * wx - ux * wz, nz = ux * wy - uy * wx, n = Math.hypot(nx, ny, nz);
+      if (!(n > 0) || Math.abs(ny) > 0.7 * n) continue;   // a walkable slope, or nothing
+      for (const h of BODY_PLANES) {
+        const cut = [];
+        for (let e = 0; e < 3; e++) {
+          const q = v[e], r = v[(e + 1) % 3], yq = p[q + 1] - h, yr = p[r + 1] - h;
+          if ((yq >= 0) === (yr >= 0)) continue;
+          const f = yq / (yq - yr);
+          cut.push([p[q] + (p[r] - p[q]) * f, -(p[q + 2] + (p[r + 2] - p[q + 2]) * f)]);   // the anchor's z runs south
+        }
+        if (cut.length !== 2) continue;
+        const [[x0, z0], [x1, z1]] = cut, steps = Math.max(1, Math.ceil(Math.hypot(x1 - x0, z1 - z0) / (CELL / 4)));
+        for (let k = 0; k <= steps; k++) mark(x0 + ((x1 - x0) * k) / steps, z0 + ((z1 - z0) * k) / steps);
+      }
+    }
+  }
+  for (const c of [...cells]) {
+    const i = Math.floor(c / 8192) - 4096, j = (c % 8192) - 4096;
+    for (const dj of [1, -1]) if (cells.has(key(i + 1, j + dj)) && !cells.has(key(i + 1, j)) && !cells.has(key(i, j + dj))) cells.add(key(i + 1, j));
+  }
+  return (x, z) => cells.has(key(Math.floor(x / CELL), Math.floor(z / CELL)));
+}
+
 let _installed = false;
 /**
  * ONCE: the capitals' port blocks, models and pictures on their doors (scenes/modWorldData.js, beside installArena).
@@ -261,7 +312,8 @@ export function installCapitals({ addTextures = addVendorTextures } = {}) {
   if (_installed) return false;
   _installed = true;
   installWorldDataReplacement();
-  for (const b of capitalPortBlocks()) registerPortBlock(b.name, b.json, b.index);
+  // AUDIT-TESA A6-2: each block built when first read, its capital's footprint with it - the models it stands under
+  for (const b of capitalPortBlocks({ footprint: (cap) => capitalFootprint(cap) })) registerPortBlock(b.name, () => b.json, b.index);
   const builds = {
     [CAPITAL_MODELS.whiteGoldTower]: buildWhiteGoldTower,
     [CAPITAL_MODELS.imperialWall]: () => buildImperialWall(),

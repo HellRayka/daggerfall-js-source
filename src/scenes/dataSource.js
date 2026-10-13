@@ -1002,7 +1002,9 @@ export async function pickArenaFolder() {
       ports. Only <b>CITYDATA.65</b> and <b>A.EXE</b> are kept.</p>`,
     store: storeArenaFiles,
     register: registerArenaData,
-    doneText: (n) => (n ? 'Arena\u2019s places will stand on the map of Tamriel' : 'no CITYDATA.65 in that folder'),
+    // AUDIT-TESA A1-6: and what a folder without A.EXE (or ACD.EXE) costs - the ports, and online the places (TESA6)
+    doneText: (n) => (!n ? 'no CITYDATA.65 in that folder' : _arenaCoast ? 'Arena\u2019s places will stand on the map of Tamriel, its coastal cities ports'
+      : 'Arena\u2019s places will stand on the map of Tamriel - no A.EXE in that folder: no ports, and online no places'),
   });
 }
 

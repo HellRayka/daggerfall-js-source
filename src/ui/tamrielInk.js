@@ -36,7 +36,7 @@ import { pictureToBay, bayToPicture, inBay, BAY_W, BAY_H, tamrielFit, tamrielFra
 import { tamrielTrace, tamrielLandVersion, provinceKeyAt, PROVINCE_OF_ID } from '../world/tamrielLand.js';
 // TESA1: Arena's places, where the player attached their Arena and the trace stands them (world/arenaPlaces.js)
 import { arenaPlaces, arenaPlacesVersion, arenaPixels, arenaStanding } from '../world/arenaPlaces.js';
-import { capitalPin, capitalsStanding, capitalsVersion } from '../world/tamrielCapitals.js';   // TESA10d: a capital's journey, Arena or none
+import { capitalPin, capitalsStanding, capitalsVersion } from '../world/tamrielCapitals.js';   // TESA10d: a capital's pixel on the map, Arena or none
 import { makeNoise, octaveNoise } from './introMap.js';   // the intro's own seeded value noise - ONE home for it
 import { PEN, NAME_FACE, HALO_PEN, penOf, toPaper, paintGlyph, roundCorners, spacedName, boundarySegments, linkSegments } from './inkMap.js';
 import { simplifyChain } from './overworldModel.js';   // TAMRIEL3: the coast's chain thinned as the overworld's are
@@ -429,26 +429,30 @@ export function placeCity(city) {
 /** TESA1: the ink's cities off Arena's places - every named place beyond the Bay's rectangle (the Bay's own are
  *  Daggerfall's, inked by the Bay's painter), each a capital where TAMRIEL1 named it one, by name in its province.
  *  The unnamed dungeons (a name each Arena save rolls) are not inked. TESA2: where a host stands the places
- *  (arenaStanding), each carries the Bay pixel it stands on (`pixel`, world/arenaPlaces.js standArenaPixels) - the map's
- *  journey to it; else `pixel` is null and a press picks nothing, as TESA1's did.
+ *  (arenaStanding), each carries the Bay pixel it stands on (`pixel`, world/arenaPlaces.js standArenaPixels) - a portal's
+ *  end on the teleport map (TESA-NO-FAST: never a journey); else `pixel` is null and a press picks nothing, as TESA1's did.
  *  @param {NonNullable<ReturnType<typeof arenaPlaces>>} model */
 export function arenaInkCities(model) {
   const capital = new Set(CITIES.filter((c) => c.capital).map((c) => `${c.province}|${c.name}`));
   const stood = new Map();
-  if (arenaStanding()) for (const p of arenaPixels()?.stood ?? []) stood.set(`${p.provinceIndex}|${p.id}`, { x: p.bx, y: p.by });
+  if (arenaStanding()) for (const p of arenaPixels()?.stood ?? []) stood.set(`${p.provinceIndex}|${p.id}`, { x: p.bx, y: p.by, pinned: !!p.pinned });
   const out = [];
   for (const p of model.places) {
     if (!p.name) continue;
     const [x, y] = pictureToBay(p.px, p.py);
     if (inBay(x, y)) continue;
-    out.push({ name: p.name, province: p.province, capital: capital.has(`${p.province}|${p.name}`), kind: p.kind, x, y, pixel: stood.get(`${p.provinceIndex}|${p.id}`) ?? capitalJourney(p) });
+    const st = stood.get(`${p.provinceIndex}|${p.id}`), pixel = st ? { x: st.x, y: st.y } : capitalStandsAt(p);
+    // AUDIT-TESA A7-4: a place on a capital's pixel (its pin, or the capital standing where Arena's places do not) is inked
+    // there - on the city the world stands, not on its own point a pixel or more away
+    const on = pixel && (st?.pinned || !st) ? [pixel.x + 0.5, pixel.y + 0.5] : [x, y];
+    out.push({ name: p.name, province: p.province, capital: capital.has(`${p.province}|${p.name}`), kind: p.kind, x: on[0], y: on[1], pixel });
   }
   return out;
 }
 
-/** TESA10d: the pixel a city of a capital's name and province is a journey to - the capital's, where a host stands the
+/** TESA10d: the pixel a city of a capital's name and province stands on - a portal's end there (TESA-NO-FAST) - the capital's, where a host stands the
  *  capitals (world/tamrielCapitals.js capitalsStanding) - or null. */
-function capitalJourney(city) {
+function capitalStandsAt(city) {
   const at = capitalsStanding() ? capitalPin(city) : null;
   return at ? { x: at.px, y: at.py } : null;
 }
@@ -507,7 +511,7 @@ export function buildTamrielInk({ bayCoast = [] } = {}) {
   // TESA1: Arena's places where the player's Arena stands them on the trace; TAMRIEL1's authored cities else
   const arena = traced ? arenaPlaces() : null;
   const cities = arena ? arenaInkCities(arena) : CITIES.map((c) => {
-    const pixel = capitalJourney(c);   // TESA10d: a capital the world stands is inked on its pixel, and the press travels there
+    const pixel = capitalStandsAt(c);   // TESA10d: a capital the world stands is inked on its pixel - on the teleport map a portal's end (TESA-NO-FAST)
     if (pixel) return { name: c.name, province: c.province, capital: !!c.capital, kind: null, x: pixel.x + 0.5, y: pixel.y + 0.5, pixel };
     const at = placeCity(c); if (!at) return null; const [x, y] = pictureToBay(at[0], at[1]); return { name: c.name, province: c.province, capital: !!c.capital, kind: null, x, y };
   })

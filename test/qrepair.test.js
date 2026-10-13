@@ -193,7 +193,7 @@ test('QREPAIR the door, by source: every host\'s pause hands repairQuests off it
   assert.match(w, /questLog: \(\) => questBridge\?\.questLog\(\) \?\? \{ active: \[\], finished: \[\] \},\n\s+repairQuests: \(\) => questBridge\?\.repair\?\.\(\) \?\? null,/, 'the world pause');
   assert.match(w, /pauseQuestLog: \(\) => questBridge\?\.questLog\(\) \?\? \{ active: \[\], finished: \[\] \},\n\s+repairQuests: \(\) => questBridge\?\.repair\?\.\(\) \?\? null,/, 'the world\'s host bag, for the interior pause');
   assert.match(w, /hasQuestTopics: \(quest\) => topicTree\.dictQuestInfo\.has\(quest\.uid\),/);
-  assert.match(w, /return discoverLocation\(loc\.mapTableData\.mapId, \{ regionName: loc\.regionName, locationName: loc\.name \}\);/);
+  assert.match(w, /return discoverLocation\(loc\.mapTableData\.mapId, \{ regionName: loc\.regionName, locationName: loc\.arena && !loc\.capital \? '' : loc\.name \}\);/);   // PIN MOVED (AUDIT-TESA A1-2): an Arena place's name never rides a save
   const x = rd('src/scenes/exterior.js');
   assert.equal((x.match(/repairQuests: \(\) => questBridge\?\.repair\?\.\(\) \?\? null,/g) ?? []).length, 2, 'the fixed city: its pause and its host bag');
   assert.match(x, /return discoverLocation\(l\.mapTableData\.mapId, \{ regionName: l\.regionName, locationName: l\.name \}\);/);

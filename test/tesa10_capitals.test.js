@@ -9,7 +9,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
 import {
-  CAPITAL_LANE, CAPITAL_INDEX_BASE, CAPITAL_SALT, CAPITAL_BLOCK_INDEX, CAPITAL_BLOCKS, CAPITAL_MODELS, CAPITALS, IMPERIAL_CITY_PLAN,
+  CAPITAL_LANE, CAPITAL_INDEX_BASE, CAPITAL_SALT, CAPITAL_BLOCK_INDEX, CAPITAL_BLOCKS, CAPITAL_MODELS, CAPITALS, IMPERIAL_CITY_PLAN, capitalGardenName, CAPITAL_CLOSED_BYTE,
   IMPERIAL_DISTRICTS, IMPERIAL_GROUNDS, BLOCK_M, capitalPlaceId, capitalLocationIndex, isCapitalPlaceId, capitalPixel, capitalOnPixel,
   capitalPin, capitalBase, cityBlockNames, capitalBlockNames, capitalBuildings, portBlockJson, miscModelAt, tileCentre, autoCentre,
   capitalPortBlocks, synthesizeCapitalLocation, capitalDistrict, capitalCarrier, anchorMetres, SOLITUDE, SOLITUDE_PLAN, SOLITUDE_DISTRICTS,
@@ -123,10 +123,10 @@ test('TESA10 the blocks: every name the game\'s cities lay by its kind, sorted, 
   // the grid's rows from the south: the plan's last row first
   assert.deepEqual(out.slice(0, 3), [...CAPITAL_BLOCKS.grounds.slice(2, 4), CAPITAL_BLOCKS.lake]);
   assert.deepEqual(out.slice(3, 5), CAPITAL_BLOCKS.grounds.slice(0, 2));
-  assert.deepEqual(out.slice(6, 8), [CAPITAL_BLOCKS.lake, CAPITAL_BLOCKS.garden]);
+  assert.deepEqual(out.slice(6, 8), [CAPITAL_BLOCKS.lake, capitalGardenName(CAPITALS[0], 1, 0)], 'PIN MOVED (AUDIT-TESA A6-2): a garden the capital\'s own, by its cell');
   assert.equal(out[8], names.get('TVRN')[hash32(CAPITAL_SALT, 0, 2, 0) % 2], 'the hash the plan\'s column and row');
   assert.equal(out[5], names.get('TVRN')[hash32(CAPITAL_SALT, 0, 2, 1) % 2]);
-  assert.deepEqual(capitalBlockNames([['L'], ['G']], 0, names), [CAPITAL_BLOCKS.garden, CAPITAL_BLOCKS.lake], 'the plan\'s south row the grid\'s first');
+  assert.deepEqual(capitalBlockNames([['L'], ['G']], 0, names), [capitalGardenName(CAPITALS[0], 0, 1), CAPITAL_BLOCKS.lake], 'the plan\'s south row the grid\'s first');
   assert.equal(capitalBlockNames([['MAGE']], 0, names), null);
 });
 
@@ -164,7 +164,7 @@ test('TESA10 the port blocks: the lake all water, the garden grass with a tree i
     for (let ay = 0; ay < 64; ay++) for (let ax = 0; ax < 64; ax++) {
       const [x, z] = autoCentre(ax, ay), dx = x - ox, dz = z - oz, r = Math.hypot(dx, dz);
       const want = r <= IMPERIAL_GROUNDS.towerFoot || (r >= IMPERIAL_GROUNDS.ringIn && r <= IMPERIAL_GROUNDS.ringOut && Math.abs(dx) > IMPERIAL_GROUNDS.gate && Math.abs(dz) > IMPERIAL_GROUNDS.gate);
-      assert.equal(A[ay * 64 + ax], want ? 1 : 0);
+      assert.equal(A[ay * 64 + ax], want ? CAPITAL_CLOSED_BYTE : 0);   // PIN MOVED (AUDIT-TESA A6-5): a wall's byte in no quarter
     }
     assert.equal(blk.json.RmbBlock.Misc3dObjectRecords.length, q === 0 ? 4 : 0);
   }
@@ -192,7 +192,7 @@ test('TESA10 the location: its plan\'s grid and its blocks\' buildings on a city
   const base = { ...city(9, ['X']), name: 'Broadvale', regionIndex: 1, regionName: 'R', politic: 129, climate: { worldClimate: 231 }, hasDungeon: false, exterior: { exteriorData: { blockNames: ['X'], width: 1, height: 1, mapId: 9, portTownAndUnknown: 1 }, buildings: [{ buildingType: 2 }], recordElement: { header: { locationId: 9 } } } };
   const snap = JSON.stringify(base);
   const slot = Object.freeze({ province: 'Imperial', provinceIndex: 8, id: 0, kind: 'city-state', port: false });
-  const loc = synthesizeCapitalLocation({ cap: CAPITALS[0], k: 0 }, { base, names, blockOf: (n) => (n.startsWith('TESA') ? null : fh), px: 2177, py: 612, arena: slot, where: { regionIndex: 23, regionName: 'Wrothgarian Mountains', politic: 151, climate: { worldClimate: 230 } } });
+  const loc = synthesizeCapitalLocation({ cap: CAPITALS[0], k: 0 }, { base, names, blockOf: (n) => (n.startsWith('TES') ? null : fh), px: 2177, py: 612, arena: slot, where: { regionIndex: 23, regionName: 'Wrothgarian Mountains', politic: 151, climate: { worldClimate: 230 } } });
   assert.equal(JSON.stringify(base), snap);
   const id = capitalPlaceId(0), ll = mapPixelToLongitudeLatitude(2177, 612), ed = loc.exterior.exteriorData;
   assert.equal(loc.name, 'Imperial City');
@@ -388,15 +388,28 @@ test('TESA10 the host\'s ask: the capital on its pixel stood once, its region th
 test('TESA10 the sweep: on the frame, when the fit moves, every built pixel past the Bay whose capital came or went is built again, nearest first - the Bay\'s own pixels never; a fit unmoved sweeps nothing', () => {
   assert.match(W, /if \(_capitalBase && !building\) sweepCapitalPixels\(\);/);
   const sweep = lift('  function sweepCapitalPixels() {');
-  const run = new Function('capitalOnPixel', 'tamrielFit', 'tamrielLandVersion', 'onTheBay', `
+  const run = (cop, tf, tlv, otb, rolled = false) => new Function('capitalOnPixel', 'tamrielFit', 'tamrielLandVersion', 'onTheBay', 'rolled', `
     const built = new Map([['2177,612', { px: 2177, py: 612 }], ['2300,600', { px: 2300, py: 600 }], ['5,5', { px: 5, py: 5 }], ['1385,465', { px: 1385, py: 465 }]]);
     const locationIndex = new Map([['2177,612', { capital: { k: 0 } }]]), destroyed = [], queue = [], state = { current: { x: 2177, y: 612 } };
     const walkMode = false, playerSpawned = false, nearestFirstFrom = () => () => 0, destroyPixel = (x, y) => destroyed.push(x + ',' + y);
     let _seasonHoldKey = null, _capitalSwept = null, _capitalSweptLand = -1;
+    const _countryTemplates = rolled ? {} : null, _lairTemplates = null;
     ${sweep}
-    return { sweep: sweepCapitalPixels, destroyed, queue };`);
+    return { sweep: sweepCapitalPixels, destroyed, queue };`)(cop, tf, tlv, otb, rolled);
   setTamrielFit({ ox: 38 * 15.5, oy: 57 * 15.5, ppu: 15.5 });
   const h = run(capitalOnPixel, () => tamrielFitNow(), () => tamrielLandVersion(), inBay);
+  // AUDIT-TESA A7-1: with the countryside standing, the land's moving builds again every pixel past the Bay it rolls -
+  // never on the first frame's ask, never the Bay's, never a capital's or an Arena place's (their own sweeps)
+  {
+    setTamrielFit({ ox: 38 * 15.5, oy: 57 * 15.5, ppu: 15.5 });
+    const r = run(capitalOnPixel, () => tamrielFitNow(), () => tamrielLandVersion(), inBay, true);
+    r.sweep();
+    assert.deepEqual(r.destroyed, [], 'the first ask: the fit they were built by');
+    setTamrielFit({ ox: 400, oy: 500, ppu: 10 });
+    r.sweep();
+    assert.deepEqual(r.destroyed.sort(), ['1385,465', '2177,612', '2300,600'], 'the land moved: the country pixel too, the capitals\' as ever, the Bay\'s never');
+    setTamrielFit({ ox: 38 * 15.5, oy: 57 * 15.5, ppu: 15.5 });
+  }
   h.sweep();
   assert.deepEqual(h.destroyed, [], 'the fit the capital was built by: nothing');
   setTamrielFit({ ox: 400, oy: 500, ppu: 10 });
@@ -506,16 +519,16 @@ test('TESA10b Solitude\'s port blocks: the quay\'s stone to its edge and the sea
   const P0 = own.find((x) => x.name === 'TESASOP0.RMB'), Q0 = own.find((x) => x.name === 'TESASOQ0.RMB');
   // a closed cell by the anchor's metres (x east, z south): the block's own (z north) and its automap cell
   const cell = (blk, dx, dz) => { const [cx, cy] = at(blk.name), x = dx - (cx - 2) * BLOCK_M, z = (cy + 1 - 3) * BLOCK_M - dz; assert.ok(x >= 0 && x < BLOCK_M && z >= 0 && z < BLOCK_M, `${blk.name} ${dx},${dz}`); const ax = Math.floor(x / 1.6), ay = 63 - Math.floor(z / 1.6); return blk.json.RmbBlock.FldHeader.AutoMapData[ay * 64 + ax]; };
-  assert.equal(cell(P0, 20, -5), 1, 'the terrace');
+  assert.equal(cell(P0, 20, -5), CAPITAL_CLOSED_BYTE, 'the terrace');
   assert.equal(cell(P0, 90, -40), 0, 'the street past the ramp');
   const Q1 = own.find((x) => x.name === 'TESASOQ1.RMB');
-  assert.equal(cell(Q1, 230, S.wall.north), 1, 'the north wall');
+  assert.equal(cell(Q1, 230, S.wall.north), CAPITAL_CLOSED_BYTE, 'the north wall');
   assert.equal(cell(Q1, S.wall.northGate, S.wall.north), 0, 'its gate');
-  assert.equal(cell(own.find((x) => x.name === 'TESASOQ2.RMB'), S.docks.warehouse.x, S.docks.warehouse.z), 1, 'the warehouse');
+  assert.equal(cell(own.find((x) => x.name === 'TESASOQ2.RMB'), S.docks.warehouse.x, S.docks.warehouse.z), CAPITAL_CLOSED_BYTE, 'the warehouse');
   const D0 = own.find((x) => x.name === 'TESASOD0.RMB'), D2 = own.find((x) => x.name === 'TESASOD2.RMB');
-  assert.equal(cell(D0, S.castle.x - S.castle.half, S.castle.z - 10), 1, 'the curtain\'s west side');
+  assert.equal(cell(D0, S.castle.x - S.castle.half, S.castle.z - 10), CAPITAL_CLOSED_BYTE, 'the curtain\'s west side');
   assert.equal(cell(D2, S.castle.x - S.castle.half, S.castle.z + 1), 0, 'its gate');
-  assert.equal(cell(D0, S.castle.x + S.emperorsTower.dx, S.castle.z + S.emperorsTower.dz), 1, 'the Emperor\'s Tower');
+  assert.equal(cell(D0, S.castle.x + S.emperorsTower.dx, S.castle.z + S.emperorsTower.dz), CAPITAL_CLOSED_BYTE, 'the Emperor\'s Tower');
   assert.equal(cell(D0, S.castle.x - 20, S.castle.z - 2), 0, 'the yard');
   assert.equal(Q0.json.RmbBlock.Misc3dObjectRecords.length, 0);
   const laid = layoutRmbBlock(blockFromJson(P0.json, P0.index));

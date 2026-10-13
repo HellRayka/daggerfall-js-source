@@ -197,7 +197,7 @@ test('TESA2 the clone: the template under Arena\'s name, its own id on the map r
   assert.deepEqual([town.regionIndex, town.politic], [17, 145], 'no region handed: the template\'s');
 });
 
-test('TESA2 the map: where a host stands the places, each inked place carries the pixel it stands on, and the press on one is a journey to that pixel, the trip the coordinates\' own; where none does it carries none and the press picks nothing; the cursor points at one it travels to (mutant: the switch, the pixel, the pick)', () => {
+test('TESA2 the map: where a host stands the places, each inked place carries the pixel it stands on, and on the teleport map the press on one is a portal\'s end at that pixel (TESA-NO-FAST: never a journey), the coordinates\' own; where none does it carries none and the press picks nothing; the cursor points at one it opens a portal to (mutant: the switch, the pixel, the pick)', () => {
   setTamrielFit({ ox: 38 * 15.5, oy: 57 * 15.5, ppu: 15.5 });
   setTamrielTrace(rectTrace([[3, 110, 20, 210, 80]]));
   setArenaCityData(parseArenaCityData(mintCityData([null, null, { name: 'Skyrim', rect: { x: 112, y: 22, w: 94, h: 53 }, places: { 0: { name: 'Solitude', x: 112, y: 8 }, 1: { name: 'Dawnstar', x: 186, y: 23 } } }])));
@@ -241,7 +241,8 @@ test('TESA2 the host: offline on the land beyond the Bay it stands the places - 
   assert.match(sweep, /if \(\(place \? `\$\{place\.provinceIndex\}\|\$\{place\.id\}\|\$\{!!place\.port\}` : null\) !== \(p\.arenaSlot \? `\$\{p\.arenaSlot\.provinceIndex\}\|\$\{p\.arenaSlot\.id\}\|\$\{!!p\.arenaSlot\.port\}` : null\)\) again\.push/, 'PIN MOVED (TESA6): and its port');
   assert.match(sweep, /for \(const k of again\) destroyPixel\(k\.px, k\.py, \{ collectLoose: false \}\);\n\s+queue\.push\(\.\.\.again\.sort\(nearestFirstFrom\(state\.current\)\)\);/);
   assert.match(w, /if \(_arenaTemplates && !building\) sweepArenaPixels\(\);/);
-  assert.match(w, /if \(_arenaTemplates && params\.has\('load'\)\) await arenaReady\.then\(\(n\) => \(n \? Promise\.race\(\[arenaTraced, new Promise\(\(r\) => setTimeout\(r, ARENA_LOAD_WAIT_MS\)\)\]\) : 0\)\);\n\s+let _loadedGame = false;/, 'a load waits before the boot decides its start');
+  assert.match(w, /if \(_arenaTemplates && params\.has\('load'\)\) await arenaReady\.then\(\(n\) => \(n \? Promise\.race\(\[arenaTraced, new Promise\(\(r\) => setTimeout\(r, ARENA_LOAD_WAIT_MS\)\)\]\) : 0\)\);/, 'PIN MOVED (AUDIT-TESA A7-1: the trace\'s own wait for the rest past the Bay follows it, then the boot) a load waits before the boot decides its start');
+  assert.ok(w.indexOf("if (_arenaTemplates && params.has('load')) await arenaReady") < w.indexOf('  let _loadedGame = false;'), 'before the boot decides its start');
   assert.match(w, /\.finally\(\(\) => arenaTraceLanded\(\)\);/, 'landed, or never will');
   assert.match(w, /if \(!arenaTraceAsked\) arenaTraceLanded\(\);/, 'the door shut: nothing to wait for');
   assert.ok(w.indexOf('const arenaTraced = ') < w.indexOf('if (_arenaTemplates && params.has(\'load\')) await arenaReady'), 'the trace\'s promise made before the load waits on it');
@@ -256,7 +257,7 @@ const ARENA = process.env.ARENA_PATH;
 const ARENA2 = process.env.ARENA2_PATH;
 const HAVE_BOTH = !!ARENA && existsSync(join(ARENA, 'CITYDATA.65')) && !!ARENA2 && ['TMAP00I0.IMG', 'TAMRIEL2.IMG', 'MAP.PAL', 'ART_PAL.COL', 'MAPS.BSA'].every((f) => existsSync(join(ARENA2, f)));
 
-test('TESA2 with ARENA and ARENA2: on the player\'s own trace all 248 named places beyond the Bay stand on a pixel of their own, every one under its own point; MAPS.BSA\'s templates are 407 cities, 1200 hamlets, 1834 villages, 1500 labyrinths and 843 keeps; Winterhold stands a 6 x 7 city', { skip: HAVE_BOTH ? false : 'ARENA_PATH and ARENA2_PATH not both set' }, async () => {
+test('TESA2 with ARENA and ARENA2: on the player\'s own trace all 248 named places beyond the Bay stand on a pixel of their own, every one under its own point but a capital\'s, on the capital; MAPS.BSA\'s templates are 407 cities, 1200 hamlets, 1834 villages, 1500 labyrinths and 843 keeps; Winterhold stands a 6 x 7 city', { skip: HAVE_BOTH ? false : 'ARENA_PATH and ARENA2_PATH not both set' }, async () => {
   const { DFPalette } = await import('../src/formats/dfPalette.js');
   const { preloadTamrielTrace } = await import('../src/ui/tamrielTrace.js');
   const { MapsFile } = await import('../src/formats/mapsFile.js');
@@ -267,7 +268,13 @@ test('TESA2 with ARENA and ARENA2: on the player\'s own trace all 248 named plac
   setArenaCityData(parseArenaCityData(new Uint8Array(readFileSync(join(ARENA, 'CITYDATA.65')))));
   const px = arenaPixels();
   assert.deepEqual([px.stood.length, px.unstood.length, px.byPixel.size], [248, 0, 248]);
-  for (const p of px.stood) { const [x, y] = pictureToBay(p.px, p.py); assert.deepEqual([p.bx, p.by], [Math.floor(x), Math.floor(y)], p.name); }
+  // PIN MOVED (AUDIT-TESA A7-2): a capital's place stands on the capital the port built (TESA10's pin), every other under
+  // its own point
+  const { capitalPin, CAPITALS } = await import('../src/world/tamrielCapitals.js');
+  for (const p of px.stood) {
+    if (p.pinned) { const at = capitalPin(p); assert.ok(at && CAPITALS.some((c) => c.name === p.name), p.name); assert.deepEqual([p.bx, p.by], [at.px, at.py], p.name); continue; }
+    const [x, y] = pictureToBay(p.px, p.py); assert.deepEqual([p.bx, p.by], [Math.floor(x), Math.floor(y)], p.name);
+  }
   const maps = new MapsFile();
   maps.load(await fetchBytes('MAPS.BSA'), await fetchBytes('CLIMATE.PAK'), await fetchBytes('POLITIC.PAK'));
   const rows = [];

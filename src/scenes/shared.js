@@ -893,15 +893,18 @@ export function arenaPlacesOn(search) {
 }
 
 /** TESA7 (bible/03-World/Arena-Provinces.md): THE COUNTRYSIDE'S KILL DOOR - `?country=off` stands no hamlet, farm, inn,
- *  temple or shrine past the Bay; Arena's places stand as ever. No Features row: the countryside is the land's own. */
+ *  temple or shrine past the Bay; Arena's places stand as ever. No Features row: the countryside is the land's own.
+ *  AUDIT-TESA A7-8: offline alone - online the land is the room's (forestsOn's law), and one player's door shut would
+ *  stand none of the places, quest sites and names the others stand. */
 export function countrysideOn(search) {
-  return pageParam('country', search) !== 'off';
+  return pageParam('country', search) !== 'off' || isOnlinePage(search);
 }
 
 /** TESA10 (bible/03-World/Arena-Provinces.md): THE CAPITALS' KILL DOOR - `?capitals=off` stands no capital the port
- *  builds; Arena's place of its name stands as any of Arena's places. No Features row: the capitals are the land's own. */
+ *  builds; Arena's place of its name stands as any of Arena's places. No Features row: the capitals are the land's own.
+ *  AUDIT-TESA A7-8: offline alone, as the countryside's. */
 export function capitalsOn(search) {
-  return pageParam('capitals', search) !== 'off';
+  return pageParam('capitals', search) !== 'off' || isOnlinePage(search);
 }
 
 /** VERGE1: THE CLEAR ROADSIDES' SWITCH - the Features row (`roadVerges`) on the enhanced skin, and on for everyone

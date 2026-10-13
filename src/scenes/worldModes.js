@@ -644,7 +644,7 @@ export function createWorldModes(host) {
   const tavernRegulars = (n) => regularSeeds(n).map((r) => residentName(r.seed, r.bank, r.gender));
   /** CARDS4b: each regular's seed, bank and gender - the namer's own, so the same seed dresses him (world/cardRegulars.js). */
   const regularSeeds = (n) => {
-    const b = interiorBuilding, bank = getNameBankOfRegion(b?.regionIndex ?? 0);
+    const b = interiorBuilding, bank = host.provinceBank?.() ?? getNameBankOfRegion(b?.regionIndex ?? 0);   // AUDIT-TESA A2-5: past the Bay the province's
     const town = Math.imul(homeTownOf(b) >>> 0, 0x9E3779B1) >>> 0;
     return Array.from({ length: n }, (_, i) => ({ seed: (((b?.buildingKey ?? 1) * 31 + i * 7919 + 1) ^ town) >>> 0, bank, gender: i % 2 }));
   };
@@ -2335,7 +2335,7 @@ export function createWorldModes(host) {
   const privateRoomSceneName = (room) => (isCaravanRoom(room) ? CARAVAN_SCENE_NAME : cabinSceneName(room.uid));
   /** GetNameBankOfCurrentRegion (PlayerGPS.cs:421-427) - F016. An
    *  unknown region answers Breton, which is DFU's own fallback. */
-  const currentNameBank = () => getNameBankOfRegion(
+  const currentNameBank = () => host.provinceBank?.() ?? getNameBankOfRegion(   // AUDIT-TESA A2-5: past the Bay the province's people (TESA3)
     interiorBuilding?.regionIndex ?? buildingDirectory?.()?.regionIndex ?? -1);
   /** StaticNPC.SetLayoutData's scene context for one person - the
    *  entered building's key (0 outside a building, where the street and

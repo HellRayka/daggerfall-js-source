@@ -173,8 +173,8 @@
   {
     "name": "TESA10-misc-z-unshifted",
     "file": "src/world/tamrielCapitals.js",
-    "old": "ZPos: Math.round(z / 0.025) - RMB_UNITS,",
-    "new": "ZPos: Math.round(z / 0.025),",
+    "old": "YPos: -4, ZPos: Math.round(z / 0.025) - RMB_UNITS,",
+    "new": "YPos: -4, ZPos: Math.round(z / 0.025),",
     "tests": [
       "test/tesa10_capitals.test.js"
     ]
@@ -389,7 +389,7 @@
   {
     "name": "TESA10-wall-inside-blocks",
     "file": "src/world/capitalModels.js",
-    "old": "export const IMPERIAL_WALL = Object.freeze({ apothem: 311,",
+    "old": "export const IMPERIAL_WALL = Object.freeze({ apothem: 317,",
     "new": "export const IMPERIAL_WALL = Object.freeze({ apothem: 309,",
     "tests": [
       "test/tesa10_capitals.test.js"
@@ -463,8 +463,8 @@
   {
     "name": "TESA10-bridge-short",
     "file": "src/world/capitalModels.js",
-    "old": "export const IMPERIAL_BRIDGE = Object.freeze({ from: 311, to: 4 * BLOCK_M + 2,",
-    "new": "export const IMPERIAL_BRIDGE = Object.freeze({ from: 311, to: 4 * BLOCK_M - 40,",
+    "old": "export const IMPERIAL_BRIDGE = Object.freeze({ from: IMPERIAL_WALL.apothem, to: 4 * BLOCK_M + 2,",
+    "new": "export const IMPERIAL_BRIDGE = Object.freeze({ from: IMPERIAL_WALL.apothem, to: 4 * BLOCK_M - 40,",
     "tests": [
       "test/tesa10_capitals.test.js"
     ]
@@ -571,7 +571,7 @@
   {
     "name": "TESA10-door-shut",
     "file": "src/scenes/shared.js",
-    "old": "  return pageParam('capitals', search) !== 'off';",
+    "old": "  return pageParam('capitals', search) !== 'off' || isOnlinePage(search);",
     "new": "  return true;",
     "tests": [
       "test/tesa10_capitals.test.js"
@@ -598,7 +598,7 @@
   {
     "name": "TESA10-host-stale-slot",
     "file": "src/scenes/world.js",
-    "old": "      if (at && had.capital.k === at.k && (had.arena?.id ?? null) === (slot?.id ?? null) && (had.arena?.provinceIndex ?? null) === (slot?.provinceIndex ?? null)) return had;",
+    "old": "      if (at && had.capital.k === at.k && (had.arena?.id ?? null) === (slot?.id ?? null) && (had.arena?.provinceIndex ?? null) === (slot?.provinceIndex ?? null)\n        && !!had.arena?.port === !!slot?.port) return had;",
     "new": "      if (at && had.capital.k === at.k) return had;",
     "tests": [
       "test/tesa10_capitals.test.js"
@@ -607,8 +607,8 @@
   {
     "name": "TESA10-host-not-deleted",
     "file": "src/scenes/world.js",
-    "old": "      if (at && had.capital.k === at.k && (had.arena?.id ?? null) === (slot?.id ?? null) && (had.arena?.provinceIndex ?? null) === (slot?.provinceIndex ?? null)) return had;\n      _locIndexGen += 1;\n      locationIndex.delete(key);",
-    "new": "      if (at && had.capital.k === at.k && (had.arena?.id ?? null) === (slot?.id ?? null) && (had.arena?.provinceIndex ?? null) === (slot?.provinceIndex ?? null)) return had;\n      _locIndexGen += 1;",
+    "old": "        && !!had.arena?.port === !!slot?.port) return had;   // AUDIT-TESA A4-F2: its place made a port, its slot too\n      _locIndexGen += 1;\n      locationIndex.delete(key);",
+    "new": "        && !!had.arena?.port === !!slot?.port) return had;   // AUDIT-TESA A4-F2: its place made a port, its slot too\n      _locIndexGen += 1;",
     "tests": [
       "test/tesa10_capitals.test.js"
     ]
@@ -661,8 +661,8 @@
   {
     "name": "TESA10-sweep-every-frame",
     "file": "src/scenes/world.js",
-    "old": "    if (fit === _capitalSwept && land === _capitalSweptLand) return;\n    _capitalSwept = fit;",
-    "new": "    _capitalSwept = fit;",
+    "old": "    if (fit === _capitalSwept && land === _capitalSweptLand) return;\n    const moved = _capitalSwept !== null;",
+    "new": "    const moved = _capitalSwept !== null;",
     "tests": [
       "test/tesa10_capitals.test.js"
     ]
@@ -670,8 +670,8 @@
   {
     "name": "TESA10-sweep-only-new",
     "file": "src/scenes/world.js",
-    "old": "      if (!!capitalOnPixel(p.px, p.py) !== !!locationIndex.get(`${p.px},${p.py}`)?.capital) again.push({ px: p.px, py: p.py });",
-    "new": "      if (capitalOnPixel(p.px, p.py)) again.push({ px: p.px, py: p.py });",
+    "old": "      if (rolled || cap !== !!had?.capital) again.push({ px: p.px, py: p.py });",
+    "new": "      if (cap) again.push({ px: p.px, py: p.py });",
     "tests": [
       "test/tesa10_capitals.test.js"
     ]
@@ -886,8 +886,8 @@
   {
     "name": "TESA10b-anchor-moved",
     "file": "src/world/tamrielCapitals.js",
-    "old": "    anchor: Object.freeze([2, 3]), blocks: SOLITUDE_BLOCKS,",
-    "new": "    anchor: Object.freeze([2, 2]), blocks: SOLITUDE_BLOCKS,",
+    "old": "    anchor: Object.freeze([2, 3]), markers:",
+    "new": "    anchor: Object.freeze([2, 2]), markers:",
     "tests": [
       "test/tesa10_capitals.test.js"
     ]

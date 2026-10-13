@@ -11,7 +11,7 @@
 // WHERE: the capital's point on Daggerfall's map of Tamriel (world/tamrielGeography.js CITIES - TAMRIEL1's, the port's own
 // reading of the picture), on the live fit - every client's the same pixel, with Arena attached or not. With Arena
 // attached, Arena's place of the capital's name stands on it too (world/arenaPlaces.js standArenaPixels' `pinned`), so its
-// roads, its map ink and the journey all lead here.
+// roads, its map ink and a portal's end all lead here (TESA-NO-FAST: the map is no journey past the Bay).
 //
 // THE IMPERIAL CITY (IMPERIAL_CITY_PLAN): an island city in a ring of water - the 8 x 8 grid's outer ring the lake (port
 // blocks all water), a 6 x 6 city inside it within a towered wall of eight sides, its four corners gardens the wall cuts
@@ -58,8 +58,9 @@ export const CAPITAL_LANE = 0x341;
 export const CAPITAL_INDEX_BASE = 41000000;
 /** The hash's salt. */
 export const CAPITAL_SALT = 0xca9c;
-/** The port blocks' fixed indices (formats/worldDataReplacement.js registerPortBlock: past any BSA; the arena's 900100). */
-export const CAPITAL_BLOCK_INDEX = 900200;
+/** The port blocks' fixed indices (formats/worldDataReplacement.js registerPortBlock: past any BSA; the arena's 900100;
+ *  AUDIT-TESA: past the Shadow Realm's 900200 too - world/sdRealm.js SD_REALM_BLOCK_INDEX). */
+export const CAPITAL_BLOCK_INDEX = 900400;
 /** The port's own blocks a capital lays, by name. */
 export const CAPITAL_BLOCKS = Object.freeze({
   lake: 'TESALAKE.RMB',
@@ -128,7 +129,8 @@ export const IMPERIAL_BLOCKS = Object.freeze(Object.fromEntries(CAPITAL_BLOCKS.g
 /** SOLITUDE'S MEASURES, metres from its anchor (the grid point (2, 3): the city's west edge, level with the arch) - x
  *  east, z south: the sea stack, the arch (its deck from the stack's top to the terrace's, its opening between its
  *  springs over the river), the terrace and its ramp, the Blue Palace on the stack, the walls, Castle Dour, the keep and
- *  the Emperor's Tower, the quay and the docks. */
+ *  the Emperor's Tower, the quay and the docks. AUDIT-TESA A6-3: the walls and their towers clear of the city's blocks (they
+ *  stood up to 2 m into a house's block on the north, south and west). */
 export const SOLITUDE = Object.freeze({
   stack: Object.freeze({ x: -160, z: 0, r: 35, top: 30 }),
   arch: Object.freeze({ from: -128, to: 2, w: 28, topW: 30, topE: 14, springW: -112, springE: -8, crown: 14, parapet: 1.1 }),
@@ -140,7 +142,7 @@ export const SOLITUDE = Object.freeze({
     turret: Object.freeze({ r: 4, h: 28, roof: 10 }),
   }),
   wall: Object.freeze({
-    west: -4, north: -106, east: 604, south: 413, thick: 5, h: 14, tower: 10, towerH: 20, gate: 10, gateH: 9,
+    west: -7, north: -108, east: 604, south: 416, thick: 5, h: 14, tower: 10, towerH: 20, gate: 10, gateH: 9,
     northGate: 250, southGate: 300, archGap: 17,
     along: Object.freeze({ north: Object.freeze([100, 430]), south: Object.freeze([120, 470]), west: Object.freeze([150, 290]), east: Object.freeze([40, 170, 300]) }),
   }),
@@ -194,22 +196,23 @@ export const SOLITUDE_DISTRICTS = Object.freeze({
 
 /** The capitals the port builds, in their ordinal order: the name (Arena's and TAMRIEL1's), the province, the point on
  *  the picture (world/tamrielGeography.js CITIES), whether it stands on the shore, the plan and its districts, its
- *  anchor, its own blocks and its models. */
+ *  anchor, its start markers (AUDIT-TESA A6-1: the anchor's metres, on its own open ground - a plaza, a terrace, a
+ *  quay), its own blocks and its models; its tag (AUDIT-TESA A6-2: its gardens' names, capitalGardenName). */
 export const CAPITALS = Object.freeze([
-  Object.freeze({ key: 'imperial-city', name: 'Imperial City', province: 'Imperial', at: Object.freeze([178, 96]), shore: false, plan: IMPERIAL_CITY_PLAN, districts: IMPERIAL_DISTRICTS,
-    anchor: Object.freeze([4, 4]), blocks: IMPERIAL_BLOCKS, models: Object.freeze([CAPITAL_MODELS.whiteGoldTower, CAPITAL_MODELS.imperialWall, CAPITAL_MODELS.imperialInnerWall, CAPITAL_MODELS.imperialBridges]) }),
-  Object.freeze({ key: 'solitude', name: 'Solitude', province: 'Skyrim', at: Object.freeze([136, 26]), shore: true, plan: SOLITUDE_PLAN, districts: SOLITUDE_DISTRICTS,
-    anchor: Object.freeze([2, 3]), blocks: SOLITUDE_BLOCKS, models: Object.freeze([CAPITAL_MODELS.solitudeArch, CAPITAL_MODELS.bluePalace, CAPITAL_MODELS.solitudeWall, CAPITAL_MODELS.castleDour, CAPITAL_MODELS.solitudeDocks]) }),
-  Object.freeze({ key: 'mournhold', name: 'Mournhold', province: 'Morrowind', at: Object.freeze([250, 92]), shore: false, plan: MOURNHOLD_PLAN, districts: MOURNHOLD_DISTRICTS,
-    anchor: Object.freeze([4, 4]), blocks: MOURNHOLD_BLOCKS, models: Object.freeze([CAPITAL_MODELS.mournholdPlaza, CAPITAL_MODELS.highFane, CAPITAL_MODELS.mournholdPalace, CAPITAL_MODELS.greatBazaar, CAPITAL_MODELS.mournholdWall]) }),
-  Object.freeze({ key: 'alinor', name: 'Alinor', province: 'Sumurset', at: Object.freeze([38, 154]), shore: true, plan: ALINOR_PLAN, districts: ALINOR_DISTRICTS,
-    anchor: Object.freeze([4, 2]), blocks: ALINOR_BLOCKS, models: Object.freeze([CAPITAL_MODELS.alinorPalace, CAPITAL_MODELS.crystalTower, CAPITAL_MODELS.alinorHarbour, CAPITAL_MODELS.alinorWall]) }),
-  Object.freeze({ key: 'falinesti', name: 'Falinesti', province: 'Valenwood', at: Object.freeze([118, 150]), shore: false, plan: FALINESTI_PLAN, districts: FALINESTI_DISTRICTS,
-    anchor: Object.freeze([4, 4]), blocks: FALINESTI_BLOCKS, models: Object.freeze([CAPITAL_MODELS.grahtOak]) }),
-  Object.freeze({ key: 'torval', name: 'Torval', province: 'Elsweyr', at: Object.freeze([156, 168]), shore: true, plan: TORVAL_PLAN, districts: TORVAL_DISTRICTS,
-    anchor: Object.freeze([4, 3]), blocks: TORVAL_BLOCKS, models: Object.freeze([CAPITAL_MODELS.manePalace, CAPITAL_MODELS.twoMoonsTemple, CAPITAL_MODELS.torvalQuay, CAPITAL_MODELS.torvalWall]) }),
-  Object.freeze({ key: 'helstrom', name: 'Helstrom', province: 'BlackMarsh', at: Object.freeze([254, 128]), shore: false, plan: HELSTROM_PLAN, districts: HELSTROM_DISTRICTS,
-    anchor: Object.freeze([4, 3]), blocks: HELSTROM_BLOCKS, models: Object.freeze([CAPITAL_MODELS.xanmeer, CAPITAL_MODELS.hist, CAPITAL_MODELS.helstromWalks, CAPITAL_MODELS.palisade]) }),
+  Object.freeze({ key: 'imperial-city', tag: 'IC', name: 'Imperial City', province: 'Imperial', at: Object.freeze([178, 96]), shore: false, plan: IMPERIAL_CITY_PLAN, districts: IMPERIAL_DISTRICTS,
+    anchor: Object.freeze([4, 4]), markers: Object.freeze([[42, 0], [-42, 0], [0, 42], [0, -42]]), blocks: IMPERIAL_BLOCKS, models: Object.freeze([CAPITAL_MODELS.whiteGoldTower, CAPITAL_MODELS.imperialWall, CAPITAL_MODELS.imperialInnerWall, CAPITAL_MODELS.imperialBridges]) }),
+  Object.freeze({ key: 'solitude', tag: 'SO', name: 'Solitude', province: 'Skyrim', at: Object.freeze([136, 26]), shore: true, plan: SOLITUDE_PLAN, districts: SOLITUDE_DISTRICTS,
+    anchor: Object.freeze([2, 3]), markers: Object.freeze([[90, -60], [90, 60], [200, -130]]), blocks: SOLITUDE_BLOCKS, models: Object.freeze([CAPITAL_MODELS.solitudeArch, CAPITAL_MODELS.bluePalace, CAPITAL_MODELS.solitudeWall, CAPITAL_MODELS.castleDour, CAPITAL_MODELS.solitudeDocks]) }),
+  Object.freeze({ key: 'mournhold', tag: 'MH', name: 'Mournhold', province: 'Morrowind', at: Object.freeze([250, 92]), shore: false, plan: MOURNHOLD_PLAN, districts: MOURNHOLD_DISTRICTS,
+    anchor: Object.freeze([4, 4]), markers: Object.freeze([[40, 0], [-40, 0], [0, 40], [0, -40]]), blocks: MOURNHOLD_BLOCKS, models: Object.freeze([CAPITAL_MODELS.mournholdPlaza, CAPITAL_MODELS.highFane, CAPITAL_MODELS.mournholdPalace, CAPITAL_MODELS.greatBazaar, CAPITAL_MODELS.mournholdWall]) }),
+  Object.freeze({ key: 'alinor', tag: 'AL', name: 'Alinor', province: 'Sumurset', at: Object.freeze([38, 154]), shore: true, plan: ALINOR_PLAN, districts: ALINOR_DISTRICTS,
+    anchor: Object.freeze([4, 2]), markers: Object.freeze([[0, 60], [-75, -60], [75, -60], [100, 440]]), blocks: ALINOR_BLOCKS, models: Object.freeze([CAPITAL_MODELS.alinorPalace, CAPITAL_MODELS.crystalTower, CAPITAL_MODELS.alinorHarbour, CAPITAL_MODELS.alinorWall]) }),
+  Object.freeze({ key: 'falinesti', tag: 'FA', name: 'Falinesti', province: 'Valenwood', at: Object.freeze([118, 150]), shore: false, plan: FALINESTI_PLAN, districts: FALINESTI_DISTRICTS,
+    anchor: Object.freeze([4, 4]), markers: Object.freeze([[80, 0], [-80, 0], [0, 80], [0, -80]]), blocks: FALINESTI_BLOCKS, models: Object.freeze([CAPITAL_MODELS.grahtOak]) }),
+  Object.freeze({ key: 'torval', tag: 'TO', name: 'Torval', province: 'Elsweyr', at: Object.freeze([156, 168]), shore: true, plan: TORVAL_PLAN, districts: TORVAL_DISTRICTS,
+    anchor: Object.freeze([4, 3]), markers: Object.freeze([[0, 20], [-60, 20], [60, 20], [100, 340]]), blocks: TORVAL_BLOCKS, models: Object.freeze([CAPITAL_MODELS.manePalace, CAPITAL_MODELS.twoMoonsTemple, CAPITAL_MODELS.torvalQuay, CAPITAL_MODELS.torvalWall]) }),
+  Object.freeze({ key: 'helstrom', tag: 'HE', name: 'Helstrom', province: 'BlackMarsh', at: Object.freeze([254, 128]), shore: false, plan: HELSTROM_PLAN, districts: HELSTROM_DISTRICTS,
+    anchor: Object.freeze([4, 3]), markers: Object.freeze([[70, 0], [-70, 0], [0, 70], [0, -70]]), blocks: HELSTROM_BLOCKS, models: Object.freeze([CAPITAL_MODELS.xanmeer, CAPITAL_MODELS.hist, CAPITAL_MODELS.helstromWalks, CAPITAL_MODELS.palisade]) }),
 ]);
 
 /** A capital's map id, its location index, and whether a map id is a capital's. */
@@ -238,8 +241,9 @@ export function capitalPixel(cap) {
   for (let r = 1; r <= CAPITAL_REACH; r++) {
     let at = null, bd = Infinity;
     for (let dy = -r; dy <= r; dy++) {
-      for (let dx = -r; dx <= r; dx++) {
-        if (Math.max(Math.abs(dx), Math.abs(dy)) !== r) continue;   // the ring alone - the ones inside it were asked
+      // the ring alone - the ones inside it were asked (AUDIT-TESA A4-F5: walked, not skipped: its top and bottom rows
+      // whole, its sides their two ends - the same cells in the same order, 8r a ring and never (2r + 1)^2)
+      for (let dx = -r; dx <= r; dx += Math.abs(dy) === r ? 1 : 2 * r) {
         const d = Math.hypot(fx + dx + 0.5 - x, fy + dy + 0.5 - y);
         if (d < bd && ok(fx + dx, fy + dy)) { bd = d; at = { px: fx + dx, py: fy + dy }; }
       }
@@ -267,7 +271,7 @@ export function capitalOnPixel(px, py) {
 }
 let _standing = false, _version = 0;
 /** TESA10d: does a host stand the capitals - the world host with the land past the Bay and the capitals' door open (its
- *  boot says so; Arena attached or not). The map's journey to a capital reads it; a change moves the version, so the
+ *  boot says so; Arena attached or not). The map's ink of a capital, and a portal's end there, read it; a change moves the version, so the
  *  ink is made again. */
 export function setCapitalsStanding(on) {
   if (!!on === _standing) return;
@@ -310,8 +314,12 @@ export function cityBlockNames(rows) {
   return new Map([...out].map(([k, s]) => [k, [...s].sort()]));
 }
 
+/** AUDIT-TESA A6-2: a capital's garden at its plan's (cx, r) - a block of its own, so the walls a capital's models raise
+ *  over it close its ground and keep its trees off them (capitalPortBlocks' `footprint`). */
+export const capitalGardenName = (cap, cx, r) => `TESG${cap.tag}${r}${cx}.RMB`;
+
 /** A plan's block names in the grid's order (row by row from the SOUTH - the plan's last row first): the port's own for
- *  its lake, its gardens and the capital's own blocks (`own`, the capital's `blocks`), a classic block of each other
+ *  its lake, its gardens (the capital's own, capitalGardenName) and the capital's own blocks (`own`, the capital's `blocks`), a classic block of each other
  *  cell's kind off the cell's hash (its plan column and row) - null where a kind has none. */
 export function capitalBlockNames(plan, k, names, own = CAPITALS[k]?.blocks ?? {}) {
   const out = [];
@@ -319,7 +327,7 @@ export function capitalBlockNames(plan, k, names, own = CAPITALS[k]?.blocks ?? {
     for (let x = 0; x < plan[r].length; x++) {
       const cell = plan[r][x];
       if (cell === 'L') out.push(CAPITAL_BLOCKS.lake);
-      else if (cell === 'G') out.push(CAPITAL_BLOCKS.garden);
+      else if (cell === 'G') out.push(CAPITALS[k] ? capitalGardenName(CAPITALS[k], x, r) : CAPITAL_BLOCKS.garden);   // AUDIT-TESA A6-2: its own
       else if (Object.hasOwn(own, cell)) out.push(own[cell].name);
       else {
         const list = names?.get(cell);
@@ -361,12 +369,16 @@ export function capitalBuildings(blockNames, blockOf, k, locationId) {
 export const tileCentre = (tx, ty) => [(tx + 0.5) * TILE_M, (15 - ty + 0.5) * TILE_M];
 export const autoCentre = (ax, ay) => [(ax + 0.5) * AUTO_M, (63 - ay + 0.5) * AUTO_M];
 
+/** AUDIT-TESA A6-5: a closed automap cell's byte - in no quarter and no show-all byte (ui/townQuarters.js quarterOf,
+ *  isShowAllByte): the walkers' navgrid shut there (world/cityNavigation.js: any byte but 0), the town map painting none
+ *  - a wall's byte 1 was BuildingType 0 + 1, an alchemist's, drawn and pressed as a shop. */
+export const CAPITAL_CLOSED_BYTE = 0xfe;
 /** A block of the port's own in DFU's world-data JSON (formats/worldDataReplacement.js blockFromJson): its ground tiles
  *  (`tile(x, z)` - a record, by the tile centre's metres), its trees (`tree(x, z)` - a scenery record or -1), its automap
- *  (`closed(x, z)`), its misc models.
+ *  (`closed(x, z)`), its misc models and (AUDIT-TESA A6-1) its flats.
  * @param {string} name
- * @param {{ tile: (x: number, z: number) => number, tree?: (x: number, z: number) => number, closed?: (x: number, z: number) => boolean, models?: any[] }} o */
-export function portBlockJson(name, { tile, tree = () => -1, closed = () => false, models = [] }) {
+ * @param {{ tile: (x: number, z: number) => number, tree?: (x: number, z: number) => number, closed?: (x: number, z: number) => boolean, models?: any[], flats?: any[] }} o */
+export function portBlockJson(name, { tile, tree = () => -1, closed = () => false, models = [], flats = [] }) {
   const GroundTiles = [], GroundScenery = [], AutoMapData = [];
   for (let ty = 0; ty < 16; ty++) {
     for (let tx = 0; tx < 16; tx++) {
@@ -375,12 +387,16 @@ export function portBlockJson(name, { tile, tree = () => -1, closed = () => fals
       GroundScenery.push({ TextureRecord: tree(x, z) });
     }
   }
-  for (let ay = 0; ay < 64; ay++) for (let ax = 0; ax < 64; ax++) { const [x, z] = autoCentre(ax, ay); AutoMapData.push(closed(x, z) ? 1 : 0); }
+  for (let ay = 0; ay < 64; ay++) for (let ax = 0; ax < 64; ax++) { const [x, z] = autoCentre(ax, ay); AutoMapData.push(closed(x, z) ? CAPITAL_CLOSED_BYTE : 0); }
   return {
     Name: name, Type: 'Rmb', Position: 0,
-    RmbBlock: { FldHeader: { GroundData: { GroundTiles, GroundScenery }, AutoMapData, BuildingDataList: [], Name: name }, SubRecords: [], Misc3dObjectRecords: models, MiscFlatObjectRecords: [] },
+    RmbBlock: { FldHeader: { GroundData: { GroundTiles, GroundScenery }, AutoMapData, BuildingDataList: [], Name: name }, SubRecords: [], Misc3dObjectRecords: models, MiscFlatObjectRecords: flats },
   };
 }
+/** AUDIT-TESA A6-1: a START MARKER at a block's metres (x, z) on the ground - the editor's flat (archive 199, record 10:
+ *  world/locationEntrance.js locationStartMarkers) an arrival - a portal's, a load's, a respawn's - lands by; DFU's flat record law
+ *  (world/rmbFlats.js collectBlockFlats: x * 0.025, z + 4096). */
+export const startMarkerAt = (x, z) => ({ Position: 0, XPos: Math.round(x / 0.025), YPos: 0, ZPos: Math.round(z / 0.025) - RMB_UNITS, TextureArchive: 199, TextureRecord: 10, FactionID: 0, Flags: 0 });
 /** A misc model at a block's metres (x, z) on the ground, by DFU's own record law (world/rmbLayout.js: x * 0.025,
  *  (-y + PROPS_OFFSET_Y) * 0.025, (z + 4096) * 0.025). */
 export const miscModelAt = (id, x, z) => ({ ModelId: String(id), ModelIdNum: id, ObjectType: 0, XPos: Math.round(x / 0.025), YPos: -4, ZPos: Math.round(z / 0.025) - RMB_UNITS, XRotation: 0, YRotation: 0, ZRotation: 0 });
@@ -404,19 +420,31 @@ export function capitalCarrier(cap) {
  *  north - the block's, world/rmbLayout.js and tileCentre's). */
 export const anchorMetres = (cap, cx, r, x, z) => [(cx - cap.anchor[0]) * BLOCK_M + x, (r + 1 - cap.anchor[1]) * BLOCK_M - z];
 
+/** A garden's tree at a tile's centre (x, z, the block's metres): one in five off its hash, of the climate's own. */
+const gardenTree = (x, z) => { const h = hash32(CAPITAL_SALT, Math.floor(x), Math.floor(z), 9); return h % 5 === 0 ? GARDEN_TREES[(h >>> 3) % GARDEN_TREES.length] : -1; };
+/** A tile's sixteen automap cells' centres about its centre: a tree stands only where none of them is under a model. */
+const TILE_CELLS = Object.freeze([-2.4, -0.8, 0.8, 2.4].flatMap((a) => [-2.4, -0.8, 0.8, 2.4].map((b) => Object.freeze([a, b]))));
+
 /**
  * THE PORT'S BLOCKS: the lake (all water) and the garden (grass and trees), every capital's; then each capital's own
  * (its `blocks`, in its plan's order), their ground, trees and closed cells its laws of the metres from its anchor - and
- * the one capitalCarrier names carrying its models there.
+ * the one capitalCarrier names carrying its models there; then each capital's gardens (AUDIT-TESA A6-2), the shared
+ * garden's grass and trees at its plan's cells. `footprint(cap)` (world/capitalModels.js capitalFootprint) answers
+ * where the capital's models stand - `(x, z) => boolean`, the anchor's metres - and every one of its blocks closes its
+ * automap there, its gardens' trees kept off it: a wall the models raise over a garden or an own block is a wall to the
+ * walkers too (world/cityNavigation.js), not ground to cross. Each block's JSON is built when it is first read
+ * (`json`, a getter; formats/worldDataReplacement.js registerPortBlock takes it as a function), the footprint with
+ * it: a capital's models are built when one of its blocks is.
+ * @param {{ footprint?: (cap: any) => ((x: number, z: number) => boolean) | null }} [o]
  * @returns {Array<{ name: string, index: number, json: any }>}
  */
-export function capitalPortBlocks() {
+export function capitalPortBlocks({ footprint = null } = {}) {
   const out = [];
+  const lazy = (name, index, make) => { let json = null; out.push({ name, index, get json() { return (json ??= make()); } }); };
   out.push({ name: CAPITAL_BLOCKS.lake, index: CAPITAL_BLOCK_INDEX, json: portBlockJson(CAPITAL_BLOCKS.lake, { tile: () => 0 }) });
-  out.push({ name: CAPITAL_BLOCKS.garden, index: CAPITAL_BLOCK_INDEX + 1, json: portBlockJson(CAPITAL_BLOCKS.garden, {
-    tile: () => 2,
-    tree: (x, z) => { const h = hash32(CAPITAL_SALT, Math.floor(x), Math.floor(z), 9); return h % 5 === 0 ? GARDEN_TREES[(h >>> 3) % GARDEN_TREES.length] : -1; },
-  }) });
+  out.push({ name: CAPITAL_BLOCKS.garden, index: CAPITAL_BLOCK_INDEX + 1, json: portBlockJson(CAPITAL_BLOCKS.garden, { tile: () => 2, tree: gardenTree }) });
+  const stands = new Map();
+  const standsOf = (cap) => { if (!stands.has(cap.key)) stands.set(cap.key, footprint?.(cap) ?? null); return stands.get(cap.key); };
   for (const cap of CAPITALS) {
     const carrier = capitalCarrier(cap);
     cap.plan.forEach((row, r) => row.forEach((cell, cx) => {
@@ -424,17 +452,52 @@ export function capitalPortBlocks() {
       if (!own) return;
       // the anchor in the block's own metres: where anchorMetres answers (0, 0)
       const at = [(cap.anchor[0] - cx) * BLOCK_M, (r + 1 - cap.anchor[1]) * BLOCK_M];
-      out.push({ name: own.name, index: CAPITAL_BLOCK_INDEX + out.length, json: portBlockJson(own.name, {
-        tile: (x, z) => own.tile(...anchorMetres(cap, cx, r, x, z)),
-        closed: (x, z) => own.closed(...anchorMetres(cap, cx, r, x, z)),
-        models: cell === carrier ? cap.models.map((id) => miscModelAt(id, at[0], at[1])) : [],
-      }) });
+      lazy(own.name, CAPITAL_BLOCK_INDEX + out.length, () => {
+        const under = standsOf(cap);
+        return portBlockJson(own.name, {
+          tile: (x, z) => own.tile(...anchorMetres(cap, cx, r, x, z)),
+          closed: (x, z) => { const [dx, dz] = anchorMetres(cap, cx, r, x, z); return own.closed(dx, dz) || !!under?.(dx, dz); },
+          models: cell === carrier ? cap.models.map((id) => miscModelAt(id, at[0], at[1])) : [],
+          // AUDIT-TESA A6-1: its start markers with them, the anchor's metres (z south) to the block's (z north)
+          flats: cell === carrier ? (cap.markers ?? []).map(([dx, dz]) => startMarkerAt(at[0] + dx, at[1] - dz)) : [],
+        });
+      });
+    }));
+  }
+  for (const cap of CAPITALS) {
+    cap.plan.forEach((row, r) => row.forEach((cell, cx) => {
+      if (cell !== 'G') return;
+      const name = capitalGardenName(cap, cx, r);
+      lazy(name, CAPITAL_BLOCK_INDEX + out.length, () => {
+        const under = standsOf(cap), on = (x, z) => !!under?.(...anchorMetres(cap, cx, r, x, z));
+        return portBlockJson(name, { tile: () => 2, tree: (x, z) => (TILE_CELLS.some(([a, b]) => on(x + a, z + b)) ? -1 : gardenTree(x, z)), closed: on });
+      });
     }));
   }
   return out;
 }
 
 // ---------------------------------------------------------------- the location
+
+/** AUDIT-TESA A6-4: the kinds of Daggerfall's city blocks that can carry a canal or a quay's water (CUST - a town on the
+ *  water's), and how many water tiles (record 0) make a block wet. */
+const WET_KINDS = Object.freeze(['CUST']);
+const WET_TILES = 8;
+/** AUDIT-TESA A6-4: AN INLAND CAPITAL'S BLOCKS - each wet kind's list (`names`) kept to its dry blocks (`blockOf(name)`'s
+ *  ground holds fewer than WET_TILES water tiles), so no canal runs out of a city on no water (Mournhold's did); the
+ *  list whole where none of it is dry. */
+export function dryKinds(names, blockOf) {
+  if (!names) return names;
+  const out = new Map(names);
+  for (const kind of WET_KINDS) {
+    const list = names.get(kind);
+    if (!list?.length) continue;
+    const wet = (name) => { let n = 0; for (const col of blockOf(name)?.rmbBlock?.fldHeader?.groundData?.groundTiles ?? []) for (const t of col ?? []) if (t?.textureRecord === 0) n++; return n >= WET_TILES; };
+    const dry = list.filter((name) => !wet(name));
+    if (dry.length) out.set(kind, dry);
+  }
+  return out;
+}
 
 /**
  * A CAPITAL'S LOCATION: a city of its own on `base`'s shape (a TownCity row of the game's, for the fields a city carries
@@ -448,7 +511,7 @@ export function capitalPortBlocks() {
  */
 export function synthesizeCapitalLocation({ cap, k }, ctx) {
   const plan = cap.plan, width = plan[0].length, height = plan.length;
-  const blockNames = capitalBlockNames(plan, k, ctx.names);
+  const blockNames = capitalBlockNames(plan, k, cap.shore ? ctx.names : dryKinds(ctx.names, ctx.blockOf));   // AUDIT-TESA A6-4
   if (!blockNames || !ctx.base) return null;
   const mapId = capitalPlaceId(k);
   const ll = mapPixelToLongitudeLatitude(ctx.px, ctx.py);

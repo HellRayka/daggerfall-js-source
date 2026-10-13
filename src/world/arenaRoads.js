@@ -37,7 +37,7 @@ import { GENERATOR_VERSION } from './roadsCache.js';
 export const ARENA_ROAD_MARGIN = 40;
 /** Bump when the layer's shape changes - the window, the raster, the ground a cell reads. The Bay's generator rides the
  *  key on its own (GENERATOR_VERSION, ROAD_DIALS). */
-export const ARENA_ROADS_VERSION = 1;
+export const ARENA_ROADS_VERSION = 2;   // AUDIT-TESA A3-1: a shore town's cell its land
 
 /**
  * THE WINDOW over the towns: its north-west Bay pixel and its scale - the least integer at which the extent and its
@@ -85,6 +85,9 @@ export function buildArenaNetwork({ towns, window, heightAt, isWater }) {
     const [u, v] = windowCell(window, t.x, t.y);
     if (taken.has(v * MAP_W + u)) continue;
     taken.add(v * MAP_W + u);
+    // AUDIT-TESA A3-1: a town on the shore (TESA6's ports, a shore capital) can stand in a cell whose centre is the sea -
+    // its own cell is its land, at its own pixel's height, so the roads reach it
+    if (!inBay(t.x, t.y)) { water[v * MAP_W + u] = 0; heights[v * MAP_W + u] = heightAt(t.x, t.y); }
     locations.push({ x: u, y: v, type: t.type });
   }
   return buildRoadNetwork({ locations, heightAt: (u, v) => heights[v * MAP_W + u], isWater: (u, v) => water[v * MAP_W + u] === 1 });

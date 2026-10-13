@@ -273,8 +273,8 @@
   {
     "name": "TESA6-no-harbour-book",
     "file": "src/scenes/world.js",
-    "old": "      if (aloc?.exterior?.exteriorData) town = { id: `arena:",
-    "new": "      if (false) town = { id: `arena:",
+    "old": "      if (aloc?.exterior?.exteriorData) town = { id: maskMapId(",
+    "new": "      if (false) town = { id: maskMapId(",
     "tests": [
       "test/tesa6_ports.test.js"
     ]
