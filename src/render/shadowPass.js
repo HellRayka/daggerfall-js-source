@@ -1933,7 +1933,6 @@ export class ShadowPass {
           this._slotSelf[k] = selfWant;
         }
         this._slotCached[k] = 0; this._slotLiveDyn[k] = 0; this._faceDyn.fill(1, k * 6, k * 6 + 6);   // PERF-FACE: no cache to be equal to
-        this._slotBodySig[k * 2 + 1] = -1;   // LIGHT-ID: the live layers hold everything in reach, never the bodies alone
       } else {
         // SC1: the static cache, drawn only when the light or the static set in its reach changed
         const sigHash = this._sigOut[rank * 2], sigCount = this._sigOut[rank * 2 + 1];   // PERF-EXT3: folded above

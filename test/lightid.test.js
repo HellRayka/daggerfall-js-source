@@ -1,13 +1,15 @@
 // LIGHT-ID (2026-10-14, Mac: "Engine fix (Recommended)" - FIELD BUGS 2026-10-13e AOE-PERF's follow-up, the gate boss's
 // lights): A LIGHT IS SOMEBODY'S LIGHT. bible/07-Rendering/Enhanced-Lighting-Arc.md LIGHT-ID.
 //
-// Pinned: THE ONE CONSTRUCTION SEAM - no light is written into a frame's list but through render/lightId.js (the source
-// swept), each composer's list carrying its records' identities, and the pools that refill in order naming each entry
-// by the light it stands for; the identity's own laws (a record keeps it and never shows it, a copy or a fresh record
-// is another light unless it adopts, a pool adopts, a reused record is relit, a frozen record has one); the renderer lifting it for the shadow pass
-// and keeping it through the flash and a snapshot; THE MOVER - a light that moved, by its identity, draws its cube whole
-// (no static cache, no copy), the same casters into the same layers, and goes back to its cache when it stops, while a
-// light with no name (an anonymous list, a new record each frame) keeps the cached path; and the court's own counts
+// Pinned: THE SHAPE A HOST HANDS - every host's own light composition, run from its source, hands the renderer a list
+// naming every light in it by its producer's record; THE ONE CONSTRUCTION SEAM - no light is written into a frame's
+// list but through render/lightId.js (the source swept, a second net), each composer's list carrying its records'
+// identities, and the pools that refill in order naming each entry by the light it stands for; the identity's own laws
+// (a record keeps it and never shows it, a copy or a fresh record is another light unless it adopts, a pool adopts, a
+// reused record is relit, a frozen record has one); the renderer lifting it for the shadow pass and keeping it through
+// the flash and a snapshot; THE MOVER - a light that moved, by its identity, draws its cube whole (no static cache, no
+// copy), the same casters into the same layers, and goes back to its cache when it stops, while a light with no name
+// (an anonymous list, a new record each frame) keeps the cached path; and the court's own counts
 // (tools/courtShadowProbe.mjs) before and after. The lo tier's half (a light holding a 512 slot draws no lo map) is
 // disc15.test.js's.
 import { test } from 'node:test';
@@ -16,15 +18,19 @@ import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { lightIdOf, relight, adoptLight, lightList, packLight, copyLights, lightIdsOf, NO_LIGHT_ID } from '../src/render/lightId.js';
 import { Renderer, WORLD_FRAME } from '../src/render/renderer.js';
-import { EL_LANE } from '../src/render/enhancedLighting.js';
+import { EL_LANE, interiorLightColor } from '../src/render/enhancedLighting.js';
 import { SHADOW_TUNING, SHADOW_POINT_CASTERS } from '../src/render/shadowPass.js';
-import { nearestLights, fillLanternPool } from '../src/world/cityLights.js';
+import { nearestLights, fillLanternPool, capFadePairs, capFadeColors } from '../src/world/cityLights.js';
 import { withPlayerLights } from '../src/scenes/magicCandle.js';
-import { withCourtLights, courtLights } from '../src/world/gateArena.js';
+import { withCourtLights, courtLights, courtLightsNear } from '../src/world/gateArena.js';
 import { realmLightsWith, realmLightsNear } from '../src/world/sdRealm.js';
 import { bossGlow } from '../src/world/gateBoss.js';
 import { GATE_STATE_EMPTY } from '../src/net/gateLink.js';
 import { courtShadowCounts, meanOf, worstOf, CASE_FRAMES } from '../tools/courtShadowProbe.mjs';
+import { iilActive, iilTorch, iilDungeonLights, iilInteriorLights } from '../src/systems/improvedInteriorLighting.js';
+import { DUNGEON_LIGHT_BLOCK_RANGE } from '../src/world/dungeonLights.js';
+import { wodLightColors } from '../src/world/worldOfDaggerfall.js';
+import { exteriorRenderer } from './yardLightRig.mjs';
 
 const ROOT = new URL('..', import.meta.url).pathname;
 const rd = (p) => readFileSync(join(ROOT, p), 'utf8');
@@ -184,6 +190,138 @@ function room({ name = 'kept' } = {}) {
   };
   return { r, sp: r.shadows, frame };
 }
+
+/** A host's own text: from the line holding `from` through the line holding `to` (the first of each after it). */
+function hostText(file, from, to) {
+  const S = rd(file), a = S.indexOf(from);
+  assert.ok(a >= 0 && S.indexOf(from, a + 1) < 0, `${file}: the composition starts where this reads it, once`);
+  const b = S.indexOf(to, a);
+  assert.ok(b >= a, `${file}: and ends where this reads it`);
+  return S.slice(S.lastIndexOf('\n', a) + 1, S.indexOf('\n', b));
+}
+/** Run host text over `scope`: a free name the scope does not hold (nor the global object) throws, so a rig that missed
+ *  a producer fails rather than passing by not running it. */
+function runHost(src, scope) {
+  new Function('__s', `with (__s) {\n${src}\n}`)(new Proxy(scope, {
+    has: (_t, k) => k !== '__s',
+    get: (t, k) => { if (k === Symbol.unscopables) return undefined; if (k in t) return t[k]; if (k in globalThis) return globalThis[k]; throw new ReferenceError(`the rig lacks ${String(k)}`); },
+    set: (t, k, v) => { t[k] = v; return true; },
+  }));
+}
+/** A renderer on the lane (its cap 48, so nothing here is cut), every list it is handed kept with its identities. */
+function hearingRenderer(heard) {
+  const r = new Renderer(drawingGl().canvas);
+  r.setLightingLane(EL_LANE);
+  const set = r.setPointLights.bind(r);
+  r.setPointLights = (...a) => { set(...a); heard.push({ L: r._pointLights, ids: r._pointIds }); };
+  return r;
+}
+/** THE SHAPE A HOST HANDS: the list names every light in it, and the light standing at each producer record's place is
+ *  that record's (a position array's, for a town lantern). */
+function namesEvery(label, { L, ids: I }, records) {
+  const n = L.length / 4;
+  assert.ok(I, `${label}: the list the renderer took carries its lights' identities`);
+  assert.equal(I.length, n, `${label}: one a light`);
+  for (let i = 0; i < n; i++) assert.ok(I[i] > NO_LIGHT_ID, `${label}: light ${i} of ${n} (${L[i * 4]}, ${L[i * 4 + 1]}, ${L[i * 4 + 2]}) is somebody's`);
+  for (const r of records) {
+    const [x, y, z] = Array.isArray(r) ? r : [r.x, r.y, r.z];
+    const at = [...Array(n).keys()].filter((i) => Math.abs(L[i * 4] - x) < 1e-4 && Math.abs(L[i * 4 + 1] - y) < 1e-4 && Math.abs(L[i * 4 + 2] - z) < 1e-4);
+    assert.ok(at.length, `${label}: the light at (${x}, ${y}, ${z}) is in the list`);
+    assert.ok(at.some((i) => I[i] === lightIdOf(r)), `${label}: the light at (${x}, ${y}, ${z}) is its producer's`);
+  }
+}
+
+test('LIGHT-ID: THE SHAPE A HOST HANDS - every host\'s own light composition, run from its source (world.js\'s street by night, by day and with the World of Daggerfall\'s lights; worldModes.js\'s dungeon, the court, the Hour and a building; exterior.js; dungeon.js; interior.js), hands the renderer a list that names every light in it, each producer\'s record by its own identity - whatever way a light was written into it (mutants: a composer writing a light by hand; a pool keeping its slot\'s name; a copy not adopting)', () => {
+  const eye = [0, 1, 0];
+  // world.js - the street: lanterns (a pixel's position arrays), a yard's lamp, a port's lamp, a boat's and a quay's
+  // lanterns, and every hand and scene light the frame adds
+  const town = [[2, 3, 1], [-3, 3, 2], [1, 3, -4]];
+  const yard = { x: 4, y: 2, z: 4, range: 18, slot: 1 }, port = { x: -5, y: 6, z: -2, range: 18 };
+  const boat = { x: 6, y: 1, z: -3, range: 9, color: [1, 0.6, 0.2] }, quay = { x: -6, y: 2, z: 5, range: 12 };
+  const torch = { x: 0, y: 1.2, z: 0.3, range: 4, carried: true }, peer = { x: 2, y: 1.2, z: 2, range: 4, carried: true };
+  const camp = { x: -2, y: 0.6, z: -6, range: 12 }, thrown = { x: 3, y: 0.2, z: -1, range: 6 }, gate = { x: -1, y: 2, z: 6, range: 10 };
+  const wodLamp = { x: 5, y: 3, z: 6, range: 10, color: [1, 0.8, 0.6] };
+  for (const [night, wod] of [[true, false], [false, false], [true, true]]) {
+    const heard = [];
+    exteriorRenderer({ lane: true, night, town: [], lamps: [yard], eye, ranges: new Float32Array(64).fill(18), ports: [port] }, {
+      built: new Map([['0,0', { px: 0, py: 0, lights: town, ...(wod ? { wodLights: [wodLamp] } : {}) }]]),
+      wod: wod ? {} : null, csaOn: () => true, csa: { lights: () => [boat] }, quays: { lights: () => [quay] },
+      playerTorchLight: () => torch, peerTorchLights: () => [peer], gatePool: { lights: () => [gate] },
+      camps: { lights: () => [camp] }, droppedTorches: { lights: () => [thrown] },
+    }, (rr) => heard.push({ L: rr._pointLights, ids: rr._pointIds }));
+    assert.equal(heard.length, 1, 'world.js: one list a frame');
+    const label = `world.js, ${night ? 'by night' : 'by day'}${wod ? ', the mod\'s lights' : ''}`;
+    namesEvery(label, heard[0], [boat, torch, peer, gate, camp, thrown, ...(night ? [...town, yard, port, quay] : []), ...(wod ? [wodLamp] : [])]);
+  }
+  // worldModes.js - the dungeon arm: the level's torches, the context's candle, a camp and a thrown torch (both through
+  // the dungeon's flame tint, a copy a frame), a peer's torch, the abyss's candle; and the court's and the Hour's lists
+  const torches = [{ x: 2, y: 2, z: 1, range: 8 }, { x: -3, y: 2, z: 2, range: 8 }];
+  const candle = { x: 0, y: 1.6, z: 0.5, range: 6, carried: true }, glow = { x: 1, y: 3, z: -2, range: 9, color: [1.2, 0.5, 0.15] };
+  const dgArm = hostText('src/scenes/worldModes.js', '      const _iilOn = iilActive(renderer.lightingLane);', 'if (isSdRealm(dungeonLoc)) {');
+  const abyssCandleSrc = hostText('src/scenes/worldModes.js', '  const abyssCandle = (l, abyss) =>', '  const abyssCandle = (l, abyss) =>');
+  for (const arm of ['dungeon', 'court', 'hour']) {
+    for (const abyss of [null, { magicLightScale: 0.5, torchOff: false }]) {
+      const heard = [];
+      runHost(`${abyssCandleSrc}\n${dgArm}`, {
+        renderer: hearingRenderer(heard), cam: { pos: eye, yaw: 0 }, iilActive, iilTorch, iilDungeonLights, adoptLight, nearestLights, withPlayerLights, capFadePairs, withCourtLights, courtLightsNear, realmLightsWith,
+        dungeonCtx: { iilLightFlats: [], lights: torches, flicker: { ranges: new Float32Array([8, 8]) }, candleLight: () => candle, campLights: () => [camp], torchLights: () => [thrown], sdEndLights: () => [] },
+        _dgColor: new Float32Array([1, 0.7, 0.4]), _abyss: abyss, dungeonLoc: {}, DUNGEON_LIGHT_BLOCK_RANGE, NO_LIGHTS: [],
+        isGateArena: () => arm === 'court', isSdRealm: () => arm === 'hour',
+        playerTorchLight: () => torch, thunderlockMuzzleLight: () => null, playerEntity: {}, player: { feetAt: () => eye },
+        host: { peerLights: () => [peer], modeLights: () => [], gateCourtLights: () => [glow], sdRealmLights: () => [glow], sdLampDim: () => null },
+      });
+      assert.equal(heard.length, arm === 'dungeon' ? 1 : 2, `worldModes.js ${arm}: its lists`);
+      const label = `worldModes.js, ${arm}${abyss ? ' under the abyss' : ''}`;
+      namesEvery(label, heard[0], abyss ? [...torches, torch] : [...torches, candle, torch, peer, camp, thrown]);
+      if (arm !== 'dungeon') namesEvery(`${label} (its own list)`, heard[1], abyss ? [...torches, torch, glow] : [...torches, candle, torch, peer, camp, thrown, glow]);
+      if (abyss) {   // the abyss's copies (the candle at half, a peer's torch through the tint and the candle) adopt their lights
+        const I = heard.at(-1).ids, L = heard.at(-1).L, idAt = (l) => I[[...Array(L.length / 4).keys()].find((i) => Math.abs(L[i * 4] - l.x) < 1e-4 && Math.abs(L[i * 4 + 2] - l.z) < 1e-4)];
+        for (const l of [candle, peer, camp, thrown]) assert.equal(idAt(l), lightIdOf(l), `${label}: the copy of the light at (${l.x}, ${l.z}) is that light`);
+      }
+    }
+  }
+  // worldModes.js - a building: its lamps, the candle, the torch, a mode's light, a peer's, a dropped torch
+  const roomLamps = [{ x: 1, y: 3, z: 1, range: 10, color: [1, 1, 1], intensity: 1 }, { x: -2, y: 3, z: 3, range: 10, color: [1, 0.9, 0.8], intensity: 1.2 }];
+  const modeLight = { x: 0, y: 2, z: -3, range: 5 };
+  {
+    const heard = [];
+    runHost(hostText('src/scenes/worldModes.js', '    const _iilOnIt = iilActive(renderer.lightingLane);', '    renderer.setPointLights(_itLit.data, null, _itLit.colors);'), {
+      renderer: hearingRenderer(heard), cam: { pos: eye, yaw: 0 }, iilActive, iilTorch, iilInteriorLights, interiorLightColor, nearestLights, withPlayerLights,
+      interiorCtx: { lights: roomLamps, iilFireplaces: [] }, magic: { candleLight: () => candle }, playerTorchLight: () => torch, thunderlockMuzzleLight: () => null,
+      playerEntity: {}, player: { feetAt: () => eye }, host: { modeLights: () => [modeLight], peerLights: () => [peer] }, interiorTorches: { lights: () => [thrown] },
+    });
+    namesEvery('worldModes.js, a building', heard[0], [...roomLamps, candle, torch, modeLight, peer, thrown]);
+  }
+  // exterior.js - the fixed city's lanterns (records), the hand's lights, a camp, a dropped torch
+  const cityLamps = [{ x: 2, y: 3, z: 2 }, { x: -2, y: 3, z: -2 }];
+  for (const minute of [60, 720]) {
+    const heard = [];
+    runHost(hostText('src/scenes/exterior.js', '    const lightsOn = lightsOnAt(minute);', '      holdSel ? wodLightColors('), {
+      renderer: hearingRenderer(heard), minute, dt: 1 / 60, lightsOnAt: (m) => m < 300, lightAnimator: { tick() {}, ranges: new Float32Array(64).fill(18) },
+      holdLights: [], selectHoldLights: () => null, eye, cam: { pos: eye, yaw: 0 }, withPlayerLights, nearestLights, cityLights: cityLamps, magic: { candleLight: () => candle },
+      playerTorchLight: () => torch, thunderlockMuzzleLight: () => null, playerEntity: {}, player: { feetAt: () => eye }, camps: { lights: () => [camp] }, droppedTorches: { lights: () => [thrown] },
+      CITY_LIGHT_COLOR_F32: new Float32Array([1, 0.8, 0.6]), wodLightColors,
+    });
+    namesEvery(`exterior.js, ${minute < 300 ? 'by night' : 'by day'}`, heard[0], [candle, torch, camp, thrown, ...(minute < 300 ? cityLamps : [])]);
+  }
+  // dungeon.js and interior.js - the scenes' own arms
+  {
+    const heard = [];
+    runHost(hostText('src/scenes/dungeon.js', '    const _iilOn = iilActive(renderer.lightingLane);   // IIL1', '    else renderer.setPointLights(_lit, DUNGEON_LANTERN_F32,'), {
+      renderer: hearingRenderer(heard), cam: { pos: eye, yaw: 0 }, iilActive, iilTorch, iilDungeonLights, nearestLights, withPlayerLights, capFadeColors, DUNGEON_LIGHT_BLOCK_RANGE,
+      ctx: { iilLightFlats: [], lights: torches, flicker: { ranges: new Float32Array([8, 8]) }, candleLight: () => candle, campLights: () => [camp], torchLights: () => [thrown] },
+      playerTorchLight: () => torch, thunderlockMuzzleLight: () => null, playerEntity: {}, player: { feetAt: () => eye }, DUNGEON_LANTERN_F32: new Float32Array([1, 0.7, 0.4]),
+    });
+    namesEvery('dungeon.js', heard[0], [...torches, candle, torch, camp, thrown]);
+  }
+  {
+    const heard = [];
+    runHost(hostText('src/scenes/interior.js', '    const _iil = iilActive(renderer.lightingLane) ? iilInteriorLights(ctx.lights', '    renderer.setPointLights(lit.data, null, lit.colors);'), {
+      renderer: hearingRenderer(heard), cam: { pos: eye, yaw: 0 }, iilActive, iilInteriorLights, interiorLightColor, nearestLights, ctx: { lights: roomLamps, iilFireplaces: [] },
+    });
+    namesEvery('interior.js', heard[0], roomLamps);
+  }
+});
 
 test('LIGHT-ID: THE MOVER - a light that moved (its own slot by its identity, another place) draws its cube whole, straight into the layers it is read from: six faces, no static face, no copy - and the frame it stands still it takes the cached path, which builds its cache once; the still lamps keep theirs (mutants: the mover judged by place alone; the slot found by place first; the mover drawn through its cache; its cache claimed after the move)', () => {
   const s = room();

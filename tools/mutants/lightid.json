@@ -251,5 +251,88 @@
     "tests": [
       "test/lightid.test.js"
     ]
+  },
+  {
+    "name": "LIGHT-ID-an-emptied-slot-keeps-its-name",
+    "file": "src/render/shadowPass.js",
+    "old": "this._slotLight[k * 4] = NaN; this._slotId[k] = NO_LIGHT_ID; this._slotCached[k] = 0;",
+    "new": "this._slotLight[k * 4] = NaN; this._slotCached[k] = 0;",
+    "tests": [
+      "test/lightid.test.js",
+      "test/disc15.test.js",
+      "test/sc1_shadowcache.test.js"
+    ],
+    "equivalent": true,
+    "why": "A schedule, never a map: an emptied slot's place is NaN, so a light that comes back to it by its kept name is judged moved and drawn whole straight into its layers - the same casters, the same map the cached path builds for a slot it takes afresh. Kept so the slot's name and its place say the same thing (nobody's), and a returning light still builds its cache on the frame it returns. Found by the LIGHT-ID audit (2026-10-15)."
+  },
+  {
+    "name": "LIGHT-ID-nearest-written-four-by-i",
+    "file": "src/world/cityLights.js",
+    "old": "    packLight(out, i, l, Number.isFinite(w) ? w : CITY_LIGHT_RANGE);",
+    "new": "    out[4 * i] = l.x; out[4 * i + 1] = l.y; out[4 * i + 2] = l.z; out[4 * i + 3] = Number.isFinite(w) ? w : CITY_LIGHT_RANGE;",
+    "tests": [
+      "test/lightid.test.js"
+    ],
+    "note": "LIGHT-ID audit (2026-10-15): a write the source sweep's forms miss - THE SHAPE A HOST HANDS must kill it."
+  },
+  {
+    "name": "LIGHT-ID-the-hand-set-by-hand",
+    "file": "src/scenes/magicCandle.js",
+    "old": "    packLight(out, i, l);",
+    "new": "    out.set([l.x, l.y, l.z, l.range * 1], i * 4);",
+    "tests": [
+      "test/lightid.test.js"
+    ],
+    "note": "LIGHT-ID audit (2026-10-15): a write the source sweep's forms miss - THE SHAPE A HOST HANDS must kill it."
+  },
+  {
+    "name": "LIGHT-ID-the-hour-written-at-an-offset",
+    "file": "src/world/sdRealm.js",
+    "old": "    packLight(H.data, i, l);   // LIGHT-ID: the one seam",
+    "new": "    { const o = i * 4; H.data[o] = l.x; H.data[o + 1] = l.y; H.data[o + 2] = l.z; H.data[o + 3] = l.range; }",
+    "tests": [
+      "test/lightid.test.js"
+    ],
+    "note": "LIGHT-ID audit (2026-10-15): a write the source sweep's forms miss - THE SHAPE A HOST HANDS must kill it."
+  },
+  {
+    "name": "LIGHT-ID-the-yard-row-keeps-its-slots-name",
+    "file": "src/scenes/homeYards.js",
+    "old": "    adoptLight(e, l);   // LIGHT-ID: the row is this lamp's this frame - the rows refill in the yards' order",
+    "new": "    void l;   // LIGHT-ID: the row is this lamp's this frame - the rows refill in the yards' order",
+    "tests": [
+      "test/lightid.test.js"
+    ],
+    "note": "LIGHT-ID audit (2026-10-15): a write the source sweep's forms miss - THE SHAPE A HOST HANDS must kill it."
+  },
+  {
+    "name": "LIGHT-ID-the-boats-pool-keeps-its-slots-name",
+    "file": "src/scenes/world.js",
+    "old": "      adoptLight(e, l);   // LIGHT-ID: and a boat's lantern its own, as she sails",
+    "new": "      void l;   // LIGHT-ID: and a boat's lantern its own, as she sails",
+    "tests": [
+      "test/lightid.test.js"
+    ],
+    "note": "LIGHT-ID audit (2026-10-15): a write the source sweep's forms miss - THE SHAPE A HOST HANDS must kill it."
+  },
+  {
+    "name": "LIGHT-ID-the-mods-pool-keeps-its-slots-name",
+    "file": "src/scenes/world.js",
+    "old": "        adoptLight(e, l);   // LIGHT-ID: the pool's entry is this light's this frame (the pool refills in `built`'s order)",
+    "new": "        void l;   // LIGHT-ID: the pool's entry is this light's this frame (the pool refills in `built`'s order)",
+    "tests": [
+      "test/lightid.test.js"
+    ],
+    "note": "LIGHT-ID audit (2026-10-15): a write the source sweep's forms miss - THE SHAPE A HOST HANDS must kill it."
+  },
+  {
+    "name": "LIGHT-ID-the-quay-a-new-light",
+    "file": "src/scenes/world.js",
+    "old": "csaLit.push(adoptLight({ x: l.x, y: l.y, z: l.z, range: l.range, color: CITY_LIGHT_COLOR_F32 }, l));",
+    "new": "csaLit.push({ x: l.x, y: l.y, z: l.z, range: l.range, color: CITY_LIGHT_COLOR_F32 });",
+    "tests": [
+      "test/lightid.test.js"
+    ],
+    "note": "LIGHT-ID audit (2026-10-15): a write the source sweep's forms miss - THE SHAPE A HOST HANDS must kill it."
   }
 ]

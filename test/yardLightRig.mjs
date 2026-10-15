@@ -54,7 +54,16 @@ export function streetColor(lane) {
  *  the lanterns' hours, `ranges` the town's animator and `tick` what its tick does to them; SHIPYARDS: `ports` what a
  *  port's pool hands (scenes/portHost.js lights - x, y, z, range), none by default. Answers each light the renderer
  *  took - its place, range and uploaded colour. */
-export function exteriorFrame({ lane, night, town, lamps, eye, ranges, tick = () => {}, ports = null }) {
+export function exteriorFrame(opts) {
+  const renderer = exteriorRenderer(opts);
+  const L = renderer._pointLights, n = Math.min(L.length / 4, renderer.maxPointLights);
+  const colors = renderer._pointColorData(n);
+  return Array.from({ length: n }, (_, i) => ({ at: [L[i * 4], L[i * 4 + 1], L[i * 4 + 2]], range: L[i * 4 + 3], color: [...colors.subarray(i * 3, i * 3 + 3)] }));
+}
+/** LIGHT-ID: the same frame through world.js's composition with `extra` laid over the scope (the boats, the quays, the
+ *  camps, the hand's lights, the mod's pixels) - the renderer answered, with the list it took and the identities on it.
+ *  `onSet` hears the renderer each time the source hands it a list. */
+export function exteriorRenderer({ lane, night, town, lamps, eye, ranges, tick = () => {}, ports = null }, extra = {}, onSet = null) {
   const renderer = new Renderer(fakeCanvas());
   if (lane) renderer.setLightingLane(EL_LANE);
   const scope = {
@@ -72,10 +81,10 @@ export function exteriorFrame({ lane, night, town, lamps, eye, ranges, tick = ()
     fillLanternPool, nearestLights, rangesFor, capFadeColors, capFadePairs, withPlayerLights, wodLightColors,
     meterFor: () => null,   // PIN MOVED (PERF-SIM3): the frame's CPU meter marks its spans inside this source - no meter in this rig
     adoptLight,   // PIN MOVED (LIGHT-ID): the pools name each entry by its light, and a quay's lantern its own (render/lightId.js)
+    ...extra,
   };
+  if (onSet) { const set = renderer.setPointLights.bind(renderer); renderer.setPointLights = (...a) => { set(...a); onSet(renderer); }; }
   exteriorLightsSource()(scope);
-  const L = renderer._pointLights, n = Math.min(L.length / 4, renderer.maxPointLights);
-  const colors = renderer._pointColorData(n);
-  return Array.from({ length: n }, (_, i) => ({ at: [L[i * 4], L[i * 4 + 1], L[i * 4 + 2]], range: L[i * 4 + 3], color: [...colors.subarray(i * 3, i * 3 + 3)] }));
+  return renderer;
 }
 export const same = (a, b) => a.every((v, i) => Math.abs(v - b[i]) < 1e-4);

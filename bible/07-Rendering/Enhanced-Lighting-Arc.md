@@ -2255,7 +2255,11 @@ the gate's and the spoils' lights), and a record reused for another light is `re
 burst slots). His glow is one kept record (`world/gateBoss.js` bossGlow's `out`, `scenes/gateCourt.js` `_glow`). The
 renderer lifts the identities with the list (`src/render/renderer.js:"ids: this._pointIds,"`), shifts them under the
 storm's flash and keeps them through a snapshot. A list with no ids - a raw vec4 array - names no light, and the pass
-is what it was. `test/lightid.test.js` sweeps src/ for a light written into a list anywhere else.
+is what it was. THE SHAPE A HOST HANDS pins the seam (`test/lightid.test.js`): every host's own light composition is
+run from its source - world.js's street by night, by day and with the World of Daggerfall's lights, worldModes.js's
+dungeon, court, Hour and building arms, exterior.js, dungeon.js, interior.js - and the list the renderer takes must name
+every light in it, each producer record's by its own identity, however the light was written in; a source sweep for the
+literal write forms stays as a second net.
 
 **The mover** (`render/shadowPass.js`). A slot is kept by its light's identity first, by place after
 (`src/render/shadowPass.js:"if (!taken[k] && sid[k] === id)"`); a light that kept its own slot and stands elsewhere
@@ -2286,7 +2290,9 @@ arrays it owns beside the slots (`_slotId`, one a slot) and the lo array (`_loUn
 `scenes/worldModes.js`, `scenes/dungeonContext.js`); each host's lights reach it through the composers above, and a
 host list the seam does not name keeps the old path.
 
-`test/lightid.test.js` (10); `tools/mutants/lightid.json` (28, all dead). Re-pinned to the lo law, none loosened, each
+`test/lightid.test.js` (11); `tools/mutants/lightid.json` (36: 35 dead, 1 equivalent as recorded - an emptied slot
+forgetting its light's name changes when a returning light is drawn whole, never its map; the audit's other survivor,
+the mover path's body signature, was a redundant line and is gone). Re-pinned to the lo law, none loosened, each
 still failing under a one-character mutation: disc15 (six, and the hand-over added), disc29_lamps (DISC29-E's idler),
 la_shadow (LA-SHADOW4's pass: 72 static and 24 lo faces at the crossing), perfexta (PERF-EXT's still hall); PERF-SHADOW1
 needed none. Records re-aimed by content: disc15, el1, el3, perfon2 (2), perfsun3, perfvol, wb3b - all still dead. Pins
