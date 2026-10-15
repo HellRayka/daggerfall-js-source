@@ -24,7 +24,7 @@ jobs:
   verify:
     uses: ./.github/workflows/verify.yml
     with:
-      ref: 8954b93a978d67a9fd1271c6bbffdf9d125ebea9
+      ref: 23fec095d78908cb8d969ab826f53fce0904dcd2
 
   check:
     if: ${{ always() }}
