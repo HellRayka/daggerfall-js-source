@@ -9,7 +9,7 @@
 // _fallCheck). A departure: DFU's controllers block, the port's pools push.
 import { worldAabb } from '../player/activate.js';   // AUDIT TACT C6: an action door's box
 import { CAPSULE_HEIGHT, CAPSULE_RADIUS, STEP_OFFSET } from '../player/motor.js';   // FIELD BUGS 2026-10-04d CRATE-FREE: a freed body keeps its own floor, a step at most
-import { FALL_CHECK_DROP } from './enemyMotor.js';
+import { FALL_CHECK_DROP, moveFoeBody } from './enemyMotor.js';
 
 /** How fast a body is pushed out of another, metres a second. */
 export const FOE_SPACING_SPEED = 3;
@@ -85,7 +85,7 @@ export function spaceFoes(foes, collider, dt, skip = spacingSkips) {
     const ai = foes[i].ai, feet = ai.feet;
     const airborne = !!(ai.flies || ai.swims || ai.levitating);
     _was[0] = feet[0]; _was[1] = feet[1]; _was[2] = feet[2];
-    const r = collider.move(feet, px, 0, pz, sweepHeight(ai), !airborne);
+    const r = moveFoeBody(collider, feet, px, 0, pz, sweepHeight(ai), !airborne);   // DOOR-JAM audit: the one move of a foe's body, its floor kept
     if (!airborne && ((r && !r.grounded) || !supported(collider, ai, feet))) { feet[0] = _was[0]; feet[1] = _was[1]; feet[2] = _was[2]; continue; }   // never off an edge
     moved++;
   }
@@ -138,7 +138,7 @@ function nudge(ai, px, pz, cap, collider) {
   if (len > cap) { px *= cap / len; pz *= cap / len; }
   const feet = ai.feet, airborne = !!(ai.flies || ai.swims || ai.levitating);
   _was[0] = feet[0]; _was[1] = feet[1]; _was[2] = feet[2];
-  const r = collider.move(feet, px, 0, pz, sweepHeight(ai), !airborne);
+  const r = moveFoeBody(collider, feet, px, 0, pz, sweepHeight(ai), !airborne);   // DOOR-JAM audit: the one move of a foe's body, its floor kept
   if (!airborne && ((r && !r.grounded) || !supported(collider, ai, feet))) { feet[0] = _was[0]; feet[1] = _was[1]; feet[2] = _was[2]; return false; }
   return true;
 }

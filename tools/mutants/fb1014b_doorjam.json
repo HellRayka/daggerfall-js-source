@@ -67,8 +67,8 @@
   {
     "name": "DOORJAM-8-the-walk-sweeps-its-full-height",
     "file": "src/characters/enemyMotor.js",
-    "old": "    const r = this.collider.move(this.feet, dxm, dy, dzm, this.controllerHeight, true, FOE_KEEPS_FLOOR);",
-    "new": "    const r = this.collider.move(this.feet, dxm, dy, dzm, this.height, true, FOE_KEEPS_FLOOR);",
+    "old": "    const r = moveFoeBody(this.collider, this.feet, dxm, dy, dzm, this.controllerHeight);",
+    "new": "    const r = moveFoeBody(this.collider, this.feet, dxm, dy, dzm, this.height);",
     "tests": [
       "test/fb1014b_doorjam.test.js"
     ]
@@ -112,7 +112,7 @@
   {
     "name": "DOORJAM-13-a-ladder-thrown-back-counts-as-a-step",
     "file": "src/player/collider.js",
-    "old": "        if ((landed[0] - beforeX) * dx + (landed[2] - beforeZ) * dz >= 0.5 * wantedSq) sides = false;",
+    "old": "        sides = landX * landX + landZ * landZ > SIDE_CONTACT * SIDE_CONTACT;",
     "new": "        sides = false;",
     "tests": [
       "test/fb1014b_doorjam.test.js"
@@ -139,8 +139,8 @@
   {
     "name": "DOORJAM-16-the-push-sweeps-the-full-height",
     "file": "src/characters/foeSpacing.js",
-    "old": "    const r = collider.move(feet, px, 0, pz, sweepHeight(ai), !airborne);",
-    "new": "    const r = collider.move(feet, px, 0, pz, ai.height ?? CAPSULE_HEIGHT, !airborne);",
+    "old": "    const r = moveFoeBody(collider, feet, px, 0, pz, sweepHeight(ai), !airborne);",
+    "new": "    const r = moveFoeBody(collider, feet, px, 0, pz, ai.height ?? CAPSULE_HEIGHT, !airborne);",
     "tests": [
       "test/fb1014b_doorjam.test.js"
     ]
@@ -157,8 +157,8 @@
   {
     "name": "DOORJAM-18-the-nudge-sweeps-the-full-height",
     "file": "src/characters/foeSpacing.js",
-    "old": "  const r = collider.move(feet, px, 0, pz, sweepHeight(ai), !airborne);\n  if (!airborne",
-    "new": "  const r = collider.move(feet, px, 0, pz, ai.height ?? CAPSULE_HEIGHT, !airborne);\n  if (!airborne",
+    "old": "  const r = moveFoeBody(collider, feet, px, 0, pz, sweepHeight(ai), !airborne);   // DOOR-JAM audit: the one move of a foe's body, its floor kept\n  if (!airborne",
+    "new": "  const r = moveFoeBody(collider, feet, px, 0, pz, ai.height ?? CAPSULE_HEIGHT, !airborne);   // DOOR-JAM audit: the one move of a foe's body, its floor kept\n  if (!airborne",
     "tests": [
       "test/fb1014b_doorjam.test.js"
     ]
@@ -231,6 +231,78 @@
     "file": "src/characters/enemyTargets.js",
     "old": "const see = canSeeTarget(ai.collider, ai.feet, ai.yaw, ai.height, tFeet,",
     "new": "const see = canSeeTarget(ai.collider, ai.feet, ai.yaw, ai.controllerHeight, tFeet,",
+    "tests": [
+      "test/fb1014b_doorjam.test.js"
+    ]
+  },
+  {
+    "name": "FLOORKEPT-1-the-one-move-drops-the-floor",
+    "file": "src/characters/enemyMotor.js",
+    "old": "  return collider.move(feet, dx, dy, dz, height, snap, FOE_KEEPS_FLOOR);",
+    "new": "  return collider.move(feet, dx, dy, dz, height, snap, false);",
+    "tests": [
+      "test/fb1014b_doorjam.test.js"
+    ]
+  },
+  {
+    "name": "FLOORKEPT-2-the-pool-push-goes-round-it",
+    "file": "src/characters/foeSpacing.js",
+    "old": "    const r = moveFoeBody(collider, feet, px, 0, pz, sweepHeight(ai), !airborne);",
+    "new": "    const r = collider.move(feet, px, 0, pz, sweepHeight(ai), !airborne);",
+    "tests": [
+      "test/fb1014b_doorjam.test.js"
+    ]
+  },
+  {
+    "name": "FLOORKEPT-3-the-nudge-goes-round-it",
+    "file": "src/characters/foeSpacing.js",
+    "old": "  const r = moveFoeBody(collider, feet, px, 0, pz, sweepHeight(ai), !airborne);   // DOOR-JAM audit: the one move of a foe's body, its floor kept\n  if (!airborne",
+    "new": "  const r = collider.move(feet, px, 0, pz, sweepHeight(ai), !airborne);   // DOOR-JAM audit: the one move of a foe's body, its floor kept\n  if (!airborne",
+    "tests": [
+      "test/fb1014b_doorjam.test.js"
+    ]
+  },
+  {
+    "name": "FLOORKEPT-4-the-unstick-goes-round-it",
+    "file": "src/ai/enhancedMotor.js",
+    "old": "moveFoeBody(this.collider, this.feet, nx - this.feet[0], 0, nz - this.feet[2], this.controllerHeight)",
+    "new": "this.collider.move(this.feet, nx - this.feet[0], 0, nz - this.feet[2], this.controllerHeight)",
+    "tests": [
+      "test/fb1014b_doorjam.test.js"
+    ]
+  },
+  {
+    "name": "HEIGHTADJUST-1-every-bump-re-arms-it",
+    "file": "src/characters/enemyMotor.js",
+    "old": "    if (!this._resetHeight && this.collidedSides && this.height > DOOR_CROUCHING_HEIGHT) {",
+    "new": "    if (this.collidedSides && this.height > DOOR_CROUCHING_HEIGHT) {",
+    "tests": [
+      "test/fb1014b_doorjam.test.js"
+    ]
+  },
+  {
+    "name": "HEIGHTADJUST-2-nought-is-not-done",
+    "file": "src/characters/enemyMotor.js",
+    "old": "    } else if (this._resetHeight && this._heightChangeTimer <= 0) {",
+    "new": "    } else if (this._resetHeight && this._heightChangeTimer < 0) {",
+    "tests": [
+      "test/fb1014b_doorjam.test.js"
+    ]
+  },
+  {
+    "name": "SIDES-1-the-last-sub-step-alone",
+    "file": "src/player/collider.js",
+    "old": "        out.sides = out.sides || r.sides;",
+    "new": "        out.sides = r.sides;",
+    "tests": [
+      "test/fb1014b_doorjam.test.js"
+    ]
+  },
+  {
+    "name": "SIDES-2-the-measure-five-times-coarser",
+    "file": "src/player/collider.js",
+    "old": "export const SIDE_CONTACT = 1e-4;",
+    "new": "export const SIDE_CONTACT = 5e-4;",
     "tests": [
       "test/fb1014b_doorjam.test.js"
     ]

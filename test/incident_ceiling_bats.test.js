@@ -82,11 +82,11 @@ test('bats 2: the motor hands the collider ITS capsule height, not the player\'s
 test('bats 2: every collider.move in both motors passes the foe\'s own controller height (DOOR-JAM: this.controllerHeight, HeightAdjust\'s crouch)', () => {
   for (const f of ['src/characters/enemyMotor.js', 'src/ai/enhancedMotor.js']) {
     const s = src(f);
-    const sites = [...s.matchAll(/this\.collider\.move\(this\.feet,[^;]*\);/g)].map((m) => m[0]);
+    const sites = [...s.matchAll(/moveFoeBody\(this\.collider, this\.feet,[^;]*\);/g)].map((m) => m[0]);   // DOOR-JAM's audit: the one move of a foe's body, which keeps its floor (AUDIT (pre-merge) S2)
     assert.ok(sites.length >= 1, `${f} moves through the collider`);
-    for (const site of sites) assert.match(site, /, this\.controllerHeight(?:, true, FOE_KEEPS_FLOOR)?\);$/, `${f}: ${site}`);   // AUDIT (pre-merge) S2: the foe's floor flag after it
+    for (const site of sites) assert.match(site, /, this\.controllerHeight\);$/, `${f}: ${site}`);
   }
-  assert.equal([...src('src/characters/enemyMotor.js').matchAll(/this\.collider\.move\(/g)].length, 6, 'the six motor sites');
+  assert.equal([...src('src/characters/enemyMotor.js').matchAll(/moveFoeBody\(this\.collider, /g)].length, 6, 'the six motor sites');
 });
 
 test('bats 1: both spawn hosts build the capsule from the idle sprite and drop a FLYER from centre to feet', () => {

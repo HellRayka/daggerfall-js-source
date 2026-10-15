@@ -100,9 +100,12 @@ test('AUDIT pre-merge S2: every FOE keeps its floor by its motor\'s word, whatev
     assert.equal(grounded, true);
   }
   const m = readFileSync(new URL('../src/characters/enemyMotor.js', import.meta.url), 'utf8');
-  const sites = [...m.matchAll(/this\.collider\.move\(this\.feet,[^;]*\);/g)].map((x) => x[0]);
+  // DOOR-JAM's audit (FIELD BUGS 2026-10-14b): every Move goes through the one move of a foe's body, which passes the flag
+  const sites = [...m.matchAll(/moveFoeBody\(this\.collider, this\.feet,[^;]*\);/g)].map((x) => x[0]);
   assert.equal(sites.length, 6);
-  for (const site of sites) assert.match(site, /, this\.controllerHeight, true, FOE_KEEPS_FLOOR\);$/, site);   // DOOR-JAM (FIELD BUGS 2026-10-14b): the controller's own height, HeightAdjust's crouch
+  for (const site of sites) assert.match(site, /, this\.controllerHeight\);$/, site);   // the controller's own height, HeightAdjust's crouch
+  assert.ok(!/this\.collider\.move\(/.test(m), 'no Move of the motor goes round it');
+  assert.match(m, /export function moveFoeBody\(collider, feet, dx, dy, dz, height, snap = true\) \{\n\s*return collider\.move\(feet, dx, dy, dz, height, snap, FOE_KEEPS_FLOOR\);\n\}/);
   assert.match(m, /const FOE_KEEPS_FLOOR = true;/);
   const c = readFileSync(new URL('../src/player/collider.js', import.meta.url), 'utf8');
   // (AUDIT CLIMB2 G1 added `noStep` after it - the free climber's, which passes keepFloor false in so many words)

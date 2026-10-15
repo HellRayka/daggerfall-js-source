@@ -2034,9 +2034,11 @@ export class Collider {
           if (probeY <= entryY) break;
         }
         if (!landed) continue;
-        // DOOR-JAM: a step climbed is the controller's own up-forward-down, no side contact - a rung that carried the
-        // body on along its motion. One the resolve threw back as far (a head under a lintel's edge) is not a step.
-        if ((landed[0] - beforeX) * dx + (landed[2] - beforeZ) * dz >= 0.5 * wantedSq) sides = false;
+        // DOOR-JAM: a step climbed is the controller's own up-forward-down - no side contact when it lands the body where its
+        // motion ends (SIDE_CONTACT, as the sideways pass's). A rung the resolve threw anywhere else met something on the
+        // body's side: a head under a lintel's edge "lands" the body backwards every other frame.
+        const landX = landed[0] - (beforeX + dx), landZ = landed[2] - (beforeZ + dz);
+        sides = landX * landX + landZ * landZ > SIDE_CONTACT * SIDE_CONTACT;
         feet[0] = landed[0];
         feet[1] = landed[1];
         feet[2] = landed[2];

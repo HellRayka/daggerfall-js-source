@@ -52,6 +52,17 @@ export const FOE_MAX_FRAME_DT = 3 * FIXED_DT;
 /** AUDIT (the pre-merge audit, S2): every foe's move keeps its floor under a ceiling that holds it down (collider move's
  *  `keepFloor`, SQUEEZE1) - a body of any height, not only one past the player's tallest stance. */
 const FOE_KEEPS_FLOOR = true;
+/** DOOR-JAM (the audit of FIELD BUGS 2026-10-14b): THE ONE MOVE OF A FOE'S BODY. Every displacement of a foe's capsule
+ *  through the collider - the motor's own Moves, the spacing passes' pushes and the doorway's nudge
+ *  (characters/foeSpacing.js), the pathing subclass's unstick (its stuck watch's nudge) - is this one, and keeps its
+ *  floor (FOE_KEEPS_FLOOR: SQUEEZE1's "every foe, by its motor's word"). HeightAdjust stands a ducked foe back up wherever
+ *  it is, as DFU's does, so a foe stopped under a lintel stands with its head in it; the pushes moved it without the
+ *  floor kept, and a body of 2.1 to 2.475 m - under RIDE_HEIGHT, where the collider keeps the floor of its own accord -
+ *  was pushed down through the floor by all its head was over the lintel. A move of a foe's feet anywhere else is a
+ *  move that forgot it (test/fb1014b_doorjam.test.js sweeps src/ for one). `snap` is move()'s. */
+export function moveFoeBody(collider, feet, dx, dy, dz, height, snap = true) {
+  return collider.move(feet, dx, dy, dz, height, snap, FOE_KEEPS_FLOOR);
+}
 /** WERE-FRIGHT: how far ahead along the way away a fleeing foe's aim point stands (EnemyAI.flee). */
 const FLEE_AIM = 10;
 /** CREW-COMPANIONS: a follower stands inside FOLLOW_STOP of its leader, sets off again past FOLLOW_STOP +
@@ -1645,7 +1656,7 @@ export class EnemyAI {
       if (waterY !== null && center < waterY) {
         let my = myRaw;
         if (my > 0 && center + WATER_HEAD_MARGIN >= waterY) my = 0;
-        const moveResult = this.collider.move(this.feet, mx, my, mz, this.controllerHeight, true, FOE_KEEPS_FLOOR);
+        const moveResult = moveFoeBody(this.collider, this.feet, mx, my, mz, this.controllerHeight);
         this.isGrounded = moveResult.grounded;
         this.collidedSides = !!moveResult.sides;   // DOOR-JAM: the Move's CollidedSides, for HeightAdjust
       }
@@ -1659,14 +1670,14 @@ export class EnemyAI {
       // knocked-back levitator sails and does not drop.
       if (this.flies && !this.levitating) this.velY -= GRAVITY * dt;   // flyerFalls: a hit knocks them out of the air
       else this.velY = 0;   // no gravity arm claims a levitator: the port's accumulator must not carry one either
-      const r = this.collider.move(this.feet, mx, myRaw + this.velY * dt, mz, this.controllerHeight, true, FOE_KEEPS_FLOOR);
+      const r = moveFoeBody(this.collider, this.feet, mx, myRaw + this.velY * dt, mz, this.controllerHeight);
       this.isGrounded = r.grounded;
       this.collidedSides = !!r.sides;   // DOOR-JAM
       if (r.grounded) this.velY = 0;
       this._trackFall(r.grounded);   // CH3: a knocked-down flyer lands hard
     } else {
       this.velY -= GRAVITY * dt;   // SimpleMove: horizontal motion, gravity applies
-      const r = this.collider.move(this.feet, mx, this.velY * dt, mz, this.controllerHeight, true, FOE_KEEPS_FLOOR);
+      const r = moveFoeBody(this.collider, this.feet, mx, this.velY * dt, mz, this.controllerHeight);
       this.isGrounded = r.grounded;
       this.collidedSides = !!r.sides;   // DOOR-JAM
       if (r.grounded) this.velY = 0;
@@ -2101,7 +2112,7 @@ export class EnemyAI {
       if (this.fallDetected || this.obstacleDetected) { this._findDetour(d); return; }
       let my = d[1] * this.speed * dt;
       if (my > 0 && center + WATER_HEAD_MARGIN >= waterY) my = 0;
-      const moveResult = this.collider.move(this.feet, d[0] * this.speed * dt, my, d[2] * this.speed * dt, this.controllerHeight, true, FOE_KEEPS_FLOOR);
+      const moveResult = moveFoeBody(this.collider, this.feet, d[0] * this.speed * dt, my, d[2] * this.speed * dt, this.controllerHeight);
       this.isGrounded = moveResult.grounded;
       this.collidedSides = !!moveResult.sides;   // DOOR-JAM
       return;
@@ -2160,7 +2171,7 @@ export class EnemyAI {
       this._obstacleCheck(d);
       this._fallCheck(d);
       if (this.fallDetected || this.obstacleDetected) { this._findDetour(d); this.lastGroundedY = this.feet[1]; return; }
-      const moveResult = this.collider.move(this.feet, d[0] * this.speed * dt, d[1] * this.speed * dt, d[2] * this.speed * dt, this.controllerHeight, true, FOE_KEEPS_FLOOR);
+      const moveResult = moveFoeBody(this.collider, this.feet, d[0] * this.speed * dt, d[1] * this.speed * dt, d[2] * this.speed * dt, this.controllerHeight);
       this.isGrounded = moveResult.grounded;
       this.collidedSides = !!moveResult.sides;   // DOOR-JAM
       this.lastGroundedY = this.feet[1];   // the altitude-control anchor, post-move
@@ -2211,7 +2222,7 @@ export class EnemyAI {
         dzm = dir2d[2] * sp * dt;
       }
     }
-    const r = this.collider.move(this.feet, dxm, dy, dzm, this.controllerHeight, true, FOE_KEEPS_FLOOR);
+    const r = moveFoeBody(this.collider, this.feet, dxm, dy, dzm, this.controllerHeight);
     this.isGrounded = r.grounded;
     this.collidedSides = !!r.sides;   // DOOR-JAM: the Move's CollidedSides, for HeightAdjust
     if (r.grounded) this.velY = 0;

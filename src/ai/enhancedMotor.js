@@ -107,7 +107,7 @@
 // on - a broken navmesh costs a feature, never a dungeon.
 // ═══════════════════════════════════════════════════════════════════
 
-import { EnemyAI } from '../characters/enemyMotor.js';
+import { EnemyAI, moveFoeBody } from '../characters/enemyMotor.js';
 import { findPath } from './navmesh.js';
 
 // ── project-final enemyShared.js:7-12, verbatim ────────────────────
@@ -214,7 +214,7 @@ export class EnhancedEnemyAI extends EnemyAI {
       const drop = this.fallDetected;
       this.obstacleDetected = od; this.foundUpwardSlope = us; this.foundDoor = fd; this.fallDetected = false;
       if (drop) continue;
-      const moveResult = this.collider.move(this.feet, nx - this.feet[0], 0, nz - this.feet[2], this.controllerHeight);   // a Move like any other: isGrounded is its (FIELD BUGS 2026-09-29 sea #2); DOOR-JAM: at the controller's own height
+      const moveResult = moveFoeBody(this.collider, this.feet, nx - this.feet[0], 0, nz - this.feet[2], this.controllerHeight);   // a Move like any other: isGrounded is its (FIELD BUGS 2026-09-29 sea #2); DOOR-JAM: at the controller's own height, its floor kept (the one move of a foe's body)
       this.isGrounded = moveResult.grounded;
       this.collidedSides = !!moveResult.sides;   // DOOR-JAM: and its CollidedSides, for HeightAdjust
       break;

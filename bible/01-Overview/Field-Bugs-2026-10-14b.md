@@ -63,8 +63,8 @@ FIXED, HeightAdjust verbatim and what it needs:
 - `collider.js:"out.sides = sides;"` - move() says CollidedSides: the sideways pass's resolve pushed the body off where
   its motion put it by more than `SIDE_CONTACT` (0.1 mm) along a face steeper than the slope limit (`GROUND_NY`, the
   collider's own wall law) - never a floor or a walkable slope the lower sphere rides, nor a resting touch. A step the
-  ladder climbs is none; a rung the resolve threw back as far as it came is no step (a head under a lintel's edge: the
-  ladder "landed" the body backwards every other frame and called it a step).
+  ladder climbs is none when it lands the body where its motion ends; a rung the resolve threw anywhere else met
+  something on the body's side (a head under a lintel's edge: the ladder "landed" the body backwards every other frame).
 - `foeSpacing.js:"export const sweepHeight = (ai) =>"` - the pushes that stand in for two controllers meeting
   (spaceFoes, spaceAcross, clearDoorways' nudge) sweep the live controller height: at the full height a push swept a
   ducking body's head into the lintel it was passing. The ground check under a push keeps the body's own height
@@ -88,17 +88,43 @@ than ducking. Found on the way and not this bug: ObstacleCheck is still cast at 
 item), and over a made doorway 1.0 m wide and 0.8 m deep, narrower than any dungeon door, a lone foe approaching off its
 line paces the wall beside it - DFU's detour, which the port runs verbatim.
 
-Pins: `test/fb1014b_doorjam.test.js` (8; the last on the player's ARENA2, skipped without it - six real 2.25 m doorways
+Pins: `test/fb1014b_doorjam.test.js` (12; the last on the player's ARENA2, skipped without it - six real 2.25 m doorways
 and three Mages through each). Without the duck the report's corridor holds all three foes at the lintel on both lanes,
 and on N0000000.RDB not one Mage comes through a door. KEEP FULL HEIGHT's two: a ducking Mage-height foe is hit by a
 missile and found by a touch at its head over the crouch, met by the crosshair and held by the lock-on whole, aimed at
 by a hunter at 2.475, and sees over a 1.6 m parapet a 1.65 eye cannot; and a sweep of `src/` in which every
 `.controllerHeight` and every sweepHeight call is one of the seven Moves, the six push sites or the duck's own state.
-`tools/mutants/fb1014b_doorjam.json`, 26: 25 dead, 1 recorded equivalent (the strict 1.65 gate - a body of exactly 1.65
-ducked to 1.65 sweeps what it had); eight of them switch a reader - the lock-on, the crosshair, the missile, the touch,
-the hunter's aim, the eye, a companion's bar, the target pass's eye - to the duck. Re-aimed at
+The audit's four (below). `tools/mutants/fb1014b_doorjam.json`, 34: 33 dead, 1 recorded equivalent (the strict 1.65
+gate - a body of exactly 1.65 ducked to 1.65 sweeps what it had); eight of them switch a reader - the lock-on, the
+crosshair, the missile, the touch, the hunter's aim, the eye, a companion's bar, the target pass's eye - to the duck. Re-aimed at
 `controllerHeight`: `test/incident_ceiling_bats.test.js`'s and `test/squeeze1.test.js`'s Move pins and
 `tools/mutants/fbsea.json`'s walker record.
+
+AUDIT (2026-10-15, an adversarial pass over the branch; Mac: "fix ALL at the root"):
+
+- A TALL FOE SANK INTO THE FLOOR IN A CROWDED DOORWAY (medium). HeightAdjust stands a ducked foe back up wherever it
+  is, with no look at the room over it - DFU's own law, kept: a headroom check on the stand would be a departure - so a
+  foe that stops under a lintel stands with its head in it. The motor's Moves keep its floor there (SQUEEZE1's
+  `keepFloor`, "every foe, by its motor's word"); the pushes that moved the same body did not - spaceFoes' push, the
+  nudge spaceAcross and clearDoorways share, and the pathing motor's unstick - and a body of 2.1 to 2.475 m is under
+  RIDE_HEIGHT, where the collider keeps a floor of its own accord, so the lintel pressed it down by all its head was
+  over it: a Mage in a real door's 2.25 m opening, 0.225 m into the floor. ROOT: the floor-keeping was a flag each site
+  had to remember, and three forgot. `enemyMotor.js:"export function moveFoeBody(collider, feet, dx, dy, dz, height, snap = true) {"`
+  is now the one move of a foe's body - the motor's six Moves, the pushes and the unstick all go through it, and it
+  passes FOE_KEEPS_FLOOR - and a sweep of `src/` fails on any move of a foe's feet that goes round it.
+- FIVE MUTATIONS OF THE PORTED LAW LIVED (low): HeightAdjust's `!resetHeight` guard (:1452) and its `<= 0` (:1464),
+  move()'s sub-step OR of `sides`, the step ladder's half-motion threshold and SIDE_CONTACT's 0.1 mm. Pinned: a
+  40-step trace of a foe bumping all the while - ducked 31 steps, up on the 32nd, ducked again on the 33rd - and the
+  timer run to exactly nought by four 0.125 s steps standing it up on the fifth (with `< 0` it was held ducked for
+  good); one metre in one move, split into sub-steps, meeting a pillar only in its first; a body 0.3 mm into a wall
+  bumps it, one 0.05 mm settles. The ladder's threshold is gone, not pinned: a climbed step is no side contact when it
+  lands the body where its motion ends (SIDE_CONTACT, the sideways pass's own measure), which is the law the threshold
+  stood in for - the same five stopped steps of 120 on a stair run, and the lintel's thrown-back landing still a bump.
+- Pins: four tests in `test/fb1014b_doorjam.test.js` (the floor kept through all four pushes in the real door's
+  opening; the source sweep; the trace; the sub-steps and the measure); `tools/mutants/fb1014b_doorjam.json` FLOORKEPT-1
+  to -4, HEIGHTADJUST-1 and -2, SIDES-1 and -2 and DOORJAM-13 re-aimed, all dead. Re-aimed at moveFoeBody: the Move
+  pins of `test/squeeze1.test.js`, `test/incident_ceiling_bats.test.js` and `test/fbsea_aquatic.test.js`, and
+  `tools/mutants/fbsea.json`'s walker record.
 
 THE FOUR HOSTS. The duck is the motor's own, and every host's foes step the motor; none of the four was edited.
 `scenes/dungeonContext.js` - the dungeon's foes, where the report was: its spaceFoes and clearDoorways passes sweep the

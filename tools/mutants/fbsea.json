@@ -20,8 +20,8 @@
   {
     "name": "FBSEA-2-the-walker-move-unwritten",
     "file": "src/characters/enemyMotor.js",
-    "old": "    const r = this.collider.move(this.feet, dxm, dy, dzm, this.controllerHeight, true, FOE_KEEPS_FLOOR);\n    this.isGrounded = r.grounded;\n",
-    "new": "    const r = this.collider.move(this.feet, dxm, dy, dzm, this.controllerHeight, true, FOE_KEEPS_FLOOR);\n",
+    "old": "    const r = moveFoeBody(this.collider, this.feet, dxm, dy, dzm, this.controllerHeight);\n    this.isGrounded = r.grounded;\n",
+    "new": "    const r = moveFoeBody(this.collider, this.feet, dxm, dy, dzm, this.controllerHeight);\n",
     "tests": [
       "test/fbsea_aquatic.test.js"
     ]

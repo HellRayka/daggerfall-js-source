@@ -44,7 +44,7 @@ test('FIELD BUGS 2026-09-29 (the sea) #2: CharacterController.isGrounded - a swi
   for (let i = 0; i < 60 * 2; i++) bat.update(1 / 60, [0, 3, 10]);
   assert.equal(bat.isGrounded, false, 'a flyer in the air stands on nothing');
   // every Move the motor makes writes it
-  const moves = MOTOR.match(/this\.collider\.move\(/g).length;
+  const moves = MOTOR.match(/moveFoeBody\(this\.collider, /g).length;   // DOOR-JAM audit: each Move goes through the one move of a foe's body
   const written = MOTOR.match(/this\.isGrounded = (?:r|moveResult)\.grounded;/g).length;
   assert.equal(written, moves, 'each Move\'s own');
 });

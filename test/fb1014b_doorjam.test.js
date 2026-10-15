@@ -59,6 +59,7 @@ function mint(c, at, tex = HUMANOID) {
 }
 const senses = () => ({ gameMinutes: 0, playerStealth: 0, rolls: () => 0.5, playerHeight: CAPSULE_HEIGHT });
 const through = (f) => f.ai.feet[0] > WALL + 0.36;
+const gap = (a, b) => Math.hypot(a.ai.feet[0] - b.ai.feet[0], a.ai.feet[2] - b.ai.feet[2]);
 
 test('DOOR-JAM: three humanoids chasing the player through a door frame lower than they stand all come through it - on the classic lane and the Enhanced AI\'s, in the dungeon host\'s frame order', () => {
   // the premise: the lintel stops a 2.1 m capsule that does not duck, and lets the player's 1.8 m one walk on
@@ -104,7 +105,7 @@ test('DOOR-JAM: EnemyMotor.HeightAdjust, verbatim - a bump on the sides sweeps t
   ai.collidedSides = false;
   let calls = 1;
   while (ai.controllerHeight === 1.65 && calls < 100) { ai._heightAdjust(DT); calls++; }
-  assert.ok(calls >= 30 && calls <= 32, `held for the half second, then restored (:1464-1477) - ${calls} fixed steps`);
+  assert.equal(calls, 32, 'held for the half second - 31 fixed steps ducked - and up on the 32nd (:1464-1477)');
   assert.equal(ai.controllerHeight, 2.1, 'back to originalHeight');
   assert.equal(ai.height, 2.1, 'originalHeight itself never moves');
   // the flags are the LAST Move's, kept (Unity keeps collisionFlags): one still bumping ducks again at once
@@ -201,8 +202,8 @@ test('DOOR-JAM by source: HeightAdjust runs after every fixed step\'s moves (Fix
   assert.match(m, /this\._step\(FIXED_DT, playerFeet, senses, paralyzed, paused\);\n\s*this\._heightAdjust\(FIXED_DT\);/);
   for (const f of ['src/characters/enemyMotor.js', 'src/ai/enhancedMotor.js']) {
     const s = rd(f);
-    const moves = [...s.matchAll(/const (\w+) = this\.collider\.move\(this\.feet,[^;]*\);[^\n]*\n\s*this\.isGrounded = \1\.grounded;[^\n]*\n\s*this\.collidedSides = !!\1\.sides;/g)].length;
-    assert.equal(moves, [...s.matchAll(/this\.collider\.move\(this\.feet,/g)].length, `${f}: every Move keeps its CollidedSides`);
+    const moves = [...s.matchAll(/const (\w+) = moveFoeBody\(this\.collider, this\.feet,[^;]*\);[^\n]*\n\s*this\.isGrounded = \1\.grounded;[^\n]*\n\s*this\.collidedSides = !!\1\.sides;/g)].length;
+    assert.equal(moves, [...s.matchAll(/moveFoeBody\(this\.collider, this\.feet,/g)].length, `${f}: every Move keeps its CollidedSides`);
   }
 });
 
@@ -249,7 +250,7 @@ test('KEEP FULL HEIGHT by source: the duck is read by movement alone - every `.c
   const walk = (d) => { for (const e of readdirSync(d, { withFileTypes: true })) { const p = join(d, e.name); if (e.isDirectory()) walk(p); else if (e.name.endsWith('.js')) files.push(p); } };
   const root = fileURLToPath(new URL('..', import.meta.url));
   walk(join(root, 'src'));
-  const MOVE = /this\.collider\.move\(this\.feet,[^;]*, this\.controllerHeight[,)]/;
+  const MOVE = /moveFoeBody\(this\.collider, this\.feet,[^;]*, this\.controllerHeight\)/;
   const KEEP = /^\s*this\.controllerHeight = (?:height|DOOR_CROUCHING_HEIGHT|this\.height);/;
   const bad = [];
   let moves = 0, pushes = 0;
@@ -264,7 +265,7 @@ test('KEEP FULL HEIGHT by source: the duck is read by movement alone - every `.c
         else bad.push(`${at} ${line.trim()}`);
       }
       if (/\bsweepHeight\(/.test(line) && !/^export const sweepHeight/.test(line)) {
-        if (rel === 'src/characters/foeSpacing.js' && (/collider\.move\(feet, px, 0, pz, sweepHeight\(ai\), !airborne\);/.test(line) || /h[ab] = sweepHeight\(/.test(line))) pushes++;
+        if (rel === 'src/characters/foeSpacing.js' && (/moveFoeBody\(collider, feet, px, 0, pz, sweepHeight\(ai\), !airborne\);/.test(line) || /h[ab] = sweepHeight\(/.test(line))) pushes++;
         else bad.push(`${at} ${line.trim()}`);
       }
     });
@@ -272,6 +273,105 @@ test('KEEP FULL HEIGHT by source: the duck is read by movement alone - every `.c
   assert.deepEqual(bad, [], 'a reader of the duck that is not movement - Mac\'s call keeps the full height everywhere else');
   assert.equal(moves, 7, 'the seven Moves of both motors sweep it');
   assert.equal(pushes, 6, 'and the pushes: spaceFoes\' and spaceAcross\' overlaps, spaceFoes\' push, the nudge');
+});
+
+// ── THE AUDIT (2026-10-15) ──────────────────────────────────────────
+
+/** The common dungeon door's opening (2,048 of the 2,303 doorways measured): 1.2 m wide under a lintel at 2.25 m, the
+ *  frame 0.6 m deep. */
+function realDoor() {
+  const c = new Collider(() => -1000);
+  floorOf(c);
+  box(c, 'jambN', [-0.3, 0, 0.6], [0.3, 3, 8]);
+  box(c, 'jambS', [-0.3, 0, -8], [0.3, 3, -0.6]);
+  box(c, 'lintel', [-0.3, 2.25, -0.6], [0.3, 3, 0.6]);
+  return c;
+}
+/** A Mage stood under the lintel at its full height - where HeightAdjust stands a ducked foe back up, as DFU's does. */
+const standingMage = (c, at, Ctor = EnemyAI, opts = {}) => ({ ai: new Ctor(c, at, Math.PI / 2, { liveSpeed: 50, height: 2.475, centreOffset: 1.2375, rolls: () => 0.25, ...opts }), dead: false });
+
+test('DOOR-JAM audit: a foe standing back up under a lintel keeps its floor through every push - the spacing passes, the doorway\'s nudge and the pathing motor\'s unstick (each sank a Mage 0.225 m into a real door\'s floor)', async () => {
+  const { EnhancedEnemyAI, STUCK_T } = await import('../src/ai/enhancedMotor.js');
+  const onFloor = (f, what) => assert.ok(f.ai.feet[1] > -0.01, `${what}: on its floor (${f.ai.feet.map((v) => v.toFixed(3))})`);
+  const doors = doorSpotsNear([{ matrix: I, centre: { x: 0, y: 1, z: 0 }, normal: { x: 1, y: 0, z: 0 } }], [0, 0, 0], 40);
+  // the pool's own spacing
+  let c = realDoor();
+  let a = standingMage(c, [-0.1, 0, 0]), b = standingMage(c, [-0.1, 0, 0.3]);
+  for (let k = 0; k < 300; k++) spaceFoes([a, b], c, DT);
+  assert.ok(gap(a, b) > 0.6, 'pushed apart');
+  onFloor(a, 'spaceFoes'); onFloor(b, 'spaceFoes');
+  // two pools' (TACT3)
+  c = realDoor(); a = standingMage(c, [-0.1, 0, 0]); b = standingMage(c, [-0.1, 0, 0.3]);
+  for (let k = 0; k < 300; k++) spaceAcross([[a], [b]], c, DT);
+  assert.ok(gap(a, b) > 0.6, 'pushed apart across pools');
+  onFloor(a, 'spaceAcross'); onFloor(b, 'spaceAcross');
+  // the doorway's nudge, a foe with no business in it
+  c = realDoor(); a = standingMage(c, [-0.1, 0, 0]);
+  a.ai.destination = [-3, 0, 0];
+  let nudged = 0;
+  for (let k = 0; k < 300; k++) nudged += clearDoorways([a], doors, c, DT);
+  assert.ok(nudged >= 1, 'the doorway rule takes it in hand');   // its head in the lintel then holds it there, on its floor, until its own next Move ducks it
+  onFloor(a, 'clearDoorways');
+  // the pathing motor's unstick: stuck its STUCK_T, it sidesteps
+  c = realDoor();
+  const chf = { xmin: -10, zmin: -10, cs: 0.5, nx: 40, nz: 40, walkmask: new Uint8Array(200).fill(255) };
+  a = standingMage(c, [-0.1, 0, 0], EnhancedEnemyAI, { nav: () => chf });
+  a.ai.stuckT = STUCK_T; a.ai.lastX = a.ai.feet[0]; a.ai.lastZ = a.ai.feet[2];
+  assert.equal(a.ai._stuckWatch(chf, 1, 0, DT), true, 'the unstick fired');
+  assert.ok(Math.abs(a.ai.feet[2]) > 0.01, `it stepped aside (${a.ai.feet[2].toFixed(3)})`);
+  onFloor(a, '_stuckWatch');
+});
+
+test('DOOR-JAM audit by source: every move of a foe\'s feet in src/ is the one move of a foe\'s body, which keeps its floor', () => {
+  const root = fileURLToPath(new URL('..', import.meta.url));
+  const files = [];
+  const walk = (d) => { for (const e of readdirSync(d, { withFileTypes: true })) { const p = join(d, e.name); if (e.isDirectory()) walk(p); else if (e.name.endsWith('.js')) files.push(p); } };
+  walk(join(root, 'src'));
+  const bad = [];
+  let helper = 0;
+  for (const p of files) {
+    const rel = relative(root, p).split(sep).join('/');
+    readFileSync(p, 'utf8').split('\n').forEach((line, i) => {
+      if (!/\.move\(\s*[\w.?[\]]*feet\s*,/.test(line)) return;
+      if (rel === 'src/characters/enemyMotor.js' && /^\s*return collider\.move\(feet, dx, dy, dz, height, snap, FOE_KEEPS_FLOOR\);$/.test(line)) helper++;
+      else bad.push(`${rel}:${i + 1} ${line.trim()}`);
+    });
+  }
+  assert.deepEqual(bad, [], 'a foe\'s feet moved round moveFoeBody - its floor is not kept');
+  assert.equal(helper, 1, 'moveFoeBody is the one, and passes FOE_KEEPS_FLOOR');
+  assert.match(rd('src/characters/enemyMotor.js'), /^const FOE_KEEPS_FLOOR = true;$/m);
+  for (const f of ['src/characters/foeSpacing.js', 'src/ai/enhancedMotor.js']) assert.match(rd(f), /moveFoeBody\(/, `${f} moves its bodies through it`);
+});
+
+test('DOOR-JAM audit: HeightAdjust step by step - 40 fixed steps bumping all the while: ducked 31, up on the 32nd, ducked again on the 33rd; a timer run to exactly nought stands it up (:1464 `<= 0`)', async () => {
+  const { FIXED_DT } = await import('../src/player/motor.js');
+  const ai = new EnemyAI(new Collider(() => 0), [0, 0, 0], 0, { height: 2.1 });
+  ai.collidedSides = true;   // the last Move's flags are kept: a foe pressed to a wall reads CollidedSides every step
+  const trace = [];
+  for (let i = 0; i < 40; i++) { ai._heightAdjust(FIXED_DT); trace.push(ai.controllerHeight); }
+  const D = DOOR_CROUCHING_HEIGHT;
+  assert.deepEqual(trace, [...Array(31).fill(D), 2.1, ...Array(8).fill(D)], '`!resetHeight` (:1452): one duck at a time, not re-armed by every bump');
+  // a step that runs the half second down to exactly nought - 0.125 s, four of them - stands it up on the fifth call
+  const b = new EnemyAI(new Collider(() => 0), [0, 0, 0], 0, { height: 2.1 });
+  b.collidedSides = true; b._heightAdjust(0.125); b.collidedSides = false;
+  const t2 = [b.controllerHeight];
+  for (let i = 0; i < 6; i++) { b._heightAdjust(0.125); t2.push(b.controllerHeight); }
+  assert.deepEqual(t2, [D, D, D, D, 2.1, 2.1, 2.1], 'at nought it stands - never held ducked by a timer that no longer runs');
+});
+
+test('DOOR-JAM audit: CollidedSides is the whole Move\'s - a move split into sub-steps that meets a pillar only in its first says so; and the side law\'s own measure (0.1 mm)', () => {
+  const c = new Collider(() => -1000);
+  floorOf(c);
+  box(c, 'pillar', [0.1, 0, 0.3], [0.3, 3, 0.5]);   // brushed by the first quarter of the move alone
+  const feet = [0, 0, 0];
+  const r = c.move(feet, 1.0, 0, 0, 2.1, true, true);   // a metre in one move: the collider takes it in four sub-steps
+  assert.equal(r.sides, true, 'the pillar met in the first sub-step is the Move\'s');
+  assert.ok(feet[0] > 0.9 && feet[2] < 0, `slid past it (${feet.map((v) => v.toFixed(3))})`);
+  const wall = new Collider(() => -1000);
+  floorOf(wall); box(wall, 'wall', [-30, 0, 1], [30, 3, 1.4]);
+  const lean = (inside) => wall.move([0, 0, 1 - 0.35 + inside], 5 * DT, 0, 0, 2.1, true, true).sides;
+  assert.equal(lean(3e-4), true, 'a body 0.3 mm into the wall it walks along is pushed out by more than 0.1 mm: a bump');
+  assert.equal(lean(5e-5), false, '0.05 mm is the resolve settling it, no bump');
 });
 
 // ── on the player's own data ────────────────────────────────────────
