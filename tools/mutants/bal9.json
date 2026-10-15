@@ -92,7 +92,7 @@
     "new": "export const ITEM_LAW_VERSION = 2;",
     "tests": ["test/tech1_roster.test.js", "test/int1_itemlaw.test.js"] },
   { "name": "BAL9c-the-service-behind-the-law", "file": "server-account/src/service.js",
-    "old": "export const ACCOUNT_VERSION = 'acct137';",
+    "old": "export const ACCOUNT_VERSION = 'acct138';",
     "new": "export const ACCOUNT_VERSION = 'acct120';",
     "tests": ["test/tech1_roster.test.js"] }
 ]

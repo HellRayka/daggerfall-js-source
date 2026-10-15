@@ -700,7 +700,8 @@ test('WAGONS2 (FINAL AUDIT) A SEATED RIDER SETS OUT ON NO JOURNEY OF THEIR OWN, 
   assert.match(w, /if \(!partyArrival && !hccRuntimeOn\(\)\?\.wagonGoesOnJourney\?\.\(\) && wagonRiders\?\.release\(\)\) _hccDirty = true;\n\s*if \(!partyArrival && wagonRiders\?\.announce\(pick\.pixel\)\)/);
   assert.match(w, /wagonRiders\?\.clear\(\);[^\n]*\n\s*caravanVisitLink\.close\(\);[^\n]*\n\s*seatLock\?\.release\(\);/);
   const hc = src('systems/horseCart.js');
-  assert.match(hc, /function wagonGoesOnJourney\(\) \{\n\s*if \(wagonState\.Mode === WAGON_MODE\.WithPlayer\) return true;\n\s*return physicalPersistenceEnabled && \(followingTransportFastTravels \|\| forceNextJourney\) && isTeamFollowing\(\);\n\s*\}/);
+  // WAGON-STABLED (PIN MOVED): a wagon with the player goes unless it was sent to the stable (test/fb1015_wagonstabled.test.js)
+  assert.match(hc, /function wagonGoesOnJourney\(\) \{\n\s*if \(wagonState\.Mode === WAGON_MODE\.WithPlayer\) return !wagonState\.WagonStabled;[^\n]*\n\s*return physicalPersistenceEnabled && \(followingTransportFastTravels \|\| forceNextJourney\) && isTeamFollowing\(\);\n\s*\}/);
   // the release, by execution
   const riders = createWagonRiders({ selfId: () => 'me', name: (i) => i, now: () => 0, say() {}, pool: { mySeatCount: () => 4, mySeatsKnown: () => true } });
   assert.equal(riders.release(), false, 'nobody aboard: nothing to give up');
