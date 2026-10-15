@@ -194,15 +194,18 @@ test('AUDIT 58 F4: the host runs both repairs at ReadyCheck’s point - before t
     return i;
   };
   const dict = at(/const mapDict = buildMapDict\(maps\);/, 'builds the map dict');
-  const dilate = at(/const dilated = dilateCoastalClimate\(maps, 2\);/, 'dilates the coastal climate');
-  const smooth = at(/smoothLocationNeighbourhood\(mapDict, woods\);/, 'smooths the location neighbourhoods');
+  // PIN MOVED (FIELD BUGS 2026-10-14 INLAND-PORTS): the two repairs are one construction (terrainHelper.js
+  // readyCheckRepairs) the host runs and the real-map pins build their reader with (test/streamingMap.mjs)
+  const repairs = at(/const \{ dilated, smoothed: smoothedLocations \} = readyCheckRepairs\(maps, mapDict, woods\);/, 'runs ReadyCheck\'s two repairs');
   const sync = at(/woods\.syncHeightMapBytes\(\);/, 'syncs the smoothed heights back');
   const client = at(/new TerrainGenClient\(\{ woods, woodsBytes \}\)/, 'builds the terrain client');
-  assert.ok(dict < dilate, 'HasLocation’s dictionary exists before the smoothing needs it');
-  assert.ok(dilate < smooth && smooth < sync, 'DFU’s order: dilate, then smooth');
+  assert.ok(dict < repairs, 'HasLocation’s dictionary exists before the smoothing needs it');
+  assert.ok(repairs < sync, 'the repairs, then the sync');
   assert.ok(sync < client, 'and the worker gets the SMOOTHED bytes, not the raw ones');
+  const helper = readFileSync('src/world/terrainHelper.js', 'utf8');
+  assert.match(helper, /export function readyCheckRepairs\(maps, mapDict, woods\) \{\n {2}const dilated = dilateCoastalClimate\(maps, 2\);\n {2}const smoothed = smoothLocationNeighbourhood\(mapDict, woods\);\n/, 'DFU’s order: dilate (two passes), then smooth');
   // Classic-lane law: neither repair sits behind the enhanced gate.
-  const block = host.slice(dilate - 400, client);
+  const block = host.slice(repairs - 400, client);
   assert.ok(!/isEnhanced/.test(block), 'no isEnhanced() gate on either repair');
 });
 
@@ -225,7 +228,7 @@ test('AUDIT 58 F4 (R1): the boot repair invalidates the cached road bake it chan
   // ...and the repair really is upstream of the bake's input: the host
   // smooths and syncs before the client hands the bytes over.
   const host = readFileSync('src/scenes/world.js', 'utf8');
-  const smooth = host.search(/smoothLocationNeighbourhood\(mapDict, woods\);/);
+  const smooth = host.search(/readyCheckRepairs\(maps, mapDict, woods\);/);   // PIN MOVED (INLAND-PORTS): the smoothing is the repairs' (terrainHelper.js readyCheckRepairs)
   const sync = host.search(/woods\.syncHeightMapBytes\(\);/);
   const client = host.search(/new TerrainGenClient\(\{ woods, woodsBytes \}\)/);
   assert.ok(smooth > 0 && smooth < sync && sync < client,

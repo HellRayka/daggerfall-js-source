@@ -215,13 +215,13 @@ test('FIELD-CSA2 on the retail data: the open Bay south of Daggerfall (209, 216)
   const { WoodsFile } = await import('../src/formats/woodsFile.js');
   const { MapsFile } = await import('../src/formats/mapsFile.js');
   const { buildMapDict, locationSummaryAt } = await import('../src/systems/mapDirectory.js');
-  const { smoothLocationNeighbourhood } = await import('../src/world/terrainHelper.js');
+  const { readyCheckRepairs } = await import('../src/world/terrainHelper.js');
   const woods = new WoodsFile();
   woods.load(readFileSync(join(ARENA2, 'WOODS.WLD')));
   const maps = new MapsFile();
   maps.load(readFileSync(join(ARENA2, 'MAPS.BSA')), readFileSync(join(ARENA2, 'CLIMATE.PAK')), readFileSync(join(ARENA2, 'POLITIC.PAK')));
   const mapDict = buildMapDict(maps);
-  smoothLocationNeighbourhood(mapDict, woods);   // the boot's own repair (world.js), before any pixel streams
+  readyCheckRepairs(maps, mapDict, woods);   // the boot's own repairs (world.js), before any pixel streams - PIN MOVED (INLAND-PORTS): both, as the host runs them
   // world.js's own csaIsPortTown, mounted: Daggerfall (207, 213) is a port by its byte
   const { hasPortFor } = await import('../src/systems/travelPorts.js');
   // PIN MOVED (THE CAPTAIN'S SEA, ETHER-PORTS - found by AUDIT CAPTAIN'S SEA's touched run with the data): an isle's port

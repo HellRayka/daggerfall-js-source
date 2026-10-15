@@ -25,7 +25,7 @@ whole of it is a departure, Ledger A (SHIPYARDS, SHIPYARDS-FOUND, THE PIER'S DRE
 by its own data - Travel Options' hand-written harbours (`systems/travelPorts.js` `hasPort`) or Daggerfall's
 PortTownAndUnknown byte (`portTownByData`) - AND that the open sea bears on (INLAND-PORTS,
 `01-Overview/Field-Bugs-2026-10-14-inland-ports.md`; `portSites.js:"export function portTownOnSea(loc, hasPort, isSea) {"`,
-the host's `portOnSea`): a pixel of the open sea within `SEA_RING` (2) of the town's, the ring the bearing below is read
+the host's `portOnSea`, `scenes/portSeaHost.js` createPortSea's): a pixel of the open sea within `SEA_RING` (2) of the town's, the ring the bearing below is read
 off, so every port town has a seaward edge. THE OPEN SEA is the map's water that reaches the map's border
 (`portSites.js:"export function openSeaOf(isWater, width, height) {"` - the one water law's pixels flooded eight-way from
 the map's edge, Deep Waters' own flood of the sea; past the Veil, the Eltheric Ocean's water round its isles). The data
@@ -386,7 +386,7 @@ own light composition), the tutorial's pages. `test/piers1.test.js` - the pier's
 `test/shipyards1_audit_port.test.js` - AUDIT SHIPYARDS's pins (below). `test/beacontower.test.js` - BEACON-TOWER's (above).
 `test/fb1014_inlandports.test.js` - INLAND-PORTS's: the open sea, the ring, the towns, the host's (and on the real map,
 the 106 and the 49). Mutants: `tools/mutants/shipyards1.json` (76), `tools/mutants/shipyards1_audit.json` (72),
-`tools/mutants/beacontower.json` (21) and `tools/mutants/fb1014_inlandports.json` (14), every one dead.
+`tools/mutants/beacontower.json` (21) and `tools/mutants/fb1014_inlandports.json` (18), every one dead.
 
 ## AUDIT SHIPYARDS (2026-10-11, Mac: "Audit everything")
 

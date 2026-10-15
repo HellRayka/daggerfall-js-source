@@ -77,8 +77,8 @@ NOT TOUCHED - the same table and byte read by other laws, each that law's own:
 - The shipyard law (`isPortTown`) stood a shipyard and a lighthouse in every town on the table - the 31 inland capitals
   among them, at the town's middle where no sea bears on it. Closed by INLAND-PORTS
   (`01-Overview/Field-Bugs-2026-10-14-inland-ports.md`, a player: "Shipyard & light house near pond" - Ilessan Hills):
-  a port town is one the open sea bears on, and the board's ports are the same towns - 106 of the 155 here, 101 of them
-  taking a cargo.
+  a port town is one the open sea bears on, and the board's ports are the same towns - 106 of the 155 here, 91 of them
+  taking a cargo on the map the streaming host reads (its own count, 113 above, is the raw files').
 - CAPT-WATERS' distance from the nearest port (`navalPortPx`) reads the table's pixels.
 
 `test/fb1013c_porttowns.test.js` (6): the host's port list and port-here lifted off world.js over eight of the table's

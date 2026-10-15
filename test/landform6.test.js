@@ -184,7 +184,8 @@ test('LANDFORM6: the climates ride every kernel - the worker keeps the posted ta
     assert.deepEqual([...grid.normals], [...restrideGrid({ woods, px: 401, py: 250, stride: 2, samples: here.samples, landform: true, climates: t }).normals], 'a promotion\'s ghost rows too');
   } finally { globalThis.postMessage = prevPost; globalThis.onmessage = prevOn; }
   const world = src('src/scenes/world.js');
-  assert.ok(world.indexOf('dilateCoastalClimate(maps, 2)') > 0 && world.indexOf('dilateCoastalClimate(maps, 2)') < world.indexOf('_landformClimates = landformClimates('), 'after the dilation, as every pixel streams the climates');
+  // PIN MOVED (FIELD BUGS 2026-10-14 INLAND-PORTS): the dilation is ReadyCheck's repairs' (terrainHelper.js readyCheckRepairs)
+  assert.ok(world.indexOf('readyCheckRepairs(maps, mapDict, woods)') > 0 && world.indexOf('readyCheckRepairs(maps, mapDict, woods)') < world.indexOf('_landformClimates = landformClimates('), 'after the dilation, as every pixel streams the climates');
   assert.match(world, /_landformClimates = landformClimates\(\(x, y\) => maps\.getClimateIndex\(x, y\)\);/, 'the climate map\'s own values');
   assert.match(world, /terrainGen\.setLandformTables\(\{ sites: _landformSites, climates: _landformClimates \}\);/, 'handed to both kernels with the sites');
 });

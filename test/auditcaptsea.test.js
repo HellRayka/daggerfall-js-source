@@ -1554,7 +1554,8 @@ test('AUDIT CAPTAIN\'S SEA B6/B8/B10: a chart\'s port drawn again till one has o
   // B10's edge - past the map only where the land beyond the Bay stands - is the open sea's own (run by
   // test/fb1014_inlandports.test.js)
   assert.match(rd('src/scenes/world.js'), /\n {4}seaAt: openSea, {3}\/\//);
-  assert.match(rd('src/scenes/world.js'), /\n {4}if \(!\(x >= 0 && y >= 0 && x < MAP_WIDTH && y < MAP_HEIGHT\)\) return tamrielLand && seaPixel\(x, y\);\n {4}_openSea \?\?= openSeaOf\(seaPixel, MAP_WIDTH, MAP_HEIGHT\);/);
+  assert.match(rd('src/scenes/world.js'), /createPortSea\(\{ seaPixel, width: MAP_WIDTH, height: MAP_HEIGHT, hasPort, etherSea, inEther, tamrielLand \}\)/, 'the host hands its switch');
+  assert.match(rd('src/scenes/portSeaHost.js'), /\n {4}if \(!\(x >= 0 && y >= 0 && x < width && y < height\)\) return tamrielLand && seaPixel\(x, y\);\n {4}mask \?\?= openSeaOf\(seaPixel, width, height\);/);
 });
 
 test('AUDIT CAPTAIN\'S SEA B9/B11/B13: a cache\'s and a chart\'s things kept in an overladen pack (they went down unsaid); the exchange caps a purchase at her room before she would lie dead in the water, and says the room; "1 hour left" (mutants: the force, the room\'s cap, the lede, the noun)', async () => {

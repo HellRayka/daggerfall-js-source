@@ -11,7 +11,10 @@
 // Now a port town is a port by its data THAT THE OPEN SEA BEARS ON (world/portSites.js portTownOnSea): a pixel of the
 // map's water that reaches the map's border (openSeaOf - Deep Waters' own flood of the sea) within SEA_RING of the
 // town's, the ring the shipyard reads its bearing off. The harbour board's ports are the same towns (world.js
-// navalPortList asks seaBears too), and the bearing is read off the open sea.
+// navalPortList asks seaBears too), and the bearing is read off the open sea. The host's open sea and its port test are
+// a module it wires (scenes/portSeaHost.js createPortSea, HOST-SPLIT's law), run here as the host constructs it.
+// The real map is read as the streaming host reads it (test/streamingMap.mjs: world/terrainHelper.js readyCheckRepairs,
+// bootWorld's own two repairs) - the raw files are another map.
 import './modsOff.js';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -20,16 +23,15 @@ import { join } from 'node:path';
 import { openSeaOf, seaBears, portTownOnSea, seaBearing, seaField, townSeaOf, SEA_RING } from '../src/world/portSites.js';
 import { isPortTown, isPortTownType, portTownByData } from '../src/systems/portPlaces.js';
 import { PORT_LOCATION_IDS, hasPort } from '../src/systems/travelPorts.js';
-import { MapsFile, LOCATION_TYPES, getPixelFromPixelID, mapPixelToLongitudeLatitude, longitudeLatitudeToMapPixel } from '../src/formats/mapsFile.js';
-import { WoodsFile } from '../src/formats/woodsFile.js';
+import { LOCATION_TYPES, getPixelFromPixelID, mapPixelToLongitudeLatitude, longitudeLatitudeToMapPixel } from '../src/formats/mapsFile.js';
 import { BlocksFile } from '../src/formats/blocksFile.js';
-import { buildMapDict } from '../src/systems/mapDirectory.js';
-import { isWaterPixel } from '../src/ui/overworldModel.js';
 import { crownOf } from '../src/systems/naval/navalShips.js';
 import { boardFor, deliveryPort, SITE_PX } from '../src/systems/naval/harbourBoard.js';
 import { chartSite } from '../src/systems/naval/treasureCharts.js';
 import { layoutLocation } from '../src/world/locationLayout.js';
 import { NAV_CELLS_PER_BLOCK, tileWeight } from '../src/world/cityNavigation.js';
+import { createPortSea } from '../src/scenes/portSeaHost.js';
+import { streamingMap } from './streamingMap.mjs';
 
 const W = readFileSync(new URL('../src/scenes/world.js', import.meta.url), 'utf8');
 
@@ -104,14 +106,12 @@ test('INLAND-PORTS THE TOWNS (the report): a city the byte\'s 0x10 marks, on Tra
   assert.equal(portTownOnSea(null, () => true, sea), false);
 });
 
-/** The host's open sea, lifted off world.js and run over a map of the test's (`isWater`) and the ether's switch. */
+/** The host's open sea - its module (scenes/portSeaHost.js), constructed with the handles world.js hands it (pinned
+ *  below) - over a map of the test's (`isWater`), the ether's switch and the land beyond the Bay's. */
 function hostOpenSea({ isWater, width, height, ether = false, inEther = () => false, tamriel = false }) {
-  const m = /\n {2}(let _openSea = null;\n {2}const openSea = \(x, y\) => \{\n[\s\S]*?\n {2}\};)\n/.exec(W);
-  assert.ok(m, 'the host\'s open sea moved');
   let asked = 0;
   const seaPixel = (x, y) => { asked++; return isWater(x, y); };
-  // eslint-disable-next-line no-new-func
-  const openSea = new Function('etherSea', 'inEther', 'seaPixel', 'MAP_WIDTH', 'MAP_HEIGHT', 'openSeaOf', 'tamrielLand', `${m[1]}\nreturn openSea;`)(ether, inEther, seaPixel, width, height, openSeaOf, tamriel);
+  const { openSea } = createPortSea({ seaPixel, width, height, hasPort: () => false, etherSea: ether, inEther, tamrielLand: tamriel });
   return { openSea, asked: () => asked };
 }
 
@@ -149,14 +149,18 @@ function hostPortList({ dict, maps, openSea }) {
     `${list[1]}\nreturn navalPortList;`)(dict, maps, PORT_LOCATION_IDS, isPortTownType, getPixelFromPixelID, crownOf, () => [], seaBears, openSea)();
 }
 
-test('INLAND-PORTS THE HOST: the pixel\'s build and the town\'s places ask portOnSea (a port by its data on the open sea), the bearing is read off the open sea, the open sea stands above the stream; the harbour board\'s ports, run, are the towns the open sea bears on - no board in a capital in the hills or by a lake (mutants: the board\'s sea unasked, the host asking the data alone, the bearing off any water)', () => {
-  assert.match(W, /\n {2}const portOnSea = \(dfLocation\) => portTownOnSea\(dfLocation, hasPort, openSea\);\n/);
+test('INLAND-PORTS THE HOST: it wires the open sea\'s module (HOST-SPLIT) with its own seaPixel, the map\'s size, Travel Options\' harbours and its two switches, above the stream; the pixel\'s build and the town\'s places ask its portOnSea (a port by its data on the open sea - run), the bearing is read off the open sea; the harbour board\'s ports, run, are the towns the open sea bears on - no board in a capital in the hills or by a lake (mutants: the board\'s sea unasked, the host asking the data alone, the bearing off any water)', () => {
+  assert.match(W, /\n {2}const \{ openSea, portOnSea \} = createPortSea\(\{ seaPixel, width: MAP_WIDTH, height: MAP_HEIGHT, hasPort, etherSea, inEther, tamrielLand \}\);\n/);
+  assert.match(W, /\nimport \{ hasPortFor, hasPort, [^\n]*\} from '\.\.\/systems\/travelPorts\.js';/, 'Travel Options\' harbours');
+  const { portOnSea } = createPortSea({ seaPixel: (x) => x <= 1, width: 40, height: 20, hasPort: (id) => id === 7 });
+  const town = (px, mapId) => { const ll = mapPixelToLongitudeLatitude(px, 10); return { mapTableData: { mapId, locationType: LOCATION_TYPES.TownCity, longitude: ll.x, latitude: ll.y }, exterior: { exteriorData: { portTownAndUnknown: 0 } } }; };
+  assert.deepEqual([portOnSea(town(3, 7)), portOnSea(town(4, 7)), portOnSea(town(3, 8))], [true, false, false], 'the table\'s harbour two off the sea, three off, and no harbour');
   assert.equal((W.match(/isPortTown\(dfLocation, portOnSea\(dfLocation\)\)/g) ?? []).length, 2, 'the pixel\'s build and townPlacesFor');
   assert.doesNotMatch(W, /isPortTown\(dfLocation, portTownByData\(|portByData/, 'nothing asks the data alone');
   assert.match(W, /const bearing = seaBearing\(lp\.x, lp\.y, openSea\);/);
-  assert.match(W, /\n {4}_openSea \?\?= openSeaOf\(seaPixel, MAP_WIDTH, MAP_HEIGHT\);\n/);
-  // BOOT-TDZ: declared above the stream, as seaPixel is - the boot's first build reads it
-  const decl = W.indexOf('\n  const openSea = (x, y) => {'), places = W.indexOf('\n  function townPlacesFor(');
+  assert.doesNotMatch(W, /openSeaOf\(/, 'the flood is the module\'s alone');
+  // BOOT-TDZ: constructed above the stream, beside seaPixel - the boot's first build reads it
+  const decl = W.indexOf('\n  const { openSea, portOnSea } = createPortSea('), places = W.indexOf('\n  function townPlacesFor(');
   assert.ok(decl > W.indexOf('\n  const seaPixel = (x, y) =>') && decl < places, 'beside seaPixel, before the towns\' places');
   // the board: three of Travel Options' harbours - a capital, a village by a lake, a hamlet on the sea's shore
   const ids = [...new Set(PORT_LOCATION_IDS)].slice(0, 3);
@@ -173,8 +177,8 @@ test('INLAND-PORTS THE HOST: the pixel\'s build and the town\'s places ask portO
   assert.deepEqual(hostPortList({ dict, maps, openSea: () => true }).map((p) => p.name), names, 'the sea all round: every town');
 });
 
-/** The harbour office's `seaAt` as the host hands it (world.js's office deps), over the host's open sea and a one water
- *  law of the test's (`isWater`) - lifted and run. */
+/** The harbour office's `seaAt` as the host hands it (world.js's office deps, lifted), over the host's open sea (its
+ *  module's) and a one water law of the test's (`isWater`) - run. */
 function hostSeaAt({ isWater, width, height }) {
   const m = /\n {4}seaAt: (.+?), {3}\/\//.exec(W);
   assert.ok(m, 'the harbour office\'s seaAt moved');
@@ -225,22 +229,18 @@ const LOST = Object.freeze([
   'Tuncart', 'Urvaius', 'Warvale', 'Whitebrone Hall', 'Whitefort', 'Whitewych Commons', 'Wrothgaria', 'Ykalon', 'Zagyry-Thar',
 ]);
 
-test('INLAND-PORTS (ARENA2): on the real map - the open sea one body of 179,926 pixels, the 81 lakes and ponds inland none of it; of the 155 towns that are ports by their data, 106 have the open sea within two and stand the port\'s places, the 49 others named - 36 capitals the byte\'s 0x10 marks, Ilessan Hills among them, whose places stood at its middle beside its own ponds; Daggerfall, Sentinel and Wayrest kept; no kept town\'s bearing moves', { skip: !HAS_ARENA2 && 'ARENA2_PATH not set' }, () => {
-  const maps = new MapsFile();
-  assert.equal(maps.load(new Uint8Array(readFileSync(join(ARENA2, 'MAPS.BSA'))), new Uint8Array(readFileSync(join(ARENA2, 'CLIMATE.PAK'))), new Uint8Array(readFileSync(join(ARENA2, 'POLITIC.PAK')))), true);
-  maps.autoDiscard = false;
-  const woods = new WoodsFile();
-  assert.equal(woods.load(new Uint8Array(readFileSync(join(ARENA2, 'WOODS.WLD')))), true);
-  const dict = buildMapDict(maps);
-  const seaPixel = (x, y) => isWaterPixel(maps.getClimateIndex(x, y), woods.getHeightMapValue(x, y));   // the world's one water law
-  const mask = openSeaOf(seaPixel, 1000, 500);
-  const openSea = (x, y) => x >= 0 && y >= 0 && x < 1000 && y < 500 && mask[y * 1000 + x] === 1;
-  assert.equal(mask.reduce((n, v) => n + v, 0), 179926, 'the open sea');
+test('INLAND-PORTS (ARENA2): on the real map as the streaming host reads it (ReadyCheck\'s two repairs: 10,623 coastal pixels dilated, 50 locations smoothed) - the open sea one body of 179,779 pixels, the 80 lakes and ponds inland none of it; of the 155 towns that are ports by their data, 106 have the open sea within two and stand the port\'s places (15 of them exactly two off), the 49 others named - 36 capitals the byte\'s 0x10 marks, Ilessan Hills among them, whose places stood at its middle beside its own ponds; Daggerfall, Sentinel and Wayrest kept; no kept town\'s bearing moves', { skip: !HAS_ARENA2 && 'ARENA2_PATH not set' }, () => {
+  const { maps, dict, repairs, seaPixel } = streamingMap(ARENA2);   // the host's map: bootWorld's own repairs (readyCheckRepairs)
+  assert.deepEqual(repairs, { dilated: 10623, smoothed: 50 });
+  const { openSea, portOnSea } = createPortSea({ seaPixel, width: 1000, height: 500, hasPort });   // the host's module, as it wires it
+  let open = 0;
+  for (let y = 0; y < 500; y++) for (let x = 0; x < 1000; x++) if (openSea(x, y)) open++;
+  assert.equal(open, 179779, 'the open sea (179,926 on the raw files)');
   // the water left out, in its bodies (eight-way, as the flood)
   const seen = new Uint8Array(1000 * 500);
   let lakes = 0, largest = 0;
   for (let i = 0; i < seen.length; i++) {
-    if (seen[i] || mask[i] || !seaPixel(i % 1000, (i - (i % 1000)) / 1000)) continue;
+    if (seen[i] || openSea(i % 1000, (i - (i % 1000)) / 1000) || !seaPixel(i % 1000, (i - (i % 1000)) / 1000)) continue;
     lakes++;
     let n = 0;
     const stack = [i];
@@ -255,20 +255,23 @@ test('INLAND-PORTS (ARENA2): on the real map - the open sea one body of 179,926 
     }
     largest = Math.max(largest, n);
   }
-  assert.deepEqual([lakes, largest], [81, 54], 'the lakes and ponds inland');
+  assert.deepEqual([lakes, largest], [80, 54], 'the lakes and ponds inland');
 
   const byData = [], kept = [], lost = [];
   for (const s of dict.values()) {
     const loc = maps.getLocation(s.regionIndex, s.mapIndex);
     if (!isPortTown(loc, portTownByData(loc, hasPort))) continue;
     byData.push(loc);
-    (isPortTown(loc, portTownOnSea(loc, hasPort, openSea)) ? kept : lost).push(loc);
+    (isPortTown(loc, portOnSea(loc)) ? kept : lost).push(loc);
+    assert.equal(portOnSea(loc), portTownOnSea(loc, hasPort, openSea), 'the module asks the law');
   }
   assert.deepEqual([byData.length, kept.length, lost.length], [155, 106, 49]);
   assert.deepEqual(lost.map((l) => l.name).sort(), [...LOST].sort());
   const capitals = byData.filter((l) => l.exterior.exteriorData.portTownAndUnknown === 0x10);
   assert.deepEqual([capitals.length, capitals.filter((l) => lost.includes(l)).length], [39, 36], 'the capitals\' mark, 36 of its towns off the open sea');
   assert.deepEqual(capitals.filter((l) => kept.includes(l)).map((l) => l.name).sort(), ['Daggerfall', 'Sentinel', 'Wayrest'], 'the crowns\' capitals two pixels off it');
+  const offBy = (l) => { const p = longitudeLatitudeToMapPixel(l.mapTableData.longitude, l.mapTableData.latitude); let d = Infinity; for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) if (openSea(p.x + dx, p.y + dy)) d = Math.min(d, Math.max(Math.abs(dx), Math.abs(dy))); return d; };
+  assert.deepEqual(kept.filter((l) => offBy(l) === 2).map((l) => l.name).sort(), ['Aldbrugh', 'Aldpath Hall', 'Chesterbrugh', 'Daggerfall', 'Gallocart', 'Holmarket', 'Holwych', 'Isfakabi', 'Lambrugh', 'Mesiton', 'Pencart', 'Sentinel', 'Wayrest', 'Whitecroft', 'Zagumba-Kom'], 'the towns on the ring\'s edge (5 of them on the raw files)');
   for (const l of kept) {
     const p = longitudeLatitudeToMapPixel(l.mapTableData.longitude, l.mapTableData.latitude);
     assert.deepEqual(seaBearing(p.x, p.y, openSea), seaBearing(p.x, p.y, seaPixel), `${l.name}: its shipyard stands where it stood`);
@@ -281,7 +284,7 @@ test('INLAND-PORTS (ARENA2): on the real map - the open sea one body of 179,926 
   let near = Infinity;
   for (let dy = -8; dy <= 8; dy++) for (let dx = -8; dx <= 8; dx++) if (seaPixel(ip.x + dx, ip.y + dy)) near = Math.min(near, Math.max(Math.abs(dx), Math.abs(dy)));
   assert.equal(near, Infinity, 'no water within eight pixels');
-  assert.equal(portTownOnSea(ih, hasPort, openSea), false, 'no port town now');
+  assert.equal(portOnSea(ih), false, 'no port town now');
   const blocks = new BlocksFile();
   assert.equal(blocks.load(new Uint8Array(readFileSync(join(ARENA2, 'BLOCKS.BSA')))), true);
   const yl = layoutLocation(ih, maps, blocks, { enhanced: true, windmills: true });

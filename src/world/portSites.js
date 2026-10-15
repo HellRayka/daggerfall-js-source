@@ -165,9 +165,9 @@ export function seaBearing(px, py, isSea) {
  * THE OPEN SEA (FIELD BUGS 2026-10-14 INLAND-PORTS): the map's water that reaches the map's border - every pixel the one
  * water law calls water (`isWater(x, y)`: overworldModel.js isWaterPixel) flooded eight-way from those on the map's edge,
  * the flood Deep Waters' bake makes of the sea (world/deepWatersBake.js COARSE: "the 8-connected flood of candidates
- * from the map's border - one component in the file, every inland lake left out"), a map pixel at a time. On the real map
- * it is one body of 179,926 pixels; the 81 lakes and ponds the map draws inland (one pixel to 54) are none of it - no
- * ship of the Bay's reaches them. Answers a mask over the map's pixels (`y * width + x`), 1 the open sea. Pure.
+ * from the map's border - one component in the file, every inland lake left out"), a map pixel at a time. On the map
+ * the streaming host reads (world/terrainHelper.js readyCheckRepairs) it is one body of 179,779 pixels; the 80 lakes and
+ * ponds the map draws inland (one pixel to 54) are none of it - no ship of the Bay's reaches them. Answers a mask over the map's pixels (`y * width + x`), 1 the open sea. Pure.
  * @param {(x: number, y: number) => boolean} isWater @param {number} width @param {number} height
  * @returns {Uint8Array}
  */

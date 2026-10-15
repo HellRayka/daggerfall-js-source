@@ -175,7 +175,10 @@ test('SHIPYARDS THE HOSTS: world.js places the port\'s places in each port town\
   // and the bearing is read off the open sea
   assert.match(w, /const yardTown = isYardTown\(dfLocation\), portTown = isPortTown\(dfLocation, portOnSea\(dfLocation\)\);\n\s*const places = yardTown \|\| portTown \? townPlacesFor\(dfLocation, lefaySpot, climate\?\.people, loc\) : null;\n\s*if \(yardTown\) yardSites = places\.yards;\n\s*if \(portTown\) portSites = places\.ports;/);
   assert.match(w, /const bearing = seaBearing\(lp\.x, lp\.y, openSea\);[^\n]*\n\s*ports = portSitesOn\(g, seaField\(g\.width, g\.height, townSeaOf\(yl, bearing\), bearing\)\);/, 'on what the yards left, off the sea');
-  assert.match(w, /const portOnSea = \(dfLocation\) => portTownOnSea\(dfLocation, hasPort, openSea\);/, 'a port by its own data on the open sea (executed: test/shipyards1_audit_port.test.js, test/fb1014_inlandports.test.js)');
+  // PIN MOVED (HOST-SPLIT, INLAND-PORTS): the host wires the open sea's module, whose portOnSea is the law's (executed:
+  // test/fb1014_inlandports.test.js)
+  assert.match(w, /const \{ openSea, portOnSea \} = createPortSea\(\{ seaPixel, width: MAP_WIDTH, height: MAP_HEIGHT, hasPort, etherSea, inEther, tamrielLand \}\);/, 'a port by its own data on the open sea');
+  assert.match(read('src/scenes/portSeaHost.js'), /\n {2}const portOnSea = \(dfLocation\) => portTownOnSea\(dfLocation, hasPort, openSea\);\n/, 'executed: test/shipyards1_audit_port.test.js, test/fb1014_inlandports.test.js');
   assert.match(w, /if \(portSites\?\.length\) carveYards\(nav, portSites\);/, 'the people walk round them');
   assert.match(w, /\n\s+portSites,   \/\/ SHIPYARDS/, 'on the pixel\'s record');
   assert.match(w, /portHost = createPortHost\(\{/);

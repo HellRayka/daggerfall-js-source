@@ -524,7 +524,9 @@ test('AUDIT C&C (lens T): THE STANDALONE EXTERIOR READS THE REPAIRED CLIMATE - S
   const first = ext.indexOf('maps.getLocation');
   assert.ok(load >= 0 && repair >= 0 && first >= 0, 'the load, the repair and the first read all stand');
   assert.ok(load < repair && repair < first, 'the repair between the load and the first read');
-  assert.match(read('src/scenes/world.js'), /\n {2}const dilated = dilateCoastalClimate\(maps, 2\);/, 'as the streaming host runs it');
+  // PIN MOVED (FIELD BUGS 2026-10-14 INLAND-PORTS): the streaming host runs ReadyCheck's two repairs as one construction
+  assert.match(read('src/scenes/world.js'), /\n {2}const \{ dilated, smoothed: smoothedLocations \} = readyCheckRepairs\(maps, mapDict, woods\);/, 'as the streaming host runs it');
+  assert.match(read('src/world/terrainHelper.js'), /\n {2}const dilated = dilateCoastalClimate\(maps, 2\);\n/, 'its dilation the same two passes');
 });
 
 test('AUDIT C&C (lens H): NO SAVE INSIDE A JOURNEY - DFU\'s fast travel is one frame (TeleportToCoordinates, then RaiseTime), and here the teleport is awaited with frames running before the clock moves: a save between them wrote the arrival\'s place with the departure\'s clock and needs; the save refuses while the journey stands, and the journey\'s flag stands from before the teleport to after the clock, and falls whatever happens (mutant: no refusal)', () => {

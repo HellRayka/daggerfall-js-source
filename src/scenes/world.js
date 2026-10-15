@@ -222,7 +222,7 @@ import { MEMBERSHIP_STATUS } from '../systems/quest/questLists.js';   // V2d: th
 import { prepareQuestShare, prepareShareData, shareSignature, receiveSharedQuest, SHARE_REFUSAL_TEXT, shareRefusalText, sayShareRefusal } from '../systems/questShare.js';   // QUEST1: the chronicle's own Share button, and the party frame it answers
 import { careerSunAverse } from '../systems/passiveSpecials.js';   // AUDIT 64 F20: Career.DamageFromSunlight, the arrival clamp's second arm - HOOD-CAREER: under a bare head
 import { buildMapDict, locationSummaryAt as travelLocationSummaryAt } from '../systems/mapDirectory.js';   // W1: ContentReader's map dict; TO1: the junction map's own reads
-import { dilateCoastalClimate, smoothLocationNeighbourhood } from '../world/terrainHelper.js';   // AUDIT 58 F4
+import { readyCheckRepairs } from '../world/terrainHelper.js';   // AUDIT 58 F4; FIELD BUGS 2026-10-14 INLAND-PORTS: the two repairs one construction, the pins' too
 import { stampResidenceQuestNames, registerExteriorAutomapConsoleCommands } from '../ui/exteriorAutomapWindow.js';   // D5: the quest-residence plate name; E3: ExteriorAutoMapConsoleCommands
 // EM4: the skin fork. The classic skin keeps DFU's rotating town map
 // whole; the enhanced one gets the held sheet with the town's plan
@@ -314,7 +314,8 @@ import { WARDEN_VENDOR, isWardenTown } from '../systems/wagonWarden.js';   // WA
 import { townGroundOf, yardSitesOn, craftYardSitesOn, carveYards, MONUMENT_KEEP_M, yardMeasuresOf, placedModelBox } from '../world/merchantYardSites.js';   // MERCHANT-YARDS: where they stand off the town's layout, and the people's navgrid carved round them
 import { isYardTown, yardKeeper, ALL_YARD_KINDS, YARD_BENCH } from '../systems/merchantYards.js';   // MERCHANT-YARDS: the towns that stand them, who keeps them, the town's people
 import { isPortTown, isPortTownType, portKeeper, portPlaceName, PORT_SITE_ORDER } from '../systems/portPlaces.js';   // SHIPYARDS: the port towns, their keepers and their places' names; FIELD BUGS 2026-10-13c PORT-TOWNS: the harbour board's ports are its towns
-import { townSeaOf, seaBearing, seaField, portSitesOn, portPlaceRows, sceneToLocationXZ, openSeaOf, seaBears, portTownOnSea } from '../world/portSites.js';   // SHIPYARDS: where a port town's shipyard and lighthouse stand - its seaward ground; FIELD BUGS 2026-10-14 INLAND-PORTS: and which towns the open sea bears on
+import { townSeaOf, seaBearing, seaField, portSitesOn, portPlaceRows, sceneToLocationXZ, seaBears } from '../world/portSites.js';   // SHIPYARDS: where a port town's shipyard and lighthouse stand - its seaward ground; FIELD BUGS 2026-10-14 INLAND-PORTS: and the board's ports the open sea bears on
+import { createPortSea } from './portSeaHost.js';   // FIELD BUGS 2026-10-14 INLAND-PORTS (HOST-SPLIT): the open sea and the port towns on it
 import { SHIPYARD as SHIPYARD_LAYOUT } from '../world/shipyardModel.js';   // SHIPYARDS: the crew hall's table, for the talk directory's row
 import { HARBOUR_REACH } from '../systems/naval/shipLife.js';   // AUDIT HOLDINGS O1: the harbour's scan reach, its pixels built before it is sounded
 import { createHarbourBook } from '../systems/naval/harbourBook.js';   // HARBOUR-BOOK: the harbours near the player, the quays' and the sea's
@@ -1332,8 +1333,7 @@ export async function bootWorld(canvas, renderer, params, status) { handHeroGend
   // dilation hides the raised square coastline by pushing land climate
   // into the ocean pixels beside it, the smoothing flattens a steep
   // location's 3x3 neighbourhood. Classic-lane law, no gate.
-  const dilated = dilateCoastalClimate(maps, 2);
-  const smoothedLocations = smoothLocationNeighbourhood(mapDict, woods);
+  const { dilated, smoothed: smoothedLocations } = readyCheckRepairs(maps, mapDict, woods);   // dilate, then smooth - DFU's order
   // ...and the worker builds its OWN reader from the raw bytes, so the
   // smoothed heights go back into them BEFORE the client copies them.
   woods.syncHeightMapBytes();
@@ -4033,27 +4033,11 @@ export async function bootWorld(canvas, renderer, params, status) { handHeroGend
    *  SHIPYARDS (BOOT-TDZ): declared here, above the stream - a port town's places read its bearing in the boot's first
    *  build, three thousand lines before its old place ran. */
   const seaPixel = (x, y) => isWaterPixel(maps.getClimateIndex(x, y), woods.getHeightMapValue(x, y));
-  /** FIELD BUGS 2026-10-14 INLAND-PORTS: THE OPEN SEA - a pixel of the Bay's map whose water reaches the map's border
-   *  (world/portSites.js openSeaOf over seaPixel, flooded the first time it is asked: every lake and pond the map draws
-   *  inland left out); past the Veil, the Eltheric Ocean's water round its isles (the ether's own ground - each isle a
-   *  hill of land in open water, ethericSea.js isleByte); past the map's edge, only where the land beyond the Bay stands
-   *  (AUDIT CAPTAIN'S SEA B10, the harbour's sites' law, moved here: else nothing streams there) - the continent's sea,
-   *  its land a province's and no lake in it (world/tamrielGround.js authoredHeightByte). The one set the port towns, the
-   *  harbour board's ports and the harbour office's sites, cargoes and charts ask. */
-  let _openSea = null;
-  const openSea = (x, y) => {
-    if (etherSea && inEther(x, y)) return seaPixel(x, y);
-    if (!(x >= 0 && y >= 0 && x < MAP_WIDTH && y < MAP_HEIGHT)) return tamrielLand && seaPixel(x, y);
-    _openSea ??= openSeaOf(seaPixel, MAP_WIDTH, MAP_HEIGHT);
-    return _openSea[y * MAP_WIDTH + x] === 1;
-  };
-  /** SHIPYARDS: whether a town stands the port's places (systems/portPlaces.js isPortTown) - a port by its own data
-   *  (Travel Options' hand-written harbours, travelPorts.js hasPort, or Daggerfall's PortTownAndUnknown byte) that the open
-   *  sea bears on (INLAND-PORTS: world/portSites.js portTownOnSea - the open sea within SEA_RING, the ring its bearing is
-   *  read off; the data alone stood a shipyard and a lighthouse at the middle of 36 region capitals, beside a pond in
-   *  Ilessan Hills' blocks). Never a seat's members' harbour (hasPortFor's word is one guild's - every client stands the
-   *  same shipyard), and never csaIsPortTown, declared below the stream (BOOT-TDZ). */
-  const portOnSea = (dfLocation) => portTownOnSea(dfLocation, hasPort, openSea);
+  /** FIELD BUGS 2026-10-14 INLAND-PORTS: THE OPEN SEA, and whether a town stands the port's places on it - a module the
+   *  host wires (scenes/portSeaHost.js, HOST-SPLIT's law), constructed here, above the stream, beside seaPixel (BOOT-TDZ:
+   *  a port town's places read it in the boot's first build). `openSea` the one set every reader of the open sea asks;
+   *  `portOnSea` a port by its data that the open sea bears on - never a seat's members' harbour, never csaIsPortTown. */
+  const { openSea, portOnSea } = createPortSea({ seaPixel, width: MAP_WIDTH, height: MAP_HEIGHT, hasPort, etherSea, inEther, tamrielLand });
   const _yardMemo = new Map();   // mapId -> { sig, sites, ports }, the latest few towns
   const _yardBoxes = new Map();   // a registered model's local box, by id
   const palaceIn = (b) => {
@@ -32851,11 +32835,9 @@ const _pixelOrder = [];   // NEAR-FIRST: the frame's pixel walk, nearest first -
   const LANE_LIST_MS = 2000, LANE_NEAR_PX = 4;
   let _laneAt = -Infinity, _laneNet = null;
   const _laneWays = new Map();
-  /** A map pixel of the lanes' water - the Ocean climate's at the shore's byte - the lanes' and the roadsteads' water.
-   *  NOT the open sea (FIELD BUGS 2026-10-14 INLAND-PORTS measured it): 331 pixels of the map's lakes carry the Ocean
-   *  climate, so the towns on a lake run their packets on it - the lake harbours' own traffic, which stays (Mac,
-   *  2026-10-15: the lake harbours are kept). The serpent's site asks a 3 x 3 of it, which no lake of the real map holds
-   *  (none in 3,650 days); a reader that means the open sea asks `openSea`. */
+  /** A map pixel of the open sea - the ocean's water, never a lake's - the lanes' and the roadsteads' water. Never a
+   *  lake's by ReadyCheck's dilation (world/terrainHelper.js readyCheckRepairs), which leaves no lake pixel this water
+   *  (FIELD BUGS 2026-10-14 INLAND-PORTS measured none of its 169,683 a lake's, and the lanes the same through `openSea`). */
   const laneOpen = (px, py) => px >= 0 && py >= 0 && px < 1000 && py < 500 && tvWater(px, py) && maps.getClimateIndex(px, py) === CLIMATES.Ocean;
   const laneOpenNative = (x, z) => { if (!(x >= 0 && z >= 0 && x < 1000 * RAID_NATIVE_PIXEL && z < 500 * RAID_NATIVE_PIXEL)) return false; const p = pixelOfNative(x, z); return laneOpen(p.x, p.y); };
   _lanesReady = true;   // BOOT-TDZ II: every binding the lanes read stands from here (raidNowMs above it)

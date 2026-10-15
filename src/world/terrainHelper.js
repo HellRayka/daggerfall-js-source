@@ -157,3 +157,22 @@ export function smoothLocationNeighbourhood(mapDict, woods, threshold = SMOOTH_G
   }
   return smoothed;
 }
+
+/**
+ * StreamingWorld.ReadyCheck's two runtime data repairs (StreamingWorld.cs:1676-1685), in DFU's order - the coast's
+ * climate dilated (`dilateCoastalClimate`, DFU's two passes), then the steep locations' neighbourhoods smoothed
+ * (`smoothLocationNeighbourhood`) - over the readers in memory, once, before anything streams: THE MAP THE STREAMING
+ * WORLD READS. ONE CONSTRUCTION (AUDIT 17i's seam): scenes/world.js bootWorld runs it, and every pin that must read what
+ * that host reads builds its reader with it (FIELD BUGS 2026-10-14 INLAND-PORTS: the raw files are not the map the host
+ * floods - 179,926 pixels of open sea raw, 179,779 repaired; 5 port towns exactly two pixels off it raw, 15 repaired).
+ * The worker's copy of the smoothed heights is the host's own step after it (WoodsFile syncHeightMapBytes).
+ * @param {object} maps - the loaded MapsFile (its climate buffer is mutated).
+ * @param {Map} mapDict - buildMapDict's answer over `maps`.
+ * @param {object} woods - the loaded WoodsFile (its height buffer is mutated).
+ * @returns {{ dilated: number, smoothed: number }}
+ */
+export function readyCheckRepairs(maps, mapDict, woods) {
+  const dilated = dilateCoastalClimate(maps, 2);
+  const smoothed = smoothLocationNeighbourhood(mapDict, woods);
+  return { dilated, smoothed };
+}

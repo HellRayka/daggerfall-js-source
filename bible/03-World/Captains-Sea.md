@@ -321,10 +321,10 @@ the towns that stand the port's places, 106 on the real map. The table is every 
 in at - MAPS.BSA's 343 flagged locations and Hazelnut's extras - and 223 of its 378 are tombs, farms, inns, temples,
 manors, graveyards and ruins, which the board read as ports with harbourmasters until then. A cargo goes only to a port
 with the sea beside it - its own map pixel or one of the eight about it (`harbourBoard.js deliveryPort`, `net/fortLaw.js
-coastalAt`), the berth's reach: 101 of the 106, each answering to its own name from a sea pixel beside it - never to
+coastalAt`), the berth's reach: 91 of the 106, each answering to its own name from a sea pixel beside it - never to
 Daggerfall, Sentinel and Wayrest, two pixels off it. A capital inland is no port of the board's at all (36 of the 39
-the byte's 0x10 marks have no open sea within two pixels), nor is a town by a lake inland (INLAND-PORTS: the twelve
-that took a cargo until then). A cargo already held for a place that is no such port is void at the office's tick, no
+the byte's 0x10 marks have no open sea within two pixels), nor is a town by a lake inland (INLAND-PORTS: the ten
+that took a cargo until then, on the map the streaming host reads). A cargo already held for a place that is no such port is void at the office's tick, no
 regard lost, and said ("Contract void - ... No ship can make port there.").
 
 THE SITES (`navalHost.js siteStep`, SITE_CHECK_S apart, aboard): a held bounty's quarry is stood when the captain sails
