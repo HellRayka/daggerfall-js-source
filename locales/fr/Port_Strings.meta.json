@@ -2604,6 +2604,16 @@
   "tr": "92f50a973cf6",
   "by": "claude-in-session"
  },
+ "account.refusal.repairQuestActive": {
+  "en": "5ae86ca41507",
+  "tr": "6ea6677eb21e",
+  "by": "claude-in-session"
+ },
+ "account.refusal.repairQuestDone": {
+  "en": "bc7a8d9570b6",
+  "tr": "d5c445508518",
+  "by": "claude-in-session"
+ },
  "account.refusal.retired": {
   "en": "1f21826df490",
   "tr": "de31eda20ee4",

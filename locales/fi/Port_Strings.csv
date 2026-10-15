@@ -505,6 +505,8 @@ account.refusal.rentRooms,"Kodissa voi tarjota vuokralle enintään {max} huonet
 account.refusal.rentTaken,"Joku muu vuokraa nyt tuota huonetta."
 account.refusal.repairNoFaction,"Hahmon tietueessa ei ole sellaista ryhmittymää, joten mitään ei korjattu."
 account.refusal.repairNotSet,"Tällä ryhmittymällä ei ole sitä merkintää tällä hahmolla, joten mitään ei korjattu - onko hahmo oikea?"
+account.refusal.repairQuestActive,"Prinssin tehtävä on tällä hahmolla kesken - manaus onnistui, joten mitään ei korjattu."
+account.refusal.repairQuestDone,"Prinssin tehtävä on tällä hahmolla suoritettu - manaus onnistui, joten mitään ei korjattu."
 account.refusal.retired,"Kaksintaistelua ei enää kirjata noin – kaksintaistelun tuomari kirjaa sen."
 account.refusal.rollBusy,"Asemaasi kiltojen kanssa kirjattiin. Sitä yritetään uudelleen."
 account.refusal.rollClaim,"Asemaasi kiltojen kanssa ei voitu lähettää. Peli saattaa vaatia päivityksen."

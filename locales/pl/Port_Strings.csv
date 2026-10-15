@@ -505,6 +505,8 @@ account.refusal.rentRooms,"Dom może oferować do wynajęcia najwyżej {max} pok
 account.refusal.rentTaken,"Ktoś inny wynajmuje teraz ten pokój."
 account.refusal.repairNoFaction,"Zapis tej postaci nie zawiera takiej frakcji, więc niczego nie naprawiono."
 account.refusal.repairNotSet,"Ta frakcja nie ma tej flagi u tej postaci, więc niczego nie naprawiono - czy to właściwa postać?"
+account.refusal.repairQuestActive,"Zadanie tego księcia trwa u tej postaci - przywołanie się udało, więc niczego nie naprawiono."
+account.refusal.repairQuestDone,"Zadanie tego księcia jest ukończone u tej postaci - przywołanie się udało, więc niczego nie naprawiono."
 account.refusal.retired,"Pojedynków nie zapisuje się już w ten sposób - zapisuje je sędzia pojedynku."
 account.refusal.rollBusy,"Twoja pozycja w gildiach była właśnie zapisywana. Nastąpi ponowna próba."
 account.refusal.rollClaim,"Nie udało się wysłać twojej pozycji w gildiach. Gra może wymagać aktualizacji."

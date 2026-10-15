@@ -9,6 +9,16 @@
   "tr": "5ca99be55bff",
   "by": "claude-in-session"
  },
+ "account.refusal.repairQuestActive": {
+  "en": "5ae86ca41507",
+  "tr": "ff2dfef2aad3",
+  "by": "claude-in-session"
+ },
+ "account.refusal.repairQuestDone": {
+  "en": "bc7a8d9570b6",
+  "tr": "bb6c276ef422",
+  "by": "claude-in-session"
+ },
  "lang.offer": {
   "en": "4417f5798650",
   "tr": "493a4a27e2ba",

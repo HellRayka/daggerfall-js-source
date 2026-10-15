@@ -703,6 +703,8 @@ const REFUSAL_WORDS = {
   'service-moved': () => t('account.refusal.serviceMoved', 'The realm moved that character\'s record since its last clean save, so it cannot be rolled back to it.'),   // INT6: staff's
   'no-clean': () => t('account.refusal.noClean', 'That character has no save the realm judged clean to roll back to.'),   // INT6: the review's rollback (tools/realmReview.mjs)
   'repair-no-faction': () => t('account.refusal.repairNoFaction', 'That character\'s record holds no such faction, so nothing was repaired.'),   // SUMMON-REPAIR: the review's repair (tools/realmReview.mjs)
+  'repair-quest-active': () => t('account.refusal.repairQuestActive', 'That prince\'s quest is under way on this character - its summoning worked, so nothing was repaired.'),   // SUMMON-REPAIR: Mac, "Refuse if quest active/done"
+  'repair-quest-done': () => t('account.refusal.repairQuestDone', 'That prince\'s quest is finished on this character - its summoning worked, so nothing was repaired.'),   // SUMMON-REPAIR: the same, his quest done
   'repair-not-set': () => t('account.refusal.repairNotSet', 'That faction does not carry that flag on this character, so nothing was repaired - is it the right character?'),   // SUMMON-REPAIR: a repair aimed at the wrong character mends nothing
 };
 export const REFUSALS = /** @type {Readonly<Record<string, string>>} */ (localizedTable(REFUSAL_WORDS));

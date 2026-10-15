@@ -520,6 +520,8 @@ account.refusal.rentRooms,"Ein Zuhause kann höchstens {max} Zimmer zur Miete an
 account.refusal.rentTaken,"Dieses Zimmer mietet jetzt jemand anderes."
 account.refusal.repairNoFaction,"Der Datensatz dieses Charakters enthält keine solche Fraktion, daher wurde nichts repariert."
 account.refusal.repairNotSet,"Diese Fraktion trägt bei diesem Charakter dieses Merkmal nicht, daher wurde nichts repariert - ist es der richtige Charakter?"
+account.refusal.repairQuestActive,"Die Aufgabe dieses Prinzen läuft bei diesem Charakter - die Beschwörung ist gelungen, daher wurde nichts repariert."
+account.refusal.repairQuestDone,"Die Aufgabe dieses Prinzen ist bei diesem Charakter erledigt - die Beschwörung ist gelungen, daher wurde nichts repariert."
 account.refusal.retired,"So wird ein Duell nicht mehr erfasst - der Schiedsrichter des Duells erfasst es."
 account.refusal.rollBusy,"Dein Ansehen bei den Gilden wurde gerade geschrieben. Es wird erneut versucht."
 account.refusal.rollClaim,"Dein Ansehen bei den Gilden konnte nicht gesendet werden. Das Spiel muss eventuell aktualisiert werden."

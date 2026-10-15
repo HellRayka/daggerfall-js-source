@@ -520,6 +520,8 @@ account.refusal.rentRooms,"Domov může k pronájmu nabízet nejvýše {max} pok
 account.refusal.rentTaken,"Ten pokoj si teď pronajímá někdo jiný."
 account.refusal.repairNoFaction,"Záznam této postavy žádnou takovou frakci nemá, takže nic nebylo opraveno."
 account.refusal.repairNotSet,"Tato frakce u této postavy ten příznak nemá, takže nic nebylo opraveno - je to správná postava?"
+account.refusal.repairQuestActive,"Úkol toho prince u této postavy probíhá - vyvolání se podařilo, takže nic nebylo opraveno."
+account.refusal.repairQuestDone,"Úkol toho prince je u této postavy dokončen - vyvolání se podařilo, takže nic nebylo opraveno."
 account.refusal.retired,"Takhle se souboj už nezaznamenává - zaznamenává ho rozhodčí souboje."
 account.refusal.rollBusy,"Tvé postavení u cechů se zapisovalo. Zkusí se to znovu."
 account.refusal.rollClaim,"Tvé postavení u cechů nebylo možné odeslat. Hra možná potřebuje aktualizaci."

@@ -1,6 +1,8 @@
 Key,Value
 account.refusal.repairNoFaction,"该角色的记录中没有这个派系，因此未作任何修复。"
 account.refusal.repairNotSet,"该角色的这个派系没有那个标记，因此未作任何修复——是正确的角色吗？"
+account.refusal.repairQuestActive,"该角色的这位魔神王子的任务正在进行——召唤已经成功，因此未作任何修复。"
+account.refusal.repairQuestDone,"该角色的这位魔神王子的任务已经完成——召唤已经成功，因此未作任何修复。"
 lang.offer,"使用简体中文进行游戏？"
 lang.offer.machine,"此翻译为机器翻译，仍在校对中。"
 lang.offer.no,"不，保持英文"

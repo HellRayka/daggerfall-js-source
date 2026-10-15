@@ -142,5 +142,59 @@
     "tests": [
       "test/fb1014_summonrepair.test.js"
     ]
+  },
+  {
+    "name": "SUMMON-REPAIR-the-live-quest-unasked",
+    "file": "src/net/repairLaw.js",
+    "old": "  if (quest === 'active') return 'repair-quest-active';\n",
+    "new": "",
+    "tests": [
+      "test/fb1014_summonrepair.test.js"
+    ]
+  },
+  {
+    "name": "SUMMON-REPAIR-the-done-quest-unasked",
+    "file": "src/net/repairLaw.js",
+    "old": "  if (quest === 'done') return 'repair-quest-done';\n",
+    "new": "",
+    "tests": [
+      "test/fb1014_summonrepair.test.js"
+    ]
+  },
+  {
+    "name": "SUMMON-REPAIR-the-tombstone-read-as-live",
+    "file": "src/net/repairLaw.js",
+    "old": "    if (!q.questComplete && !q.questTombstoned) return 'active';",
+    "new": "    return 'active';",
+    "tests": [
+      "test/fb1014_summonrepair.test.js"
+    ]
+  },
+  {
+    "name": "SUMMON-REPAIR-the-notebook-unread",
+    "file": "src/net/repairLaw.js",
+    "old": "  if (Array.isArray(heads) && heads.some((h) => h?.kind === 'quest' && h.quest === questName)) done = true;\n",
+    "new": "",
+    "tests": [
+      "test/fb1014_summonrepair.test.js"
+    ]
+  },
+  {
+    "name": "SUMMON-REPAIR-the-catch-repeat-read-as-seq",
+    "file": "server-account/src/review.js",
+    "old": "    return landed ? repairAnswer(landed, true) : { error: 'seq' };",
+    "new": "    return !landed ? repairAnswer(landed, true) : { error: 'seq' };",
+    "tests": [
+      "test/fb1014_summonrepair.test.js"
+    ]
+  },
+  {
+    "name": "SUMMON-REPAIR-the-bound-exclusive",
+    "file": "src/net/repairLaw.js",
+    "old": "  if (!Number.isSafeInteger(gold) || gold < 0 || gold > REPAIR_GOLD_MAX) return null;",
+    "new": "  if (!Number.isSafeInteger(gold) || gold < 0 || gold >= REPAIR_GOLD_MAX) return null;",
+    "tests": [
+      "test/fb1014_summonrepair.test.js"
+    ]
   }
 ]

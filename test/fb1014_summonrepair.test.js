@@ -21,6 +21,7 @@ import { realmLetterOfCredit } from '../src/net/realmGoldLaw.js';
 import { FACTION_FLAGS } from '../src/formats/factionFile.js';
 import { REPAIR_GOLD_MAX } from '../src/net/repairLaw.js';
 import { reviewRequest } from '../tools/realmReview.mjs';
+import { region, bridgeOver, heard, MAGES_GUILD, HERMAEUS as PRINCE } from './fb1014Summon.mjs';
 
 const HERMAEUS = 8;
 const TICKET = 'fb1014-summon-offer';
@@ -36,12 +37,12 @@ function deviceOf(who) {
   return { getItem: (k) => (m.has(k) ? m.get(k) : null), setItem: (k, v) => { m.set(k, String(v)); }, removeItem: (k) => { m.delete(k); }, _map: m };
 }
 
-async function stand() {
+async function stand(seated = stuck()) {
   const s = await standService({ DEVELOPER_HANDLES: 'mac' });
   const raw = s.env.DB._raw;
   const mac = await s.registered('mac');
   const sucean = await s.registered('sucean');
-  const R = await seatRealm(s.env, sucean.secret, 'Sucean', stuck());
+  const R = await seatRealm(s.env, sucean.secret, 'Sucean', seated);
   sucean.character = R.id;
   sucean.at = R.at;
   const row = () => raw.prepare('SELECT seq, obj, lease, witnessed, svc_seq FROM realm_characters WHERE id = ?').get(R.id);
@@ -185,4 +186,102 @@ test('SUMMON-REPAIR: the operator\'s command - `characters <handle>` finds the i
   const req = reviewRequest(['repair', t.R.id, TICKET, '8', '0x40', '100000']);
   const done = await t.s.call(req.path, req.body, t.mac.secret);
   assert.deepEqual([done.status, done.body.cleared, t.record().factionRep.flags[0]], [200, true, 0x01]);
+});
+
+/** THE QUEST BLOCK A SUMMONING THAT WORKED LEAVES - made by the real producer (the bridge over a region with a palace, the
+ *  vendored W0C00Y00, the offer answered), as the save's `quest` holds it (questBridge.js snapshot): `taken` the offer
+ *  accepted and the quest live, then (`finish`) ended and tombstoned, then (`expire`) a week past its tombstone, the
+ *  notebook's finished entry alone; or the offer REFUSED. */
+function questBlock({ answer = true, finish = false, expire = false } = {}) {
+  const clock = { now: 1_000 };
+  return heard(() => {
+    const bridge = bridgeOver(region({ palace: true }), { clock });
+    const offer = bridge.offerDaedricQuest(PRINCE.quest, MAGES_GUILD);
+    assert.equal(offer?.kind, 'offer');
+    offer.respond(answer);
+    bridge.machine.tick(); bridge.machine.tick();
+    if (finish) {
+      const q = [...bridge.machine.quests.values()].find((x) => x.questName === PRINCE.quest);
+      q.questSuccess = true;
+      q.endQuest();
+      for (let i = 0; i < 4; i++) bridge.machine.tick();
+    }
+    if (expire) { clock.now += 2 * 604_800; for (let i = 0; i < 4; i++) bridge.machine.tick(); }
+    return bridge.snapshot();
+  }).value;
+}
+
+test('SUMMON-REPAIR (Mac: "Refuse if quest active/done"): a record whose summoning WORKED is mended never - his quest live in it (repair-quest-active), finished and tombstoned, or a week past the tombstone with the notebook\'s finished entry alone (repair-quest-done), each 409 and nothing written; a summoning whose offer was refused leaves no quest, which the record cannot tell from SUMMON-OFFER\'s, and the repair goes (mutants: the quest unasked; the tombstone read as live; the notebook unread)', async () => {
+  const live = questBlock();
+  assert.deepEqual(live.machine.quests.map((q) => [q.questName, q.questComplete]), [[PRINCE.quest, false]], 'the producer: his quest live');
+  const done = questBlock({ finish: true });
+  assert.deepEqual(done.machine.quests.map((q) => [q.questName, q.questTombstoned]), [[PRINCE.quest, true]], 'ended: tombstoned');
+  const gone = questBlock({ finish: true, expire: true });
+  assert.deepEqual([gone.machine.quests.length, gone.notebook.finishedQuestHeaders.map((h) => h.quest)], [0, [PRINCE.quest]], 'a week on: the notebook\'s entry alone');
+  for (const [why, quest, word] of [['live', live, 'repair-quest-active'], ['tombstoned', done, 'repair-quest-done'], ['filed', gone, 'repair-quest-done']]) {
+    const t = await stand({ ...stuck(), quest });
+    const before = { row: t.row(), rec: t.record() };
+    const r = await t.repair({});
+    assert.deepEqual([r.status, r.body.error], [409, word], why);
+    assert.deepEqual([t.row().seq, t.record(), t.repairs().length, t.faucet().gold], [before.row.seq, before.rec, 0, 0], `${why}: nothing written`);
+  }
+  const refused = questBlock({ answer: false });
+  assert.deepEqual(refused.machine.quests, [], 'a refused offer leaves no quest');
+  const t = await stand({ ...stuck(), quest: refused });
+  const r = await t.repair({});
+  assert.deepEqual([r.status, r.body.cleared], [200, true], 'the one record the law cannot tell from the bug\'s - the report does');
+});
+
+test('SUMMON-REPAIR: two repairs whose batches CROSS - the second run to its end inside the first\'s - land once, and the first, refused in its own batch, answers the landed row from its catch (repeat); a checkpoint that lands inside a repair\'s batch is \'seq\' with nothing written, and asked again it mends; gold at the bound itself is given (mutants: the catch\'s repeat read as seq; the bound exclusive)', async () => {
+  const t = await stand();
+  const db = t.s.env.DB;
+  const prepare = db.prepare, batch = db.batch;
+  db.prepare = function (sql) { const st = prepare.call(this, sql); st._sql = sql; return st; };
+  /** `during()` once, inside the first batch that writes a repair's row - before that batch runs. */
+  const crossWith = (during) => {
+    let armed = true;
+    db.batch = async function (list) {
+      if (armed && list.some((st) => st._sql?.startsWith('INSERT INTO realm_repairs'))) { armed = false; await during(); }
+      return batch.call(this, list);
+    };
+  };
+  let second = null;
+  crossWith(async () => { second = await t.repair({ note: 'the second' }); });
+  const first = await t.repair({ note: 'the first' });
+  assert.deepEqual([second.status, second.body.repeat], [200, false], 'the second landed, inside the first\'s batch');
+  assert.deepEqual([first.status, first.body.repeat, first.body.seq], [200, true, second.body.seq], 'the first: refused in its batch, the row it met answered');
+  assert.deepEqual(t.record().items, [realmLetterOfCredit(100_000)], 'once');
+  assert.deepEqual(t.repairs().map((r) => r.note), ['the second']);
+  assert.deepEqual(t.faucet(), { gold: 100_000, n: 1 });
+  const row = t.raw.prepare('SELECT obj, prev, clean_obj FROM realm_characters WHERE id = ?').get(t.R.id);
+  const named = new Set([row.obj, row.prev, row.clean_obj]);
+  assert.deepEqual([...t.s.env.SAVES._map.keys()].filter((k) => k.includes(t.R.id) && !named.has(k)), [], 'the first\'s object dropped - nothing names it');
+
+  // a checkpoint inside a repair's batch: the record moved, the repair writes nothing and says so
+  const u = await stand();
+  const udb = u.s.env.DB;
+  const uprepare = udb.prepare, ubatch = udb.batch;
+  udb.prepare = function (sql) { const st = uprepare.call(this, sql); st._sql = sql; return st; };
+  let armed = true;
+  udb.batch = async function (list) {
+    if (armed && list.some((st) => st._sql?.startsWith('INSERT INTO realm_repairs'))) {
+      armed = false;
+      const at = u.sucean.at();
+      const put = await u.s.fetch(`https://accounts.invalid/v1/realm/${u.R.id}/data`, {
+        method: 'PUT', headers: { authorization: `Bearer ${u.sucean.secret}`, 'x-realm-lease': at.lease, 'x-realm-seq': String(at.seq + 1) }, body: JSON.stringify({ ...stuck(), goldPieces: 999 }),
+      });
+      assert.equal(put.status, 200, 'the tab checkpointed meanwhile');
+    }
+    return ubatch.call(this, list);
+  };
+  const raced = await u.repair({});
+  assert.deepEqual([raced.status, raced.body.error], [409, 'seq']);
+  assert.deepEqual([u.record().goldPieces, u.record().factionRep.flags[0], u.record().items, u.repairs().length], [999, 0x41, [], 0], 'the checkpoint\'s save, unmended');
+  const again = await u.repair({});
+  assert.deepEqual([again.status, again.body.repeat, u.record().factionRep.flags[0], u.record().goldPieces], [200, false, 0x01, 999], 'asked again, mended over the save that landed');
+
+  // the bound is the most a repair gives, and it gives it
+  const v = await stand();
+  const most = await v.repair({ gold: REPAIR_GOLD_MAX });
+  assert.deepEqual([most.status, most.body.gold, v.record().items], [200, REPAIR_GOLD_MAX, [realmLetterOfCredit(REPAIR_GOLD_MAX)]]);
 });

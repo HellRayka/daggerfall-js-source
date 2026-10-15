@@ -505,6 +505,8 @@ account.refusal.rentRooms,"Een huis kan hoogstens {max} kamers te huur aanbieden
 account.refusal.rentTaken,"Iemand anders huurt die kamer nu."
 account.refusal.repairNoFaction,"Het dossier van dat personage bevat zo'n factie niet, dus er is niets hersteld."
 account.refusal.repairNotSet,"Die factie draagt die vlag niet bij dit personage, dus er is niets hersteld - is het het juiste personage?"
+account.refusal.repairQuestActive,"De opdracht van die prins loopt bij dit personage - de oproeping is gelukt, dus er is niets hersteld."
+account.refusal.repairQuestDone,"De opdracht van die prins is voltooid bij dit personage - de oproeping is gelukt, dus er is niets hersteld."
 account.refusal.retired,"Zo wordt een duel niet meer vastgelegd - de scheidsrechter van het duel legt het vast."
 account.refusal.rollBusy,"Je aanzien bij de gilden werd net weggeschreven. Het wordt opnieuw geprobeerd."
 account.refusal.rollClaim,"Je aanzien bij de gilden kon niet worden verstuurd. Het spel moet misschien worden bijgewerkt."

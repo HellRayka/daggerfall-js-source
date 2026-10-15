@@ -257,10 +257,15 @@ FactionFile's flag bits (`formats/factionFile.js` FACTION_FLAGS, moved there fro
 them on, so the Worker can read them) cleared on one faction of its record, and 0 to 1,000,000 gold given back as the
 game's letter of credit (`src/net/repairLaw.js`, the service's and the tool's one law: `repairOf`, `applyRepair`). The
 record says whether it can be done - a faction it does not hold is `repair-no-faction`, a bit its faction does not carry
-`repair-not-set` (an account holds up to six characters: one aimed at the wrong one mends and gives nothing). It is
-done ONCE A TICKET: `realm_repairs` (never swept) holds a row a character and ticket, written in the record's own batch,
-so the same repair asked again answers its row (`repeat`) and moves nothing, and two asked at once meet the key and one
-rolls back. The record is SEIZED as the rollback and INT9's death take it (`realm.js` seizeRealmRecord): read where it
+`repair-not-set` (a character that never summoned him), and the Summoned bit of a prince whose quest the record holds
+live (`repair-quest-active`) or finished (`repair-quest-done`: a tombstone in the machine, or the notebook's finished
+entry naming it, kept for good - `questStateOf`) is a summoning that WORKED (Mac, 2026-10-15: "Refuse if quest
+active/done"). What no record says is an offer the player refused: DFU sets the flag and starts no quest, so that
+character's record is the bug's own, and the report tells the two apart. It is done ONCE A TICKET: `realm_repairs`
+(never swept) holds a row a character and ticket, written in the record's own batch, so the same repair asked again
+answers its row (`repeat`) and moves nothing, and two whose batches cross land once - the second's batch refused, its
+catch answering the landed row (`repeat`); a record moved by a checkpoint inside the batch is `seq`, nothing written.
+The princes' table moved to a leaf for it, `systems/daedraData.js` (daedraSummoning.js hands it on). The record is SEIZED as the rollback and INT9's death take it (`realm.js` seizeRealmRecord): read where it
 stands, written one sequence on, its seat taken from any tab - the tab playing it is refused at its next checkpoint, the
 copy its device keeps follows a sequence the record has left, and its next join plays the mended record - and the gold
 is witnessed (the judge charges no gain the service made) and counted as the service's own faucet, `repair`
@@ -272,7 +277,7 @@ node tools/realmReview.mjs repair <realm character id> <ticket> <faction id> <0x
 ```
 
 Pinned by `test/fb1014_summonrepair.test.js` over the real Worker and the playing tab's own session and join;
-`tools/mutants/fb1014_summonrepair.json` (16, dead).
+`tools/mutants/fb1014_summonrepair.json` (22, dead).
 
 ### 4b. The audit (2026-10-09, Mac: "Lets do a comprehensive audit on this")
 

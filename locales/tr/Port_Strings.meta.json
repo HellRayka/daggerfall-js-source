@@ -534,6 +534,16 @@
   "tr": "9b2af484da14",
   "by": "claude-in-session"
  },
+ "account.refusal.repairQuestActive": {
+  "en": "5ae86ca41507",
+  "tr": "65738f0808e1",
+  "by": "claude-in-session"
+ },
+ "account.refusal.repairQuestDone": {
+  "en": "bc7a8d9570b6",
+  "tr": "ef108ba82d60",
+  "by": "claude-in-session"
+ },
  "lang.offer": {
   "en": "4417f5798650",
   "tr": "6b74ae9818d3",

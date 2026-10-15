@@ -370,7 +370,7 @@ const ROLL_STATUS = Object.freeze({
   'no-season': 409, 'no-chapter': 404, 'patron-low': 409, 'guild-marks-short': 409,
 });
 /** INT6: the review's refusals - no developer 403, no such character 404, nothing clean to roll back to 409. */
-const REVIEW_STATUS = Object.freeze({ 'not-developer': 403, 'no-realm-character': 404, 'no-clean': 409, 'service-moved': 409, 'dead': 409, 'no-player': 404, 'repair-no-faction': 409, 'repair-not-set': 409, seq: 409 });   // SUMMON-REPAIR: the last four
+const REVIEW_STATUS = Object.freeze({ 'not-developer': 403, 'no-realm-character': 404, 'no-clean': 409, 'service-moved': 409, 'dead': 409, 'no-player': 404, 'repair-no-faction': 409, 'repair-not-set': 409, 'repair-quest-active': 409, 'repair-quest-done': 409, seq: 409 });   // SUMMON-REPAIR: the last six
 /** GUILD1: each guild refusal's status - a bad shape 400 (the default), the wrong rank or too little Renown 403, a
  *  thing that is not there 404, a conflict with what is 409, the hour's writes spent 429. */
 const GUILD_STATUS = Object.freeze({

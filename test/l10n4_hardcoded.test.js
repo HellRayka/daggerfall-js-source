@@ -313,7 +313,8 @@ const HARDCODED = {
   'src/systems/crownHall.js': 4,
   'src/systems/csaBoatMenu.js': 18,
   'src/systems/customClass.js': 10,
-  'src/systems/daedraSummoning.js': 7,
+  'src/systems/daedraData.js': 4,   // SUMMON-REPAIR: the princes' names, moved with their table from daedraSummoning.js
+  'src/systems/daedraSummoning.js': 3,
   'src/systems/deathPenalty.js': 5,
   'src/systems/deathRespawn.js': 12,
   'src/systems/decorCatalogue.js': 27,

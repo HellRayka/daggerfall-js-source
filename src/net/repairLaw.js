@@ -6,7 +6,7 @@
 // Before SUMMON-OFFER a Daedra summoning whose quest could not be made in the player's region took the gold and set the
 // prince's Summoned flag (FactionFile.Flags) and offered nothing - and with the flag set he never offers his quest again.
 // Nothing in a save tells that flag from one a refused offer set, so no load can mend it: staff mend the one character,
-// by hand. A repair names a faction and one of FactionFile's flag bits to clear on it, the gold to give back, and the
+// by hand. A record that shows the summoning worked - the prince's quest live or finished in it - is refused. A repair names a faction and one of FactionFile's flag bits to clear on it, the gold to give back, and the
 // operator's ticket - its name for this one act, so the same repair asked twice mends once.
 //
 // THE GOLD COMES BACK AS THE GAME'S OWN LETTER OF CREDIT (net/realmGoldLaw.js creditSave's `letter`, GUILD-LETTER's way):
@@ -16,6 +16,29 @@
 import { FACTION_FLAGS } from '../formats/factionFile.js';
 import { POST_BATCH_RE } from './postLaw.js';
 import { creditSave } from './realmGoldLaw.js';
+import { DAEDRA } from '../systems/daedraData.js';   // which quest is whose: a prince's Summoned bit is his quest's
+
+/**
+ * A QUEST AS A SAVE HOLDS IT, by its name - 'active', 'done' or null. Its quest block is the bridge's envelope
+ * (scenes/questBridge.js snapshot): the machine's quests (quest.js getSaveData) - one not complete is live, one complete
+ * or tombstoned finished (a tombstone stands a week, machine.js) - and the notebook's finished entries, whose headers
+ * name the quest they filed (notebook.js `finishedQuestHeaders`, L10N5's render data - every realm save carries them),
+ * kept for good.
+ * @param {any} save @param {string} questName
+ * @returns {'active' | 'done' | null}
+ */
+export function questStateOf(save, questName) {
+  const block = save?.quest;
+  let done = false;
+  for (const q of Array.isArray(block?.machine?.quests) ? block.machine.quests : []) {
+    if (q?.questName !== questName) continue;
+    if (!q.questComplete && !q.questTombstoned) return 'active';
+    done = true;
+  }
+  const heads = block?.notebook?.finishedQuestHeaders;
+  if (Array.isArray(heads) && heads.some((h) => h?.kind === 'quest' && h.quest === questName)) done = true;
+  return done ? 'done' : null;
+}
 
 /** The bits a repair may clear: FactionFile.Flags, every one, and nothing else. @type {readonly number[]} */
 export const REPAIR_FLAGS = Object.freeze(Object.values(FACTION_FLAGS));
@@ -49,11 +72,16 @@ export function repairOf(v) {
  * THE REPAIR ON A SAVE, in place (a realm record, server-account/src/realm.js prepareRealmRecord's `change`): the flag
  * cleared on the faction's row of the save's faction store (save.js snapshotFactionRep: `ids`, `flags` beside them) and
  * the gold given back as a letter of credit at the front of the pack. Answers `{ was }` - the faction's flags before -
- * or the refusal's word, nothing changed: 'repair-no-faction', the save holds no such faction; 'repair-not-set', its
- * faction does not carry the bit - a repair undoes a flag that stands, so one aimed at the wrong character (an account
- * holds up to six) mends nothing and gives nothing.
+ * or the refusal's word, nothing changed:
+ *   'repair-no-faction'    the save holds no such faction;
+ *   'repair-not-set'       its faction does not carry the bit - a character that never summoned him;
+ *   'repair-quest-active'  the Summoned bit of a prince whose quest the record holds live (his offer taken),
+ *   'repair-quest-done'    or holds finished (Mac, 2026-10-15: "Refuse if quest active/done") - a summoning that worked,
+ *                          never SUMMON-OFFER's, whose quest was never made (questStateOf).
+ * What the record cannot say is a summoning whose offer the player REFUSED: DFU sets the flag and starts no quest, and a
+ * refusal writes nothing a save keeps - that record and SUMMON-OFFER's are one record, and the report tells them apart.
  * @param {any} save @param {{ faction: number, flag: number, gold: number }} repair
- * @returns {{ was: number } | 'repair-no-faction' | 'repair-not-set'}
+ * @returns {{ was: number } | 'repair-no-faction' | 'repair-not-set' | 'repair-quest-active' | 'repair-quest-done'}
  */
 export function applyRepair(save, { faction, flag, gold }) {
   const store = save?.factionRep;
@@ -61,6 +89,10 @@ export function applyRepair(save, { faction, flag, gold }) {
   if (at < 0 || !Number.isSafeInteger(store.flags[at])) return 'repair-no-faction';
   const was = store.flags[at];
   if ((was & flag) === 0) return 'repair-not-set';
+  const prince = flag === FACTION_FLAGS.Summoned ? DAEDRA.find((d) => d.factionId === faction) : null;
+  const quest = prince ? questStateOf(save, prince.quest) : null;
+  if (quest === 'active') return 'repair-quest-active';
+  if (quest === 'done') return 'repair-quest-done';
   store.flags[at] = was & ~flag;
   if (gold > 0) creditSave(save, gold, { letter: true });
   return { was };

@@ -520,6 +520,8 @@ account.refusal.rentRooms,"Um lar pode oferecer no máximo {max} quartos para al
 account.refusal.rentTaken,"Outra pessoa está alugando esse quarto agora."
 account.refusal.repairNoFaction,"O registro desse personagem não tem essa facção, então nada foi reparado."
 account.refusal.repairNotSet,"Essa facção não tem essa marca neste personagem, então nada foi reparado - é o personagem certo?"
+account.refusal.repairQuestActive,"A missão desse príncipe está em andamento neste personagem - a invocação deu certo, então nada foi reparado."
+account.refusal.repairQuestDone,"A missão desse príncipe foi concluída neste personagem - a invocação deu certo, então nada foi reparado."
 account.refusal.retired,"Não é mais assim que um duelo é registrado - o juiz do duelo o registra."
 account.refusal.rollBusy,"Sua posição com as guildas estava sendo gravada. Será tentado de novo."
 account.refusal.rollClaim,"Não foi possível enviar sua posição com as guildas. O jogo pode precisar de atualização."

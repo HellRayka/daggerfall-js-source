@@ -1,6 +1,8 @@
 Key,Value
 account.refusal.repairNoFaction,"Hồ sơ của nhân vật đó không có phe phái này, nên không có gì được sửa."
 account.refusal.repairNotSet,"Phe phái đó không mang cờ này ở nhân vật này, nên không có gì được sửa - có đúng nhân vật không?"
+account.refusal.repairQuestActive,"Nhiệm vụ của hoàng tử đó đang diễn ra ở nhân vật này - lần triệu hồi đã thành công, nên không có gì được sửa."
+account.refusal.repairQuestDone,"Nhiệm vụ của hoàng tử đó đã hoàn tất ở nhân vật này - lần triệu hồi đã thành công, nên không có gì được sửa."
 lang.offer,"Chơi bằng tiếng Việt?"
 lang.offer.machine,"Bản dịch này là bản dịch máy và vẫn đang được kiểm tra."
 lang.offer.no,"Không, giữ tiếng Anh"

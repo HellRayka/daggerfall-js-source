@@ -81,8 +81,9 @@ const rowOf = (/** @type {any} */ db, /** @type {unknown} */ id) => (typeof id =
  * ONE REVIEW ACT, by its route's name - `{ error }` 'not-developer' (403), 'body' (400), 'no-realm-character' (404),
  * 'no-clean' (409: no clean checkpoint kept to roll back to), 'service-moved' (409: the service moved the record since
  * it), 'dead' (409), SUMMON-REPAIR's 'no-player' (404: no account by that handle), 'repair-no-faction' (409: the record
- * holds no such faction), 'repair-not-set' (409: its faction does not carry the bit - the wrong character?) and 'seq'
- * (409: the record moved while the repair was written - ask again), or the act's answer.
+ * holds no such faction), 'repair-not-set' (409: its faction does not carry the bit - the wrong character?),
+ * 'repair-quest-active' / 'repair-quest-done' (409: the prince's quest stands live or finished in the record - that
+ * summoning worked) and 'seq' (409: the record moved while the repair was written - ask again), or the act's answer.
  * @param {any} ctx @param {any} player @param {any} env @param {string} act @param {any} body
  */
 export async function reviewAct(ctx, player, env, act, body = {}) {

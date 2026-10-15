@@ -520,6 +520,8 @@ account.refusal.rentRooms,"Satu rumah bisa menawarkan paling banyak {max} kamar 
 account.refusal.rentTaken,"Orang lain sedang menyewa kamar itu sekarang."
 account.refusal.repairNoFaction,"Catatan karakter itu tidak memuat faksi tersebut, jadi tidak ada yang diperbaiki."
 account.refusal.repairNotSet,"Faksi itu tidak memuat tanda tersebut pada karakter ini, jadi tidak ada yang diperbaiki - apakah ini karakter yang benar?"
+account.refusal.repairQuestActive,"Misi pangeran itu sedang berjalan pada karakter ini - pemanggilannya berhasil, jadi tidak ada yang diperbaiki."
+account.refusal.repairQuestDone,"Misi pangeran itu sudah selesai pada karakter ini - pemanggilannya berhasil, jadi tidak ada yang diperbaiki."
 account.refusal.retired,"Duel tidak lagi dicatat dengan cara itu - wasit duel yang mencatatnya."
 account.refusal.rollBusy,"Kedudukanmu di serikat-serikat sedang ditulis. Akan dicoba lagi."
 account.refusal.rollClaim,"Kedudukanmu di serikat-serikat tidak bisa dikirim. Permainan mungkin perlu diperbarui."

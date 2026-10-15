@@ -505,6 +505,8 @@ account.refusal.rentRooms,"Egy otthon legfeljebb {max} szobát kínálhat bérbe
 account.refusal.rentTaken,"Azt a szobát most már más bérli."
 account.refusal.repairNoFaction,"Ennek a karakternek a rekordjában nincs ilyen frakció, így semmi sem lett javítva."
 account.refusal.repairNotSet,"Ennél a karakternél ez a frakció nem viseli ezt a jelzőt, így semmi sem lett javítva - biztosan ez a jó karakter?"
+account.refusal.repairQuestActive,"Ennek a hercegnek a küldetése folyamatban van ennél a karakternél - a megidézés sikerült, így semmi sem lett javítva."
+account.refusal.repairQuestDone,"Ennek a hercegnek a küldetése befejeződött ennél a karakternél - a megidézés sikerült, így semmi sem lett javítva."
 account.refusal.retired,"A párbajokat már nem így jegyzik – a párbaj bírája jegyzi fel."
 account.refusal.rollBusy,"A céhekkel való állásodat épp írták. Újra megpróbálja."
 account.refusal.rollClaim,"A céhekkel való állásodat nem sikerült elküldeni. Lehet, hogy frissíteni kell a játékot."

@@ -177,7 +177,13 @@ before: a missed roll (a coven's reprisal with it), the prince met before, the q
 made once a summoning: the host's second ask, after the gold, is gone, and with it the "%dae answers your summons" box
 of a quest arm that had no offer. Pinned by `test/fb1014_summonoffer.test.js`, which makes W0C00Y00 through the real
 bridge in one crafted region with a palace and the same region without one; on the old law all four of its tests fail
-(`tools/mutants/fb1014_summonoffer.json`, 7, dead).
+(`tools/mutants/fb1014_summonoffer.json`, 10, dead).
+
+THE FOUR HOSTS. `scenes/worldModes.js` - WIRED: the summoning service is the interior host's (the guild's, the temple's
+and the coven's popups open it), and the fix is its `summon`. `scenes/world.js` and `scenes/exterior.js` - WIRED through
+it: each builds its interiors with `createWorldModes` and hands it its quest bridge, so a summoning in a building of
+either street host is that one arm. `scenes/dungeonContext.js` - FLAGGED, nothing to wire: a dungeon stands no summoner
+(no guild popup, no coven), so no summoning is made there. Pinned by source in `test/fb1014_summonoffer.test.js`.
 
 THE PLAYER'S SAVE - SUMMON-REPAIR (2026-10-15, acct133; Mac, asked: "Operator tool"). The fix stops new cases; it does
 not mend a save that already holds the flag. Nothing in a save tells this flag from a summoning whose offer the player
@@ -187,11 +193,13 @@ offer a second one. Staff mend the one character instead: the review's `realm-re
 (`server-account/src/review.js`, `src/net/repairLaw.js`; `06-Systems/Integrity-Arc.md` INT6) clears one of FactionFile's
 flag bits on one faction of a realm character's record and gives gold back as a letter of credit, once a ticket, behind
 the developers' list like every review act and written among the character's findings. It refuses a faction the record
-does not hold and a bit that is not set, so a repair aimed at the wrong character mends and gives nothing. The record is
-seized one sequence on, the rollback's way: the tab playing it cannot write over it, and its next join plays the mended
-record. Pinned by `test/fb1014_summonrepair.test.js` (`tools/mutants/fb1014_summonrepair.json`, 16, dead). For the
-reporter, once acct133 is live, signed in as a developer (DAGGER_HANDLE and DAGGER_PASSWORD), the first command naming
-the character's id for the second:
+does not hold, a bit that is not set (a character that never summoned him), and a prince whose quest the record holds
+live or finished (a summoning that worked - Mac: "Refuse if quest active/done"). It cannot tell an offer the player
+refused from this bug - neither leaves a quest - so the report is what names the character. The record is seized one
+sequence on, the rollback's way: the tab playing it cannot write over it, and its next join plays the mended record.
+Pinned by `test/fb1014_summonrepair.test.js` (`tools/mutants/fb1014_summonrepair.json`, 22, dead). For the reporter,
+once acct133 is live, signed in as a developer (DAGGER_HANDLE and DAGGER_PASSWORD), the first command naming the
+character's id for the second:
 
 ```sh
 node tools/realmReview.mjs characters sucean

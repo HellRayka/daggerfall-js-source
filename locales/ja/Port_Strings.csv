@@ -505,6 +505,8 @@ account.refusal.rentRooms,"1軒の家が貸し出せる部屋は{max}部屋ま�
 account.refusal.rentTaken,"その部屋は今、別の人が借りています。"
 account.refusal.repairNoFaction,"そのキャラクターの記録にはその勢力がないため、何も修復されませんでした。"
 account.refusal.repairNotSet,"このキャラクターのその勢力にはそのフラグがないため、何も修復されませんでした - 正しいキャラクターですか?"
+account.refusal.repairQuestActive,"このキャラクターではその大公のクエストが進行中です - 召喚は成功しているため、何も修復されませんでした。"
+account.refusal.repairQuestDone,"このキャラクターではその大公のクエストが完了しています - 召喚は成功しているため、何も修復されませんでした。"
 account.refusal.retired,"決闘はもうこの方法では記録されません。決闘の審判が記録します。"
 account.refusal.rollBusy,"ギルドでの立場を書き込み中でした。再試行されます。"
 account.refusal.rollClaim,"ギルドでの立場を送信できませんでした。ゲームの更新が必要かもしれません。"

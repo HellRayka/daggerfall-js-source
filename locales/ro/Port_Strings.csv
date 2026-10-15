@@ -520,6 +520,8 @@ account.refusal.rentRooms,"O casă poate oferi cel mult {max} camere spre închi
 account.refusal.rentTaken,"Altcineva închiriază acum camera aceea."
 account.refusal.repairNoFaction,"Înregistrarea acestui personaj nu conține o astfel de facțiune, așa că nu s-a reparat nimic."
 account.refusal.repairNotSet,"Acea facțiune nu are acel marcaj la acest personaj, așa că nu s-a reparat nimic - este personajul potrivit?"
+account.refusal.repairQuestActive,"Misiunea acelui prinț este în desfășurare la acest personaj - invocarea a reușit, așa că nu s-a reparat nimic."
+account.refusal.repairQuestDone,"Misiunea acelui prinț este încheiată la acest personaj - invocarea a reușit, așa că nu s-a reparat nimic."
 account.refusal.retired,"Duelul nu se mai înregistrează așa - îl înregistrează arbitrul duelului."
 account.refusal.rollBusy,"Rangul tău în bresle era în curs de scriere. Se va încerca din nou."
 account.refusal.rollClaim,"Rangul tău în bresle nu a putut fi trimis. Poate fi nevoie să actualizezi jocul."

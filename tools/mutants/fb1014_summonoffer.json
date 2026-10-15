@@ -61,5 +61,32 @@
     "tests": [
       "test/fb1014_summonoffer.test.js"
     ]
+  },
+  {
+    "name": "SUMMON-OFFER-a-street-host-hands-no-bridge",
+    "file": "src/scenes/exterior.js",
+    "old": "\n    questBridge,\n",
+    "new": "\n",
+    "tests": [
+      "test/fb1014_summonoffer.test.js"
+    ]
+  },
+  {
+    "name": "SUMMON-OFFER-a-dungeon-summons",
+    "file": "src/scenes/dungeonContext.js",
+    "old": "import { avoidDeath, avoidDeathText } from '../systems/guildServices.js';",
+    "new": "import { avoidDeath, avoidDeathText } from '../systems/guildServices.js';   // guildServiceDaedraSummoning",
+    "tests": [
+      "test/fb1014_summonoffer.test.js"
+    ]
+  },
+  {
+    "name": "SUMMON-OFFER-the-record-forgets-the-dungeon",
+    "file": "bible/01-Overview/Field-Bugs-2026-10-14.md",
+    "old": "`scenes/dungeonContext.js` - FLAGGED",
+    "new": "`scenes/dungeonContext.js` -",
+    "tests": [
+      "test/fb1014_summonoffer.test.js"
+    ]
   }
 ]

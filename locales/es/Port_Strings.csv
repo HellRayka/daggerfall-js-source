@@ -520,6 +520,8 @@ account.refusal.rentRooms,"Un hogar puede ofrecer en alquiler como mucho {max} h
 account.refusal.rentTaken,"Ahora otra persona alquila esa habitación."
 account.refusal.repairNoFaction,"El registro de ese personaje no tiene esa facción, así que no se reparó nada."
 account.refusal.repairNotSet,"Esa facción no tiene esa marca en este personaje, así que no se reparó nada - ¿es el personaje correcto?"
+account.refusal.repairQuestActive,"La misión de ese príncipe está en curso en este personaje - la invocación funcionó, así que no se reparó nada."
+account.refusal.repairQuestDone,"La misión de ese príncipe está terminada en este personaje - la invocación funcionó, así que no se reparó nada."
 account.refusal.retired,"Un duelo ya no se registra así: lo registra el árbitro del duelo."
 account.refusal.rollBusy,"Se estaba escribiendo tu reputación con los gremios. Se volverá a intentar."
 account.refusal.rollClaim,"No se ha podido enviar tu reputación con los gremios. Puede que el juego necesite actualizarse."

@@ -69,6 +69,7 @@ on:
       - "src/net/homeVoteLaw.js"
       - "src/net/guildLaw.js"
       - "src/net/repairLaw.js"
+      - "src/systems/daedraData.js"
       - "src/net/hallLaw.js"
       - "src/net/heraldryLaw.js"
       - "src/net/townSeatLaw.js"

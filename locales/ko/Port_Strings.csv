@@ -520,6 +520,8 @@ account.refusal.rentRooms,"집은 최대 {max}개의 방을 임대로 내놓을 
 account.refusal.rentTaken,"이제 다른 사람이 그 방을 빌리고 있습니다."
 account.refusal.repairNoFaction,"그 캐릭터의 기록에는 그런 세력이 없어 아무것도 복구되지 않았습니다."
 account.refusal.repairNotSet,"이 캐릭터의 그 세력에는 그 플래그가 없어 아무것도 복구되지 않았습니다 - 맞는 캐릭터입니까?"
+account.refusal.repairQuestActive,"이 캐릭터에서 그 대공의 퀘스트가 진행 중입니다 - 소환이 성공했으므로 아무것도 복구되지 않았습니다."
+account.refusal.repairQuestDone,"이 캐릭터에서 그 대공의 퀘스트가 끝났습니다 - 소환이 성공했으므로 아무것도 복구되지 않았습니다."
 account.refusal.retired,"결투는 더 이상 이렇게 기록되지 않습니다. 결투의 심판이 기록합니다."
 account.refusal.rollBusy,"길드 평판을 기록하는 중이었습니다. 다시 시도합니다."
 account.refusal.rollClaim,"길드 평판을 보낼 수 없습니다. 게임을 업데이트해야 할 수 있습니다."
