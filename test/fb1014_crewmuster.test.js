@@ -26,6 +26,7 @@ import { GRAPPLE_S, BOARD_SPEED } from '../src/systems/naval/navalBoarding.js';
 import { hullBuild } from '../src/systems/naval/navalShips.js';
 import { SHIP_STATES } from '../src/systems/naval/navalDamage.js';
 import { sea } from './navalSea.mjs';
+import { room } from './navalRoom.mjs';
 
 const WORLD = readFileSync(new URL('../src/scenes/world.js', import.meta.url), 'utf8');
 const WRECKED = { v: 1, boats: { 42: { hull: 0, sail: 0, crew: 24, fire: 0, state: 'wrecked', barrels: 4 } }, notoriety: {}, day: 1, raids: [] };
@@ -172,4 +173,60 @@ test('CREW-MUSTER: THE GRAPPLE NAMES EACH SIDE - I throw mine on a struck ship a
   assert.equal(repel.h.host.boarding?.kind, 'repel');
   repel.step(0.2);
   assert.deepEqual([repel.told.get(repel.h.boat)?.way, repel.told.get(rid)?.way], ['repel', 'board'], 'hers go over, mine repel');
+});
+
+// ── the boarding's two reaches, which the muster now reads: their gates are the boarding's own ──────────────────────
+
+/** A ship of the sea by her seed, on one client of a room. */
+const bySeed = (c, seed) => [...c.s.host._sea.values()].find((x) => x.ship.seed === seed) ?? null;
+/** On foot by her side - within FOOT_BOARD_M of her, facing her - with no helm of mine. */
+function besideHer(s, e) {
+  const x = e.ship.pos[0] - hullBuild(e.ship.hull).beam - 3;
+  s.view.feet = [x, 0, e.ship.pos[2]];
+  s.view.look = { origin: [x, 5, e.ship.pos[2]], dir: [1, -0.05, 0] };
+}
+
+test('CREW-MUSTER: THE FEET\'S REACH IS A STRUCK SHIP\'S - a swimmer by the side of a ship still afloat and fighting goes over no rail of hers, and no crew musters toward him (footReach, the reach boardableOnFoot and her muster share; mutant: the struck gate dropped)', async () => {
+  const h = await sea({ hull: null });
+  const e = h.host._sea.get(h.host.spawnShip('merchantGalleon', { range: 20, bearing: Math.PI / 2, yaw: 0 }));
+  e.ship.pos = [20, 0, 0];
+  h.host.frame(0.1);
+  assert.ok(e.boat, 'her hull stands');
+  besideHer(h, e);
+  assert.equal(e.ship.damage.state, SHIP_STATES.afloat);
+  assert.equal(h.host.takesActivate(), false, 'nothing for Activate beside a ship afloat');
+  assert.equal(h.host.activate(), false);
+  assert.equal(h.host.boarding, null, 'no boarding of a ship afloat');
+  assert.equal(h.host.crewShips().find((x) => x.key === e.id).toward, null, 'and no muster toward me');
+  e.ship.damage.apply({ hull: Math.ceil(e.ship.damage.maxHull * 0.8), sail: 0, crew: 0 });
+  h.host.frame(0.1);
+  assert.equal(e.ship.damage.state, SHIP_STATES.struck);
+  besideHer(h, e);
+  assert.equal(h.host.takesActivate(), true, 'struck, her rail is mine to go over');
+});
+
+test('CREW-MUSTER: THE ROOM\'S BOARDED WORD - a struck ship another player is fighting on stands struck and `boarded` in my copy, and is no one else\'s to grapple from a helm nor to climb on foot, nor any crew\'s muster (boardingGap\'s and footReach\'s boarded gates; mutants: either dropped)', async () => {
+  const r = await room([{ id: 'a', hull: 2 }, { id: 'b', hull: 2 }]);
+  const A = r.get('a'), B = r.get('b');
+  const ship = A.s.host._sea.get(A.s.host.spawnShip('merchantGalleon', { range: 40, bearing: Math.PI / 2, yaw: 0 }));
+  ship.ship.pos = [40, 0, 0];
+  ship.ship.damage.apply({ hull: Math.ceil(ship.ship.damage.maxHull * 0.8), sail: 0, crew: 0 });
+  r.run(1);
+  assert.equal(A.s.host.activate(), true, 'a grapples her');
+  r.run(GRAPPLE_S + 0.5);
+  const onB = bySeed(B, ship.ship.seed);
+  assert.ok(onB?.boat, 'b stands her hull');
+  assert.deepEqual([onB.ship.damage.state, onB.ship.boarded], [SHIP_STATES.struck, true], 'the room\'s word: struck, boarded');
+  // b at its helm, way off, in reach of her and looking at her
+  assert.equal(B.s.runtime.sailing, true);
+  const gap = Math.hypot(onB.ship.pos[0], onB.ship.pos[2]) - hullBuild(onB.ship.hull).beam - hullBuild(B.s.boat.hull).beam;
+  assert.ok(gap <= 32, `in my helm's reach: ${gap.toFixed(1)} m`);
+  assert.equal(B.s.host.activate(), false, 'no grapple on a ship another is fighting on');
+  assert.equal(B.s.host.boarding, null);
+  assert.equal(B.s.host.myCrew(B.s.boat).toward, null, 'and my crew musters toward no boarding of hers');
+  // b on foot beside her
+  B.s.runtime.sailing = false;
+  besideHer(B.s, onB);
+  assert.equal(B.s.host.activate(), false, 'nor over her rail');
+  assert.equal(B.s.host.boarding, null);
 });

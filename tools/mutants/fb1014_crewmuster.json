@@ -106,5 +106,43 @@
     "tests": [
       "test/fb1014_crewmuster.test.js"
     ]
+  },
+  {
+    "name": "CREW-MUSTER-the-feets-reach-blind-to-her-colours",
+    "file": "src/scenes/navalHost.js",
+    "old": "return e.ship.damage.state === SHIP_STATES.struck && !e.ship.boarded && !!e.boat && dist2d",
+    "new": "return !e.ship.boarded && !!e.boat && dist2d",
+    "tests": [
+      "test/fb1014_crewmuster.test.js"
+    ]
+  },
+  {
+    "name": "CREW-MUSTER-the-feets-reach-blind-to-the-rooms-boarding",
+    "file": "src/scenes/navalHost.js",
+    "old": "return e.ship.damage.state === SHIP_STATES.struck && !e.ship.boarded && !!e.boat && dist2d",
+    "new": "return e.ship.damage.state === SHIP_STATES.struck && !!e.boat && dist2d",
+    "tests": [
+      "test/fb1014_crewmuster.test.js"
+    ]
+  },
+  {
+    "name": "CREW-MUSTER-the-helms-reach-blind-to-the-rooms-boarding",
+    "file": "src/scenes/navalHost.js",
+    "old": "if (e.ship.damage.state !== SHIP_STATES.struck || e.ship.boarded || !e.boat) return null;",
+    "new": "if (e.ship.damage.state !== SHIP_STATES.struck || !e.boat) return null;",
+    "tests": [
+      "test/fb1014_crewmuster.test.js"
+    ]
+  },
+  {
+    "name": "CREW-MUSTER-the-side-read-without-a-muster",
+    "file": "src/systems/naval/crewLife.js",
+    "old": "const way = muster && (ctx.way === 'board' || ctx.way === 'repel') ? ctx.way : null;",
+    "new": "const way = ctx.way === 'board' || ctx.way === 'repel' ? ctx.way : null;",
+    "tests": [
+      "test/fb1014_crewmuster.test.js"
+    ],
+    "equivalent": true,
+    "why": "Belt and braces: the one producer of ctx.way, world.js navalCrewFrame, names a side only with a boarding's own muster (`if (toward)`, the same frame that sets ctx.muster to +1 or -1), and resets it to null every call - so no step ever carries a way without a muster, and the guard never decides. It stays so a direct caller (a test, a future host) cannot make a crew at peace cry a muster's words."
   }
 ]
