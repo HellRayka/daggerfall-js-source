@@ -1573,6 +1573,7 @@ function splitMax(item, dir) {
   const plan = dir === 'store'
     ? planStore(transferItem(item, dir), { remote: remote.items, usingWagon: session.usingWagon, chooseOne: session.chooseOne, dryRun: true, groundRefusal: groundRefusalOf(deps, session), capacity: storeCapacityOf(deps, session), bagLoaded: !bagMayLeave(deps.entity), wagonKg: wagonKgFor(deps.entity) })
     : planTake(transferItem(item, dir), {
+      sourceItem: item,
       bag: deps.items?.() ?? [], entity: deps.entity, mode: 'remove',
       chooseOne: session.chooseOne, usingWagon: session.usingWagon, dryRun: true,
     });
@@ -1701,6 +1702,7 @@ function take(item) {
   const from = remoteTarget(deps, sessionState());
   const bag = deps.items?.() ?? [];
   const plan = planTake(transferItem(item, 'take'), {
+    sourceItem: item,
     bag, entity: deps.entity, mode: 'remove',
     chooseOne: session.chooseOne, usingWagon: session.usingWagon,
     getQuest: deps.getQuest ?? null,

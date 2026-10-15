@@ -73,7 +73,7 @@ quantity. Wear, use and modifications still act on one original; the next refres
 Existing saves benefit immediately without conversion; the serialized item representation is unchanged.
 The enhanced pane creates one DOM row per group rather than one per duplicate. This reduces interface work;
 it does not compress the save or the network payload. `test/itemstacks.test.js` drives both skins and the real
-weapon producer, including a thousand originals, partial moves and individual equipment state.
+weapon producer, including a thousand originals, partial moves and individual equipment state. Group quantity planning retains the source identity for the Materials Bag ownership check.
 
 ## S2 correction (2026-07-07, live-console root fix)
 

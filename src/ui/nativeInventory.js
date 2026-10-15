@@ -1133,6 +1133,7 @@ export class NativeInventoryWindow {
       // included, which DFU has once and both callers run.
       const bag = this.hooks.items();
       const plan = planTake(this._transferItem(it, remote), {
+        sourceItem: it,
         // AUDIT 64 F47: the LADDER's own mode too - itemTransfer.js's
         // `equip: mode === 'equip'` is TransferItem(..., equip:
         // actionMode == ActionModes.Equip) (:2040), so a right-click

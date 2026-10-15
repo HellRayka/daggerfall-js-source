@@ -7,6 +7,7 @@ import { itemStacks, stackTransferItem, applyItemStackTransfer } from '../src/sy
 import { NativeInventoryWindow } from '../src/ui/nativeInventory.js';
 import { mountEnhancedInventory } from '../src/ui/enhancedInventory.js';
 import { withDom } from './invdrag.mjs';
+import { BAG_TEMPLATE } from '../src/net/bagLaw.js';
 
 const dagger = () => ({ group: 'Weapons', ...createWeapon(113, 0, () => 0.5) });
 const copies = (n, item = dagger()) => Array.from({ length: n }, () => structuredClone(item));
@@ -122,6 +123,27 @@ test('identical items: classic equip changes one original, and a changed conditi
   const unworn = e.items.filter((it) => it.equipSlot == null);
   unworn[0].currentCondition--;
   assert.equal(w._filtered().length, 2);
+});
+
+test('identical items: grouped bags keep their original identity for the own-wagon exception', () => {
+  const bags = () => copies(2, { group: 'UselessItems2', templateIndex: BAG_TEMPLATE, weightInKg: 0 });
+  const e = entity(), stored = bags();
+  e.wagonItems = stored;
+  const w = native(e, { wagonItems: () => stored });
+  w.usingWagon = true;
+  assert.equal(w._remoteRows().length, 1);
+  w._pickRemote(0, 'remove');
+  assert.equal(e.items.length, 2, 'legacy bags already owned can return from the wagon together');
+  assert.equal(stored.length, 0);
+  const outside = bags();
+  assert.equal(planTake(stackTransferItem(outside, outside[0]), { bag: e.items, entity: e, sourceItem: outside[0] }).refusal?.reason, 'secondBag');
+  const loot = bags();
+  pack([], { loot: { items: () => loot } }, ({ host, e: player }) => {
+    player.wagonItems = loot;
+    host.querySelector('.itemrow').onclick({ timeStamp: 1 });
+    assert.equal(player.items.length, 2, 'the enhanced take also retains the source record');
+    assert.equal(loot.length, 0);
+  });
 });
 
 test('identical items: enhanced pack renders one tile for a thousand originals and wearing isolates one', () => {
