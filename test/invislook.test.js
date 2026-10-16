@@ -265,6 +265,6 @@ test('INVIS-LOOK by source: the host - the look read once a frame and handed to 
   assert.ok(foes > 0 && hook > foes && water > hook && weapon > water, 'the dungeon: after the foes\' flats, before the water and the weapon\'s screen quads (WATER-D1)');
   // AUDIT OW4 J6: `up` rides beside `conceal` (the travel view's leaned quad)
   // PIN MOVED (MWNPC5): the box and the quad carry a foe's tells (`fx`) beside the look
-  assert.match(rd('src/combat/fpArm.js'), /drawRigSpriteBox\(renderer, canvas, thirdMesh, model, \{ center, halfW, halfH, anchor, hitFlash, conceal, up, fx \}, proj, view, eye, MW_ARM_PIXEL\);/);
+  assert.match(rd('src/combat/fpArm.js'), /drawRigSpriteBox\(renderer, canvas, thirdMesh, model, \{ center, halfW, halfH, anchor, hitFlash, conceal, up, fx, glowLook \}, proj, view, eye, MW_ARM_PIXEL\);/);   // PIN MOVED (WEAPON-GLOW1, AUDIT MW-3): and the held weapon's glow, whose outline the picture is padded for
   assert.match(rd('src/render/characterSprite.js'), /renderer\.drawCharacterSpriteQuad\(sTex, at, halfW, halfH, right, pw \/ CHAR_SPRITE_RT_SIZE, ph \/ CHAR_SPRITE_RT_SIZE, hitFlash, conceal, qUp, null, fx, depth\);/);   // PIN MOVED (FB1015 BODY-DEPTH): and where its texels stand. PIN MOVED (BODY-LEAN): the quad's own up, the view's where one is handed
 });

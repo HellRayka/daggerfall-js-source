@@ -209,6 +209,7 @@ const HARDCODED = {
   'src/render/volumetricClouds.js': 2,
   'src/render/waterBedGlsl.js': 1,
   'src/render/waterSurface.js': 1,
+  'src/render/weaponGlowGlsl.js': 1,   // AUDIT WEAPON-GLOW SPR-1: GLOW_FIELD_VS, the field bake's vertex shader - GLSL the scan reads as prose (`in vec2`), gateVeil.js's same line
   'src/render/windWisps.js': 2,
   'src/render/windfallParticles.js': 2,
   'src/scenes/arenaOnline.js': 1,

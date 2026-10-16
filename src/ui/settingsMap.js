@@ -97,7 +97,7 @@ export const CATEGORIES = Object.freeze([
     sec("rules", "Rules & armour", [
       "feat:mod-pcaao", "MeleeAttacks/MeleeAttackFriendlyProtection", "MeleeAttacks/MeleeAttackDetection"]),
     sec("weapons", "Weapons in hand", [
-      "feat:mod-weapon-widget", "feat:mod-shield-widget", "feat:mod-readied-spellcasting-hands", "feat:mod-diverse-weapons", "feat:bows-left-hand", "Enhancements/BowLeftHandWithSwitching"]),
+      "feat:weapon-glow", "feat:mod-weapon-widget", "feat:mod-shield-widget", "feat:mod-readied-spellcasting-hands", "feat:mod-diverse-weapons", "feat:bows-left-hand", "Enhancements/BowLeftHandWithSwitching"]),
     sec("morrowind", "With Morrowind data", [
       "feat:mod-weapon-sheathing", "feat:steel-helm", "feat:mw-spell-effects", "feat:mw-npc-bodies", "feat:mw-billboard-look"]),
     sec("aftermath", "Seeing & bleeding", [

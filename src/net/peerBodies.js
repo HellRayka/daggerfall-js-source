@@ -84,6 +84,7 @@ import { HORSE_SEAT } from '../world/horseRig.js';   // COATS3D: the 3D horse's 
 import { gaitShare } from '../world/horseModel.js';
 import { JUMP_UNITS, stepPeerPace } from './peerPace.js'; import { peerBodyYaw, peerClimbing, peerMoving, PeerClimbTrack } from './peerClimb.js';   // HT-WAIST-BACK: the pace law, lifted - the walkers' lanterns swing off it too; CLIMB5: the climb's facing and pose
 import { gatherActOf, peerGatherTool, peerGatherSwing, peerKneeling, GATHER_POSE_STRIKES } from './peerGather.js';   // PEER-ACTS: a gathering act's tool, blow and kneel
+import { weaponGlowOn, glowFromWord } from '../systems/weaponGlow.js';   // WEAPON-GLOW1: a peer's weapon, glowing as its look says
 
 
 /** The most peers in a Morrowind body at once; the rest keep the paperdoll. */
@@ -802,6 +803,11 @@ export class PeerBodies {
     // when the rig took it (a swap refused mid-swap was never retried, and the wrong nock stood until a rebuild)
     const am = shown.am ? 1 : 0;
     if (b.weapon && b.ammo !== am && (b.rig.upperBodyReady?.() ?? true) && b.rig.setWeapon?.(b.weapon, { hasAmmo: !!am }) !== false) b.ammo = am;
+    // WEAPON-GLOW1 (bible/05-Combat/Weapon-Glow.md): the weapon in their hand glows as its owner's card says (the look's
+    // `glow`, net/wire.js LOOK_GLOW_RE) - off the look NOW (a weapon identified or socketed is a new look, the same
+    // template in the same hand), when MY switch shows glows; a gatherer's tool, a wolf's claws and a creature carry none
+    const heldNow = look && !look.creature && !b.wolf && !tool ? peerWeaponOf(look, shown) : null;
+    b.rig.setWeaponGlow?.(heldNow && weaponGlowOn() ? glowFromWord(heldNow.glow) : null, heldNow);   // AUDIT WEAPON-GLOW NET-1: and the weapon it is of
     b.rig.readySpell?.(!b.wolf && !!shown.sr);   // WEREWOLF1: a werewolf casts nothing (setWerewolf clears the spell stance)
     // HT-WAIST-NET (2026-09-24): THE LANTERN AT THE WAIST, off the pose's `hl` - the rig's own door, the local body's
     // (weaponRig hands the player's the same boolean every frame): the fast path one compare, the first lit binds the

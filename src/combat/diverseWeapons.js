@@ -67,10 +67,10 @@ export const moddedWeaponHUDAnimsEnabled = () => modSetting('diverse-weapons', '
  * a lookup, so a staff enchanted first with something else stays what
  * DFU makes it.
  */
-export function moddedWeaponFilename(weapon) {
+export function moddedWeaponFilename(weapon, enchanted = isEnchanted(weapon)) {   // WEAPON-GLOW1: `enchanted` false asks the plain sheet (combat/fpsWeapon.js plainWeaponType)
   if (!weapon) return '';
   const W = WEAPONS;
-  if (isEnchanted(weapon)) {
+  if (enchanted) {
     if (isArtifact(weapon)) {
       switch (weapon.templateIndex) {
         case W.Dagger: return 'MEHRUNESRAZOR.CIF';
@@ -159,9 +159,9 @@ const isArtifact = (item) => item?.artifact === true || hasArtifactEffect(item);
  * and imports this). The flag off, or no weapon in hand - a spell, the
  * fists, a werebeast's claws - is the classic name, byte for byte.
  */
-export function atlasFileName(item, classic, enabled = moddedWeaponHUDAnimsEnabled()) {
+export function atlasFileName(item, classic, enabled = moddedWeaponHUDAnimsEnabled(), enchanted = undefined) {
   if (!enabled || !item) return classic;
-  return moddedWeaponFilename(item) || classic;
+  return moddedWeaponFilename(item, enchanted) || classic;   // WEAPON-GLOW1: `enchanted` false - an element shown swings the plain sheet; undefined is the item's own
 }
 
 /**

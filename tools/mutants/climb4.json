@@ -480,8 +480,8 @@
   {
     "name": "CLIMB4-sprite-rises-instead",
     "file": "src/combat/weaponRig.js",
-    "old": "offsetHeight: weaponOffsetHeight() - climbDrop(_climbLower, c.height) }",
-    "new": "offsetHeight: weaponOffsetHeight() + climbDrop(_climbLower, c.height) }",
+    "old": "offsetHeight: weaponOffsetHeight() - climbDrop(_climbLower, c.height), glow: heldGlowNow() }",
+    "new": "offsetHeight: weaponOffsetHeight() + climbDrop(_climbLower, c.height), glow: heldGlowNow() }",
     "tests": [
       "test/climb4.test.js",
       "test/machij_sprites_and_chat.test.js"

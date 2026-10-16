@@ -47,8 +47,8 @@
   {
     "name": "DW1-6-an-empty-modded-name-is-asked-for-literally",
     "file": "src/combat/diverseWeapons.js",
-    "old": "  return moddedWeaponFilename(item) || classic;",
-    "new": "  return moddedWeaponFilename(item);",
+    "old": "  return moddedWeaponFilename(item, enchanted) || classic;",
+    "new": "  return moddedWeaponFilename(item, enchanted);",
     "tests": [
       "test/dw1_diverseweapons.test.js"
     ]
@@ -159,7 +159,7 @@
   {
     "name": "DW1-18-the-rig-cache-forgets-the-atlas-name",
     "file": "src/combat/weaponRig.js",
-    "old": "    const key = `${type}:${item?.material ?? 0}:${thunderlock ? (gilded ? 'gilded' : '') : atlasFileName(item, WEAPON_FILE[type] ?? '')}`;",
+    "old": "    const key = `${type}:${item?.material ?? 0}:${thunderlock ? (gilded ? 'gilded' : '') : atlasFileName(item, WEAPON_FILE[type] ?? '', undefined, plain ? false : undefined)}`;",
     "new": "    const key = `${type}:${item?.material ?? 0}`;",
     "tests": [
       "test/dw1_diverseweapons.test.js"
@@ -168,7 +168,7 @@
   {
     "name": "DW1-19-the-clone-asks-by-the-classic-name",
     "file": "src/combat/weaponWidget.js",
-    "old": "    const file = atlasFileName(w.specificWeapon, classic);",
+    "old": "    const file = atlasFileName(w.specificWeapon, classic, undefined, ctx?.glow ? false : undefined);",
     "new": "    const file = classic;",
     "tests": [
       "test/dw1_diverseweapons.test.js"

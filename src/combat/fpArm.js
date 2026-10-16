@@ -1701,6 +1701,7 @@ export const archiveHas = (archives) => (p) => (archives ?? []).some((a) => a.ha
  *  card's note is the same sentence, but the card is a menu away. */
 import { ammoCountFor } from '../systems/inventory.js';   // AUDIT 68 S27-ammoCount-dup: the ammunition count's one home, beside the spend law
 import { ownWeaponModelFor } from '../characters/ownWeaponModels.js';   // FIELD-GUN-MW2: the weapons Morrowind does not have - a leaf too
+import { glowUnit } from '../render/weaponGlowGlsl.js';   // WEAPON-GLOW1: the glow's unit off the lens's rows - a leaf
 
 const saidArrow = new Set();
 function sayNoArrow(notes) {
@@ -3413,6 +3414,15 @@ export function createFpArm() {
   let posedGroup = null;        // MWNPC4: the frame's winner, by name - on the card
   let dead = false;              // MWNPC4: died - the reference stops refreshing a dead actor's states (character.cpp:"For dead actors, refreshCurrentAnims is no longer called")
   let torchLit = false;
+  // WEAPON-GLOW1 (bible/05-Combat/Weapon-Glow.md): the held weapon's glow - `{ look, code, level, ramp }`
+  // (systems/weaponGlow.js meshGlow, or glowFromWord for a peer's body) - laid on the mesh each draw; the renderer lights
+  // the weapon's own ranges with it (renderer.js _drawWeaponGlow). Null draws none. AUDIT WEAPON-GLOW NET-1: the spec is
+  // the weapon's it was asked of (`glowKey`, its fpWeaponKey with the quiver aside), and it is laid on the mesh only
+  // while the mesh holds that weapon (`wornWeaponKey`) - a swap waits on its archives, and the arm still drawing the
+  // last weapon must not wear the next one's glow; NET-2: and only while the weapon is in hand (a sheathed blade's
+  // glow drew nothing, but it still grew a third-person picture's window).
+  let weaponGlowSpec = null, glowItem = null, glowKey = null, wornWeaponKey = null;
+  const glowShown = () => (weaponGlowSpec && glowKey === wornWeaponKey && weaponInHand() ? weaponGlowSpec : null);
   let torchState = null;
   let torchSource = null;
   let torchGroup = null;
@@ -4704,6 +4714,7 @@ export function createFpArm() {
         thirdBuilt = res && res.ok ? (res.third || null) : null;
         viewMode = res && res.ok && res.creature && thirdBuilt ? 'third' : 'first';   // MWNPC9: a creature is its body, from the first frame
         wornKey = fpWeaponKey(opts && opts.weapon, !!(opts && opts.hasAmmo));
+        wornWeaponKey = fpWeaponKey(opts && opts.weapon, false);   // WEAPON-GLOW1 (AUDIT NET-1): the hand the mesh holds
         wornEquipKey = wornEquipKeyOf(opts && opts.armor);
         lastBuildOpts = opts ? { ...opts } : null;
         buildDeps = (opts && opts.deps) || null;
@@ -5068,6 +5079,7 @@ export function createFpArm() {
           // The old action clip belonged to the old weapon's group.
           actionState = null; actionSource = null; attackType = null; holdWindUp = false;
           wornKey = key;
+          wornWeaponKey = fpWeaponKey(item, false);   // WEAPON-GLOW1 (AUDIT NET-1): the hand the mesh now holds
           if (lastBuildOpts) { lastBuildOpts.weapon = item; lastBuildOpts.hasAmmo = hasAmmo; lastBuildOpts.ammoCount = ammoCount; }   // AUDIT MW-TORCH F5: setWorn's rebuild carries the hand that is IN it (AUDIT 68 S08-fparm-ammocount-dropped: and its quiver)
           const wasDrawn = !sheathed;
           // MW-D28: isStillWeapon (character.cpp:1364) - a DRAWN hand
@@ -5311,6 +5323,15 @@ export function createFpArm() {
       if (!held || !lastFrame || !mesh) return null;
       return projectPaperCorners(held.piece.positions, lastFrame, lastFrame.rect);
     },
+
+    /** WEAPON-GLOW1: the held weapon's glow (systems/weaponGlow.js meshGlow / glowFromWord), or null - a value read at
+     *  the next draw, so its fast path is the assignment. */
+    setWeaponGlow(spec, item = null) {
+      weaponGlowSpec = spec ?? null;
+      if (item !== glowItem) { glowItem = item; glowKey = fpWeaponKey(item, false); }   // AUDIT WEAPON-GLOW NET-1: the weapon it is OF
+    },
+    /** WEAPON-GLOW1: the glow the next draw lays on the weapon, for a pin. */
+    weaponGlow() { return glowShown(); },
 
     setTorch(lit) {
       const want = !!lit;
@@ -5998,6 +6019,8 @@ export function createFpArm() {
       // the frame's own window, into the rect the composite lays it on.
       lastFrame = { model: NIF_TO_PASS, view, proj, rect: win ? win.dst : { x: 0, y: 0, w: W, h: H } };
       drewLast = true;
+      mesh.weaponGlow = glowShown();   // WEAPON-GLOW1
+      mesh.glowUnit = glowUnit(ph);   // AUDIT WEAPON-GLOW MW-8: the LENS's rows - a Weapon Widget scale grows the outline with the arm
       const tex = renderer.renderCharacterSprite(mesh, NIF_TO_PASS, proj, view, fw, fh, { lensLocal: true, viewmodelLight: vmLight });   // VC5 review: lens-local - no cloud deck on the arm   // DISC13-C: fw x fh - the grid the screen shows
       // WW1: Weapon Widget's channels move the composite as they move the
       // classic sprite - a screen-space rect in place of the fullscreen
@@ -6177,6 +6200,11 @@ export function createFpArm() {
       const box = thirdBox();   // AUDIT 68: poseAssembly's own fold, over the pieces, when nothing drawn has a box
       if (!box) return false;
       const { minX, minY, minZ, maxX, maxY, maxZ } = box;
+      // WEAPON-GLOW1: the weapon's glow on the body's own picture; its outline's room is the picture's pad, in texels
+      // (render/characterSprite.js drawRigSpriteBox `glowLook` - AUDIT WEAPON-GLOW MW-3)
+      const glow = glowShown();
+      thirdMesh.weaponGlow = glow;
+      const glowLook = glow ? glow.look : null;
       const halfH = ((maxZ - minZ) * u * rs.height) / 2;
       const halfW = (Math.hypot(maxX - minX, maxY - minY) * u * rs.weight) / 2;
       const center = transformPoint(model, (minX + maxX) / 2, (minY + maxY) / 2, (minZ + maxZ) / 2);
@@ -6211,10 +6239,10 @@ export function createFpArm() {
       // is OF the horse - its middle is the anchor, so the figure is the rider on it, sized where the horse stands
       if (horse && horse.mesh && horse.model && horse.box) {
         const u = spriteBoxUnion({ center, halfW, halfH }, horse.box);
-        drawRigSpriteBox(renderer, canvas, thirdMesh, model, { ...u, anchor: horse.box.anchor, hitFlash, conceal, up, fx, also: [{ mesh: horse.mesh, model: horse.model }] }, proj, view, eye, MW_ARM_PIXEL);
+        drawRigSpriteBox(renderer, canvas, thirdMesh, model, { ...u, anchor: horse.box.anchor, hitFlash, conceal, up, fx, also: [{ mesh: horse.mesh, model: horse.model }], glowLook }, proj, view, eye, MW_ARM_PIXEL);
         return true;
       }
-      drawRigSpriteBox(renderer, canvas, thirdMesh, model, { center, halfW, halfH, anchor, hitFlash, conceal, up, fx }, proj, view, eye, MW_ARM_PIXEL);   // HITFLASH1: a struck peer's body flashes
+      drawRigSpriteBox(renderer, canvas, thirdMesh, model, { center, halfW, halfH, anchor, hitFlash, conceal, up, fx, glowLook }, proj, view, eye, MW_ARM_PIXEL);   // HITFLASH1: a struck peer's body flashes
       return true;
     },
 

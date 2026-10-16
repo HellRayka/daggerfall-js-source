@@ -6742,8 +6742,10 @@ Weapon` returns after the attach (:368-369): whole, never masked.
 parent)` under the bone, NOT SceneUtil::attach** - so no BoneOffset
 and no mirror ride a holstered mesh, unlike the weapon in the hand
 (AUDIT-WS F6: every WS1 part is `bare`). The enchantment glow (:355,
-:389-393) is not ported - the port draws no glow on any Morrowind
-mesh.
+:389-393) is not ported on a holstered mesh. WEAPON-GLOW1 (2026-10-16,
+`05-Combat/Weapon-Glow.md`) draws the port's own glow on the weapon in
+the HAND alone - its element's look, or the arcane glow for an
+enchanted weapon showing none - from no archive texture.
 
 **The quiver** (actoranimation.cpp:396-471 updateQuiver, run from
 showWeapons :993 and at attachArrow / detachArrow / releaseArrow,

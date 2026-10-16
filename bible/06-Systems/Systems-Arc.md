@@ -78,6 +78,10 @@ it does not compress the save or the network payload. `test/itemstacks.test.js` 
 weapon producer, including a thousand originals, partial moves, individual equipment state, acquisition/ID stamps,
 consecutive Storage takes and reopening a saved pack. Wallet and binder sheets also render grouped rows while
 their ledgers count every original. Group quantity planning retains the source identity for the Materials Bag ownership check.
+Grouped rows feed the current virtual-list window and reuse its per-pass base-line cache. The virtual-list regression
+scrolls 170 groups of three originals, takes a visible group and preserves the storage scroll. `ui/domRepaint.js`
+normalizes CSS class order in its scroll paths: the paired window's entrance adds `on` after `paired`, while later
+paints create `on` first; those are the same window, not a reason to reset its list.
 
 ## S2 correction (2026-07-07, live-console root fix)
 

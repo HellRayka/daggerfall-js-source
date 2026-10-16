@@ -947,7 +947,8 @@ test('PERF-2D: every draw sees exactly the state it saw when the bracket was per
 test('PERF-2D: the source law - every draw in renderer.js is a 2D primitive or closes the run first', () => {
   const src = readFileSync('src/render/renderer.js', 'utf8').split('\n');
   const TWO_D = new Set(['drawScreenQuad', 'drawScreenQuadRun', 'drawScreenOverlayQuad',
-    '_ensureScreenQuadProgram', '_ensureScreenQuadRunProgram', '_ensureOverlayProgram']);
+    '_ensureScreenQuadProgram', '_ensureScreenQuadRunProgram', '_ensureOverlayProgram',
+    'drawScreenQuadGlow', '_ensureWeaponGlowQuadProgram', '_glowField']);   // WEAPON-GLOW1: the fourth primitive - a weapon sprite's outline over its frame; AUDIT WEAPON-GLOW SPR-1: and its field's bake, drawn inside the primitive's own run
   let method = null; const seen = new Map();   // method -> {closed, drew}
   for (const line of src) {
     const m = /^  (_?[A-Za-z][A-Za-z0-9_]*)\(.*\)\s*\{\s*$/.exec(line);

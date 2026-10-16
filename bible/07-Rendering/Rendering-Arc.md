@@ -1641,7 +1641,8 @@ world pass that follows draws, for the rest of the session." Three things
 carry that weight now:
 
 1. **The source law.** Every method in `renderer.js` that issues a
-   `gl.draw*` is one of the three 2D primitives or calls `_close2D()`
+   `gl.draw*` is one of the three 2D primitives (four since WEAPON-GLOW1's
+   `drawScreenQuadGlow`, with its field's bake - `05-Combat/Weapon-Glow.md`) or calls `_close2D()`
    first, and so do the five seams where foreign GL runs. Read out of
    the source, so it cannot go vacuous.
 2. **The equality proof.** A mixed scene - UI runs interleaved with

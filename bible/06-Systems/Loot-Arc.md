@@ -133,6 +133,10 @@ A weapon's three are the weapon IN HAND's alone; a wearer's armour and jewellery
 entity alone, offline and online, and never a player (law 5). Names: `Burning Longsword of the Leech`, `Barbed
 Cuirass of the Bear`, `Adept's Ring of the Owl`, `Shortsword of the Gravewatch`.
 
+WEAPON-GLOW1 (2026-10-16, `05-Combat/Weapon-Glow.md`): an `elemental` line - or a Ruby's or a Sapphire's gem - is seen
+in the hand as well as read on the card: the weapon wears an animated outline of its element, brighter in the band its
+total reads in, on the classic sprite and round a Morrowind model, and on a peer's body online.
+
 ## 7. LOOT5 - every Legendary a power
 
 Each of the thirty records names one POWER: a sentence, a brief (the card's row, CARD-FIT's 32 characters) and its

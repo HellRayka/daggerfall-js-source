@@ -27,7 +27,8 @@ import { CAPSULE_HEIGHT } from '../player/motor.js';
 import { drawText, measureText } from '../ui/text.js';
 import { titleBadge, glyphMarks, gradientAt } from '../ui/playerBadge.js';   // ACC3: what a title and a glyph LOOK like - one home, both faces (the DOM layer reads the same module)
 import { projectToScreen } from '../player/tapRay.js'; import { multiply } from '../world/mat4.js';   // one home (audit24 onehome): the touch layer's own projection
-import { LOOK_ITEM_FIELDS, LOOK_GROUPS } from './wire.js';   // the look's vocabulary: the wire's own
+import { LOOK_ITEM_FIELDS, LOOK_GROUPS, LOOK_GLOW_SLOTS, lookGlowOk } from './wire.js';   // the look's vocabulary: the wire's own; WEAPON-GLOW1: and a weapon's glow
+import { meshGlow, glowWord } from '../systems/weaponGlow.js';   // WEAPON-GLOW1: a held weapon's glow, said on the look
 import { renownText } from './renown.js';   // RENOWN1: Renown's words, left of the name in the bitmap face too
 import { guildTagText } from './guildLaw.js';   // GUILD1c: the guild's tag, right of the name in the bitmap face too
 import { ribbonRgba } from './heraldryLaw.js';   // SEASON1 part two: a Season's banner ribbon, under the name in the bitmap face too
@@ -385,6 +386,11 @@ export function composeLook(entity, { eotbSet = ownEotbSet() } = {}) {
     const o = {};
     for (const k of LOOK_ITEM_FIELDS) if (it[k] != null) o[k] = it[k];
     if (o.equipSlot == null) o.equipSlot = slot;
+    // WEAPON-GLOW1: a weapon's glow as its owner's card knows it, whatever the owner's own switch says - each viewer's
+    // switch is theirs (net/peerBodies.js); OMITTED when none, so a plain weapon's item keeps its bytes. A PLAYER's look
+    // alone: a foe's kit is said on its record (characters/foeBodies.js encodeWorn), which carries no glow, so a foe's
+    // weapon glowing on the host's screen alone would be one fight seen two ways
+    if (it.group === 'Weapons' && entity?.isPlayer === true && LOOK_GLOW_SLOTS.includes(o.equipSlot)) { const g = glowWord(meshGlow(it, { on: true })); if (g) o.glow = g; }   // AUDIT WEAPON-GLOW NET-4: a weapon in a hand
     items.push(o);
   }
   // 2026-09-17: `class` rides the look alongside race/gender/face so a peer without a Morrowind body can be drawn
@@ -434,6 +440,7 @@ export function peerStubEntity(look) {
     if (templateIndex == null || slot == null || slot >= slots || !LOOK_GROUPS.includes(it.group)) continue;   // a slot past the table is dropped, not clamped onto another
     const item = { templateIndex, group: it.group, equipSlot: slot };
     for (const k of ['material', 'dye', 'variant']) { const v = uint(it[k], 4095); if (v != null) item[k] = v; }
+    if (lookGlowOk({ ...item, glow: it.glow })) item.glow = it.glow;   // WEAPON-GLOW1: the word, as validLookItem keeps it - one law, net/wire.js
     entity.items.push(item);
     if (!entity.equip.slots[slot]) entity.equip.slots[slot] = item;
   }

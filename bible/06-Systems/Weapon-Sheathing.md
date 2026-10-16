@@ -160,5 +160,6 @@ the cites. Six findings, all fixed and pinned:
   one-line chunks, a request apiece; the table is eager now, the URLs
   in the module that owns them.
 
-Unchanged and still true: third person only; the enchantment glow
-unported; not seen on a GPU here.
+Unchanged and still true: third person only; the holstered weapon's
+enchantment glow unported (WEAPON-GLOW1 draws the hand's own,
+`05-Combat/Weapon-Glow.md`); not seen on a GPU here.
