@@ -1,19 +1,30 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createWeapon } from '../src/combat/enemyEquipment.js';
-import { itemWeight, totalWeight, goldStack } from '../src/systems/inventory.js';
+import { itemWeight, totalWeight, goldStack, letterOfCredit } from '../src/systems/inventory.js';
 import { planStore, planTake } from '../src/systems/itemTransfer.js';
 import { itemStacks, stackTransferItem, applyItemStackTransfer } from '../src/systems/itemStacks.js';
 import { NativeInventoryWindow } from '../src/ui/nativeInventory.js';
 import { mountEnhancedInventory } from '../src/ui/enhancedInventory.js';
 import { withDom } from './invdrag.mjs';
 import { BAG_TEMPLATE } from '../src/net/bagLaw.js';
+import { applyRarity } from '../src/systems/lootRarity.js';
+import { stampItemIds } from '../src/systems/itemIds.js';
+import { createAcquireWatch } from '../src/systems/acquireWatch.js';
+import { mintWallet } from '../src/systems/walletItem.js';
+import { mintBinder, mintIliacCard } from '../src/systems/iliacItems.js';
 
 const dagger = () => ({ group: 'Weapons', ...createWeapon(113, 0, () => 0.5) });
 const copies = (n, item = dagger()) => Array.from({ length: n }, () => structuredClone(item));
 const entity = (items = []) => ({ name: 'Hero', stats: { strength: 50 }, items });
 const icons = { getTexture: async () => ({ recordCount: 0 }), uploadRecord: () => {}, textures: new Map() };
 const native = (e, extra = {}) => new NativeInventoryWindow({ entity: e, items: () => e.items, icons, ...extra });
+const magicWeapon = (template = 113) => applyRarity({ group: 'Weapons', ...createWeapon(template, 0, () => 0.5) }, 'magic', () => 0.5);
+const checkpoint = () => {
+  const watch = createAcquireWatch();
+  let id = 0;
+  return (e) => { watch.observe(e); stampItemIds(e, bytes => bytes.fill(++id)); };
+};
 
 function pack(items, extra, run) {
   withDom((dom) => {
@@ -39,7 +50,7 @@ test('identical items: a thousand producer-minted weapons share one row, includi
   }
 });
 
-test('identical items: every item field participates, including nested enchantments and future mod state', () => {
+test('identical items: every gameplay field participates, including nested enchantments and future mod state', () => {
   const original = { ...dagger(), enchantments: [{ type: 1, param: 5 }], sockets: [{ gem: 'ruby', rank: 1 }] };
   const changes = {
     group: 'Armor', templateIndex: 114, name: 'Renamed', material: 1, currentCondition: 1, maxCondition: 99,
@@ -191,5 +202,128 @@ test('identical items: both skins physically drop the whole displayed group in o
     assert.equal(player.items.length, 0);
     assert.equal(drops.length, 2);
     assert.equal(drops[1].length, 3);
+  });
+});
+
+test('identical items: real acquisition and realm ID stamps never split otherwise identical gear', () => {
+  const e = entity(copies(3, applyRarity(dagger(), 'rare', () => 0.5)));
+  assert.equal(itemStacks(e.items).items.length, 1);
+  checkpoint()(e);
+  assert.equal(new Set(e.items.map(it => it.uid)).size, 3, 'the realm still owns three distinct IDs');
+  assert.ok(e.items.every(it => it.acquired === true));
+  const saved = JSON.stringify(e.items), view = itemStacks(e.items);
+  assert.equal(view.items.length, 1);
+  assert.equal(view.count(e.items[0]), 3);
+  assert.deepEqual(view.members(e.items[0]), e.items);
+  assert.equal(JSON.stringify(e.items), saved, 'view grouping never clears stored tracking fields');
+});
+
+test('identical items: only root tracking differs; gameplay, economic and nested mod state still separate rows', () => {
+  const a = { ...magicWeapon(), uid: '1111111111111111', acquired: true, untaken: true };
+  const b = { ...magicWeapon(), uid: '2222222222222222' };
+  assert.equal(itemStacks([a, b]).items.length, 1);
+  for (const change of [
+    { currentCondition: a.currentCondition - 1 }, { enchantments: [{ type: 1, param: 3 }] },
+    { foundCondition: 1 }, { counterBought: true }, { provenance: 'product:1' },
+    { mod: { uid: 'other', acquired: true, untaken: true } },
+  ]) assert.equal(itemStacks([a, { ...b, ...change }]).items.length, 2);
+  for (const key of ['uid', 'acquired', 'untaken']) {
+    const left = { ...a, mod: { [key]: 'left' } }, right = { ...b, mod: { [key]: 'right' } };
+    assert.equal(itemStacks([left, right]).items.length, 2, `a mod's nested ${key} is not a root tracking field`);
+  }
+});
+
+test('identical items: partial transfers join an existing row while retaining every original ID and mark', () => {
+  const from = copies(3, magicWeapon()), to = copies(1, magicWeapon());
+  checkpoint()({ items: [...from, ...to] });
+  from[1].untaken = true;
+  delete from[2].acquired;
+  const originals = [...from, ...to], saved = originals.map(it => JSON.stringify(it)), ids = originals.map(it => it.uid);
+  const plan = planStore(stackTransferItem(from, from[0]), { remote: to });
+  assert.equal(plan.amount, 3);
+  applyItemStackTransfer(from[0], { ...plan, amount: 2 }, from, to);
+  assert.equal(from.length, 1);
+  assert.equal(to.length, 3);
+  assert.equal(itemStacks(to).items.length, 1);
+  assert.equal(itemStacks(to).count(to[0]), 3);
+  assert.deepEqual(originals.map(it => it.uid), ids);
+  assert.deepEqual(originals.map(it => JSON.stringify(it)), saved);
+  assert.equal(new Set([...from, ...to].map(it => it.uid)).size, 4, 'no instance is lost or duplicated');
+});
+
+test('identical items: enhanced Storage takes keep both groups stacked across HUD/checkpoint updates and reopening', () => {
+  const first = copies(2, magicWeapon(113)), second = copies(2, magicWeapon(114)), storage = [...first, ...second];
+  const stamp = checkpoint();
+  let saved;
+  pack([], { loot: { items: () => storage, storage: true } }, ({ host, e, view }) => {
+    const remoteRows = () => host.querySelector('.packremote').querySelectorAll('.itemrow');
+    const localRows = () => host.querySelectorAll('.itemrow').filter(row => !row.closest('.packremote'));
+    assert.equal(remoteRows().length, 2);
+    remoteRows()[0].onclick({ timeStamp: 1 });
+    assert.equal(e.items.length, 2);
+    assert.equal(localRows().length, 1);
+    assert.equal(localRows()[0].querySelector('.count').textContent, '2');
+    stamp(e);
+    remoteRows()[0].onclick({ timeStamp: 2 });
+    assert.equal(localRows().length, 2, 'taking the second group must not split the first group');
+    assert.deepEqual(localRows().map(row => row.querySelector('.count')?.textContent), ['2', '2']);
+    stamp(e);
+    view.repaint();
+    assert.equal(localRows().length, 2, 'later checkpoints also retain both rows');
+    assert.equal(storage.length, 0);
+    assert.equal(new Set(e.items.map(it => it.uid)).size, 4);
+    saved = JSON.stringify(e.items);
+  });
+  pack(JSON.parse(saved), {}, ({ host, e }) => {
+    assert.equal(host.querySelectorAll('.itemrow').length, 2, 'existing saved inventory benefits on open');
+    assert.equal(new Set(e.items.map(it => it.uid)).size, 4);
+  });
+});
+
+test('identical items: classic Storage and pack group stamped items before and after consecutive takes', () => {
+  const storage = [...copies(2, magicWeapon(113)), ...copies(2, magicWeapon(114))];
+  const e = entity(), stamp = checkpoint(), w = native(e, { loot: { items: () => storage } });
+  stamp({ items: [storage[0]], wagonItems: [storage[2]] });
+  assert.equal(w._remoteRows().length, 2, 'storage groups marked and unmarked originals together');
+  w._pickRemote(0, 'remove');
+  stamp(e);
+  w._pickRemote(0, 'remove');
+  stamp(e);
+  assert.equal(storage.length, 0);
+  assert.equal(w._filtered().length, 2);
+  assert.deepEqual(w._filtered().map(it => w._stackView(e.items).count(it)), [2, 2]);
+  assert.equal(new Set(e.items.map(it => it.uid)).size, 4);
+});
+
+test('identical items: the wallet renders one row per group while its ledger still totals every original', () => {
+  const letters = copies(2, letterOfCredit(5000));
+  pack([mintWallet(), ...letters], {}, ({ host, e }) => {
+    const text = (n) => [n.textContent, ...n.children.map(text)].join(' ');
+    host.querySelectorAll('button').find(b => /^\s*Valuables/.test(text(b))).onclick({});
+    host.querySelectorAll('.itemrow').find(b => /Wallet/.test(text(b))).onclick({ timeStamp: 1 });
+    const sheet = host.querySelector('.walletsheet'), rows = sheet.querySelectorAll('.itemrow');
+    assert.equal(rows.length, 1, 'the wallet must not repeat an aggregate count on each original');
+    assert.equal(rows[0].querySelector('.count').textContent, '2');
+    assert.equal(sheet.querySelectorAll('.wallet-row').find(r => r.dataset.key === 'letters').querySelector('.wallet-v').textContent, '2');
+    assert.equal(sheet.querySelector('.wallet-note').textContent, 'worth 10,000 gold');
+    rows[0].onclick({ timeStamp: 2 });
+    button(host, 'Drop').onclick();
+    assert.equal(e.items.length, 1, 'the sheet row transfers both letters and retains the wallet');
+  });
+});
+
+test('identical items: the binder renders one row per group and counts all cards once', () => {
+  const cards = [mintIliacCard('rat', 2), mintIliacCard('rat', 3)];
+  pack([mintBinder(), ...cards], {}, ({ host, e }) => {
+    const text = (n) => [n.textContent, ...n.children.map(text)].join(' ');
+    host.querySelectorAll('button').find(b => /^\s*Books/.test(text(b))).onclick({});
+    host.querySelectorAll('.itemrow').find(b => /Card Binder/.test(text(b))).onclick({ timeStamp: 1 });
+    const sheet = host.querySelector('.bindersheet'), rows = sheet.querySelectorAll('.itemrow');
+    assert.equal(rows.length, 1, 'the binder must not repeat an aggregate count on each original');
+    assert.equal(rows[0].querySelector('.count').textContent, '5');
+    assert.equal(sheet.querySelector('.wallet-head').textContent, '5 cards of 1 kind');
+    rows[0].onclick({ timeStamp: 2 });
+    button(host, 'Drop').onclick();
+    assert.equal(e.items.length, 1, 'the sheet row transfers all five cards and retains the binder');
   });
 });

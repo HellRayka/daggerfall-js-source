@@ -3632,7 +3632,7 @@ function walletSheet(w) {
   }
   if (w.held.length) {
     const rows = el('div', 'walletpieces');
-    for (const it of w.held) rows.append(itemRow(it));
+    for (const it of itemStacks(w.held, stackOptions()).items) rows.append(itemRow(it));
     box.append(rows);
   }
   if (!walletAsked) {
@@ -3646,7 +3646,8 @@ function walletSheet(w) {
 function binderSheet(b) {
   const box = el('div', 'walletsheet bindersheet');
   const n = b.held.reduce((s, it) => s + Math.max(1, it.stackCount ?? 1), 0);
-  box.append(el('h4', 'wallet-head', `${n} card${n === 1 ? '' : 's'} of ${b.held.length} kind${b.held.length === 1 ? '' : 's'}`));
+  const kinds = new Set(b.held.map(it => it.card)).size;
+  box.append(el('h4', 'wallet-head', `${n} card${n === 1 ? '' : 's'} of ${kinds} kind${kinds === 1 ? '' : 's'}`));
   for (const d of binderDecks(b.item)) {   // AUDIT CARDS-5 C1: the decks a reader may trust
     const row = el('div', 'wallet-row');
     row.append(el('span', 'wallet-k', d.name), el('span', 'wallet-v', `${d.cards.length} cards`));
@@ -3655,7 +3656,7 @@ function binderSheet(b) {
   box.append(el('p', 'wallet-note', 'Your decks are built on the Holdings page, under Collections.'));
   if (b.held.length) {
     const rows = el('div', 'walletpieces');
-    for (const it of b.held) rows.append(itemRow(it));
+    for (const it of itemStacks(b.held, stackOptions()).items) rows.append(itemRow(it));
     box.append(rows);
   }
   return box;
