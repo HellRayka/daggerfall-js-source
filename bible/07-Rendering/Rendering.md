@@ -1350,6 +1350,13 @@ directory by `test/audit18_bible_docs.test.js`:
   after it) on a FIXED 1/fps step, the three speeds (general 5, ANIMALS 5,
   LIGHTS 12), and the one arming seam all four static-flat batch sites call so
   the four hosts cannot drift.
+- `weaponGlowGlsl.js` - A WEAPON'S ELEMENT, DRAWN (WEAPON-GLOW1, 2026-10-16): the glow's shaders and numbers, a leaf -
+  one design, two drawers: the classic sprite's outline (`drawScreenQuadGlow`, the fourth 2D primitive, per
+  Daggerfall pixel of the frame, off a field baked once a frame and look - `GLOW_FIELD_FS`, AUDIT WEAPON-GLOW SPR-1)
+  and the Morrowind weapon's rings and charge (`_drawWeaponGlow`, inside `drawCharacter`'s sprite pass - the rings
+  instanced at the back of the pass before the body, a 16-bit depth step apart, the charge additive after; a
+  third-person picture padded for them, `glowPad`).
+  Fire, frost, shock and the arcane; every rate whole over its clock. `05-Combat/Weapon-Glow.md`.
 - `windWisps.js` - WIND3 THE WISPS: the wind, seen - faint streaks of air
   stretched along the wind's velocity in a box that follows the eye and
   wraps by the lab's law, travelling by the one integrated step, their

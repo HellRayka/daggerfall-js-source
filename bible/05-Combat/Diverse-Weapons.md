@@ -27,8 +27,8 @@ port is the mod's code.
 | DFU | port |
 |---|---|
 | `FPSWeapon.moddedWeaponHUDAnimsEnabled` (FPSWeapon.cs:97) - a static, false until a mod sets it | `moddedWeaponHUDAnimsEnabled()` - the mod's `Enabled` switch (`combat/diverseWeapons.js`) |
-| `WeaponBasics.GetModdedWeaponFilename(item)` - three tables: the named artifact CIFs, `<NAME>MAGIC.CIF`, `<NAME>.CIF`; a custom template answers `""` | `moddedWeaponFilename(item)`, verbatim, the Staff arm's loop included |
-| `FPSWeapon.GetWeaponTextureAtlas` :637-644 - the per-template name when the flag is on and a weapon is in hand, else `GetWeaponFilename` | `atlasFileName(item, classic)` |
+| `WeaponBasics.GetModdedWeaponFilename(item)` - three tables: the named artifact CIFs, `<NAME>MAGIC.CIF`, `<NAME>.CIF`; a custom template answers `""` | `moddedWeaponFilename(item)`, verbatim, the Staff arm's loop included - and (WEAPON-GLOW1) `moddedWeaponFilename(item, enchanted)`, the MAGIC table's question the caller's to answer: the item's own enchantment by default, the plain set while an element's outline shows (`05-Combat/Weapon-Glow.md`) |
+| `FPSWeapon.GetWeaponTextureAtlas` :637-644 - the per-template name when the flag is on and a weapon is in hand, else `GetWeaponFilename` | `atlasFileName(item, classic)` (WEAPON-GLOW1: `atlasFileName(item, classic, enabled, enchanted)`, the same question passed through) |
 | :647 - `TryImportCifRci(name, record, frame, metalType)` for every frame; a hit replaces that frame | `loadFpsWeaponArt` (base lane) and the widget clone's `customTexture` |
 | :398-399 - an imported frame is drawn into the **classic record's** box | `loadFpsWeaponArt` keeps `size.width/height` from the CIF |
 | `TextureReplacement.GetNameCifRci` :795-801 - `<FILE>_<record>-<frame>_<Metal>`, None unsuffixed | the spelling in both lanes; `MATERIAL_NAMES` is `MetalTypes` index for index |

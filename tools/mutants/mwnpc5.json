@@ -137,8 +137,8 @@
  {
   "name": "MWNPC5-drawthird-drops-fx",
   "file": "src/combat/fpArm.js",
-  "old": "{ center, halfW, halfH, anchor, hitFlash, conceal, up, fx }, proj, view, eye, MW_ARM_PIXEL);",
-  "new": "{ center, halfW, halfH, anchor, hitFlash, conceal, up }, proj, view, eye, MW_ARM_PIXEL);",
+  "old": "{ center, halfW, halfH, anchor, hitFlash, conceal, up, fx, glowLook }, proj, view, eye, MW_ARM_PIXEL);",
+  "new": "{ center, halfW, halfH, anchor, hitFlash, conceal, up, glowLook }, proj, view, eye, MW_ARM_PIXEL);",
   "tests": [
    "test/mwnpc5_bodyfx.test.js"
   ]

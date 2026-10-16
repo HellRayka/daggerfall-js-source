@@ -32,7 +32,8 @@ import { setItemFields } from '../systems/itemTemplates.js';   // MW-EARLY: a sa
 import { dfWornEquipment } from '../formats/mwItemMap.js';   // MW-D32
 import { ownWerewolfSkin } from '../systems/ownGlyphs.js';   // SHADOW-FANG: the skin my own werewolf wears
 import { ARMOR_ENUM } from './enemyEquipment.js';   // MW-D32
-import { loadFpsWeaponArt, drawFpsWeapon, weaponTypeForItem, WEAPON_TYPES, fpLightingOn, WEAPON_FILE } from './fpsWeapon.js';
+import { loadFpsWeaponArt, drawFpsWeapon, weaponTypeForItem, WEAPON_TYPES, fpLightingOn, WEAPON_FILE, plainWeaponType } from './fpsWeapon.js';
+import { spriteGlow, meshGlow } from '../systems/weaponGlow.js';   // WEAPON-GLOW1: the held weapon's element, as each hand shows it
 import { loadThunderlockArt } from './thunderlockArt.js';
 import { createRecoil, GUN_FEEL, gunPitch, muzzleGlow, GUN_TICK_SECONDS, armGunPose } from './gunFeel.js';   // AUDIT FIELD-GUN-MW F1: the flash's own clock under the arm; MW-GUN-FEEL: the arm's kick and reload
 import { createGunRig, gunRigStep, gunWidgetSettings, gunMotion, gunFrameRect } from './gunViewmodel.js';   // FIELD-GUN12: the PROTOTYPE's frame, run rather than resembled
@@ -742,11 +743,21 @@ export function createWeaponRig({ renderer, canvas, fetchBytes, palette, audio, 
   // pillarbox (FPSWeapon.cs :128-129, FPSSpellCasting.cs :88-89), the canvas otherwise; draw() puts it at its place
   const cv = () => uiCanvas(typeof canvas === 'function' ? canvas() : canvas);
   const cache = new Map();   // `${type}:${material}` -> art (null while loading)
+  // WEAPON-GLOW1 (bible/05-Combat/Weapon-Glow.md): THE HELD WEAPON'S ELEMENT as the classic hand shows it - asked once
+  // a frame (frame(), beside syncWorn) and read by the art's choice and the sprite's three drawers. While it answers,
+  // the hand swings the PLAIN sheet (plainWeaponType) and the outline is drawn over it. The answer is the weapon's it
+  // was asked of: a hand changed later in the frame is asked again, never handed the last weapon's glow (or its sheet).
+  let heldGlow = null, heldFor = null;
+  const askHeld = () => { heldFor = playerWeapon.weapon; heldGlow = spriteGlow(heldFor); };
+  const glowOf = (item) => (item && item === heldFor ? heldGlow : spriteGlow(item));
+  const heldGlowNow = () => { if (playerWeapon.weapon !== heldFor) askHeld(); return heldGlow; };
+  const heldType = (item) => (glowOf(item) ? plainWeaponType(weaponTypeForItem(item)) : weaponTypeForItem(item));
   let _dx = 0, _dy = 0, _held = false;
   let wolfForm = false, wolfSkin = null;   // WEREWOLF1 / SHADOW-FANG (AUDIT D5): the form handed to the rig last, and the skin read at its change
 
   function artFor(item) {
-    const type = weaponTypeForItem(item);
+    const plain = !!glowOf(item);   // WEAPON-GLOW1: an element shown swings the plain sheet
+    const type = heldType(item);
     if (type === WEAPON_TYPES.None) return null;
     // THE PORT'S OWN WEAPON takes the OTHER loader. Its art is ours,
     // shipped with the build, and needs no palette - which is also why
@@ -770,12 +781,12 @@ export function createWeaponRig({ renderer, canvas, fetchBytes, palette, audio, 
     // is what the mod is for, and its author's tables are honoured over
     // DFU's cache slot.
     const gilded = thunderlock && item?.rarity === 'gilded';   // GILDED1: the Hourlock's frames in gold leaf (thunderlockArt.js gildFrame)
-    const key = `${type}:${item?.material ?? 0}:${thunderlock ? (gilded ? 'gilded' : '') : atlasFileName(item, WEAPON_FILE[type] ?? '')}`;
+    const key = `${type}:${item?.material ?? 0}:${thunderlock ? (gilded ? 'gilded' : '') : atlasFileName(item, WEAPON_FILE[type] ?? '', undefined, plain ? false : undefined)}`;
     if (!cache.has(key)) {
       cache.set(key, null);
       (thunderlock
         ? loadThunderlockArt(renderer, { magic: type === WEAPON_TYPES.Thunderlock_Magic, gilded })
-        : loadFpsWeaponArt(fetchBytes, palette, renderer, type, item?.material ?? 0, item))
+        : loadFpsWeaponArt(fetchBytes, palette, renderer, type, item?.material ?? 0, item, { plain }))
         .then((art) => cache.set(key, art))
         .catch((e) => console.warn('[weaponRig] art load failed', key, e));
     }
@@ -1162,6 +1173,8 @@ export function createWeaponRig({ renderer, canvas, fetchBytes, palette, audio, 
       ? tint.map((v, i) => v + (flash[i] - v) * Math.min(1, glow * GUN_FEEL.flashLight * GUN_FEEL.flashGain))
       : tint;
     renderer.drawScreenQuad(tex, rect, undefined, lit ?? undefined);
+    const elementGlow = heldGlowNow();   // WEAPON-GLOW1: the element's outline over the frame, the held weapon's own
+    if (elementGlow) renderer.drawScreenQuadGlow?.(tex, rect, undefined, elementGlow, { art: [art.unionBox.w, art.unionBox.h], view: [canvas.width, canvas.height] });   // the frame is the union box, in native pixels
   }
 
   /**
@@ -1555,6 +1568,7 @@ export function createWeaponRig({ renderer, canvas, fetchBytes, palette, audio, 
       bindBody();   // MAC-O3: and the sprite body, the same law
       bindGlobals();   // AUDIT 68 S09-rig-globals-last-built: and the pose probe, the shield hook, the popup
       syncWorn();   // AUDIT 17e F17: the rig owns the worn-weapon bind
+      askHeld();   // WEAPON-GLOW1: the classic hand's element, once a frame
       // EOTB-IL: the mod's two keys are polled on their RELEASE edge
       // (GetKeyUp) - SwitchShoulder and AutoTogglePerspective's
       // ToggleInput, the registry's ShoulderSwitch and AutoPerspective. The drawn string's release is the body's own
@@ -1697,6 +1711,9 @@ export function createWeaponRig({ renderer, canvas, fetchBytes, palette, audio, 
         // path is a boolean compare, so the stance re-composes only
         // when a spell is actually readied or let go.
         fpArm.readySpell(spellArmed());
+        // WEAPON-GLOW1 (bible/05-Combat/Weapon-Glow.md): THE WEAPON IN THE HAND GLOWS AS ITS CARD SAYS - its element, or its
+        // enchantment where none shows - on its own ranges; a value the next draw reads, so the fast path is an assignment
+        fpArm.setWeaponGlow?.(meshGlow(playerWeapon.weapon), playerWeapon.weapon);
         // MW-D32: THE BODY FOLLOWS THE EQUIP TABLE. The same per-frame
         // read that swaps the weapon now hands the rig its worn list;
         // setWorn's fast path is one key compare, and a change - a
@@ -1848,7 +1865,7 @@ export function createWeaponRig({ renderer, canvas, fetchBytes, palette, audio, 
         });
         if (widgetOn()) widget.lateUpdate(dt, {
           renderer, canvas: c, entity, art: c ? artFor(playerWeapon.weapon) : null, weapon: playerWeapon.weapon,
-          weaponType: weaponTypeForItem(playerWeapon.weapon), material: playerWeapon.weapon?.material ?? -1,
+          weaponType: heldType(playerWeapon.weapon), material: playerWeapon.weapon?.material ?? -1, glow: heldGlowNow(),   // WEAPON-GLOW1: the set the art is - the plain one while an element shows - and its outline
           machine: playerWeapon.machine, sheathed: playerWeapon.sheathed, usingRightHand: playerWeapon.usingRightHand,
           equipCountdown: entity?.equipCountdown ?? 0, shown: spriteShown(), castPlaying: fpsSpellCasting.isPlayingAnim, spellArmed: spellArmed(),
           thirdPerson: fpArm.thirdActive() || eotbHidesWeapon(), reach: WEAPON_REACH,   // AUDIT-EOTB2: the widget's third-person gate asked the Morrowind arm alone
@@ -2214,7 +2231,7 @@ export function createWeaponRig({ renderer, canvas, fetchBytes, palette, audio, 
       if (gunSliding && !shown()) return;
       if (widgetOn() && c && widget.draw(renderer, c, fpTint)) return;
       const art = c && artFor(playerWeapon.weapon);
-      if (art && spriteShown()) drawFpsWeapon(renderer, c, art, playerWeapon.machine.state, playerWeapon.machine.frame, { tint: fpTint, offsetHeight: weaponOffsetHeight() - climbDrop(_climbLower, c.height) });   // CLIMB4: lowered for the climb (0: OnGUI's own offset)
+      if (art && spriteShown()) drawFpsWeapon(renderer, c, art, playerWeapon.machine.state, playerWeapon.machine.frame, { tint: fpTint, offsetHeight: weaponOffsetHeight() - climbDrop(_climbLower, c.height), glow: heldGlowNow() });   // CLIMB4: lowered for the climb (0: OnGUI's own offset); WEAPON-GLOW1: the element's outline, the held weapon's own
     }
   }
 }

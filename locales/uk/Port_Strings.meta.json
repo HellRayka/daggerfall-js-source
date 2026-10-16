@@ -144,6 +144,16 @@
   "tr": "7f0604dc6f28",
   "by": "claude-in-session"
  },
+ "features.weaponGlow.note": {
+  "en": "80be2112719a",
+  "tr": "85d2a005e8d3",
+  "by": "claude-in-session"
+ },
+ "features.weaponGlow.title": {
+  "en": "964f52fd55ec",
+  "tr": "37879eb0c2d2",
+  "by": "claude-in-session"
+ },
  "firm.readFail.closed": {
   "en": "de16f9841240",
   "tr": "5f6c89fc5204",

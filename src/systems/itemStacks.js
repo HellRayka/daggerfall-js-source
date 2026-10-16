@@ -4,7 +4,11 @@
 // quest references and save data independent; only transfers act on the whole displayed stack.
 import { applyTransfer } from './itemTransfer.js';
 
-// Compare every stored field, including mod fields and nested enchantments, except the quantity at the root.
+// Realm IDs and pickup bookkeeping belong to each original, not to the row's gameplay identity.
+// A HUD acquisition pass or checkpoint may stamp these while the window is open. Never erase them from items.
+const ROW_TRACKING_FIELDS = new Set(['uid', 'acquired', 'untaken']);
+
+// Compare every gameplay field, including mod fields and nested enchantments; ignore only root quantity/tracking.
 // Unsupported live objects are kept separate. Sorting object keys makes property insertion order irrelevant.
 function storedValue(value, seen, root = false) {
   if (value === null) return null;
@@ -20,7 +24,7 @@ function storedValue(value, seen, root = false) {
     const proto = Object.getPrototypeOf(value);
     if (proto !== Object.prototype && proto !== null) throw new Error('live object');
     const fields = Object.getOwnPropertyDescriptors(value);
-    out = ['object', Object.keys(fields).filter((k) => fields[k].enumerable && !(root && k === 'stackCount')).sort().map((k) => {
+    out = ['object', Object.keys(fields).filter((k) => fields[k].enumerable && !(root && (k === 'stackCount' || ROW_TRACKING_FIELDS.has(k)))).sort().map((k) => {
       if (!('value' in fields[k])) throw new Error('live field');
       return [k, storedValue(fields[k].value, seen)];
     })];

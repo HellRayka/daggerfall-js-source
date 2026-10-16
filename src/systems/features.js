@@ -696,6 +696,21 @@ export const FEATURES = Object.freeze([
     kinds: Object.freeze(['enhanced']),
     control: Object.freeze({ store: 'prefs', key: 'enhancedCombatVisuals', initial: true, online: true }),   // ECV1: on by default like the other enhanced visuals; the rules are untouched either way
   }),
+  // WEAPON-GLOW1 (2026-10-16, Mac: "designed our own sort of animated outline for each element ... the same, more
+  // detailed design for the morrowind weapons"): WHAT A WEAPON'S ELEMENT LOOKS LIKE IN THE HAND - systems/weaponGlow.js
+  // the law, render/weaponGlowGlsl.js the drawing, bible/05-Combat/Weapon-Glow.md the page. A look, read every frame
+  // (weaponGlowOn; `?weaponglow=off` the kill door), so a press takes effect at once; the player's own online - a
+  // peer's weapon glows on my screen by MY switch, off the word their look carries.
+  Object.freeze({
+    id: 'weapon-glow',
+    group: 'sight',
+    get title() { return t('features.weaponGlow.title', 'Weapon glow'); },
+    get note() { return t('features.weaponGlow.note', 'A weapon with a fire, frost or shock damage bonus wears a moving outline of its element, '
+      + 'brighter the stronger it is, and an enchanted Morrowind weapon glows. Off draws weapons as before.'); },   // AUDIT WEAPON-GLOW DOC-2: a bonus (a Legendary's power and a cast-when-strikes spell deal elemental damage and show none), and "as before" (the original - OpenMW - glows an enchanted part; off, the port draws it bare)
+    get effect() { return t('features.effect.atOnce', 'Takes effect at once.'); },
+    kinds: Object.freeze(['enhanced']),
+    control: Object.freeze({ store: 'prefs', key: 'weaponGlow', initial: true, online: 'player' }),   // WEAPON-GLOW1: systems/weaponGlow.js WEAPON_GLOW_PREF
+  }),
   // QUICK-LOOT B4 (2026-09-22, Mac: Arc B of the world-hover arcs, and
   // "How does skyrim do it" when the shape was put to him). Vanilla
   // Skyrim does not; what everyone means by it is the QuickLoot mod,

@@ -2169,12 +2169,30 @@ ${badgeCss()}
 }
 .ctl-foot { display: flex; justify-content: flex-end; }
 .ctl-row:last-child { border-bottom: 0; }
-/* UXB1-D (2026-09-25, the UX backlog): a question about a key stands in the
-   sticky head (brass-edged, so it reads as the thing waiting on an answer)
-   over the list it no longer replaces - and the rows it is about say so:
-   the row the key would go to in brass, the row that holds it now in the
-   duplicate's red. */
+/* UXB1-D: Defaults still asks in the sticky head. A question about a key is a
+   viewport-fitted tooltip beside the binding being changed, so a conflict far
+   down the list never sends the player back to the top. The list remains in
+   place and inert, and the two rows involved still say what is happening. */
 .ctl-head.ctl-asking { border-color: var(--brass); box-shadow: 0 6px 18px rgba(0,0,0,0.45); }
+.ctl-row .ctl { position: relative; }
+.ctl-tooltip {
+  position: fixed; z-index: 30; inset: auto; top: 50%; left: 50%;
+  transform: translate(-50%, -50%); margin: 0; box-sizing: border-box;
+  width: min(420px, calc(100vw - 24px)); max-height: calc(100dvh - 24px); overflow-y: auto;
+  padding: 16px 18px; border: 2px solid var(--brass); background: #0d1014; color: inherit;
+  box-shadow: 0 8px 28px rgba(0,0,0,0.7); text-align: left;
+}
+.ctl-tooltip::backdrop { background: transparent; }
+.ctl-key.ctl-tip-anchor { anchor-name: --ctl-key-in-use-anchor; }
+@supports (position-anchor: --ctl-key-in-use-anchor) {
+  .ctl-tooltip {
+    position-anchor: --ctl-key-in-use-anchor; position-area: bottom span-left;
+    position-try-fallbacks: flip-block, flip-inline;
+    top: auto; left: auto; transform: none; margin-block: 10px;
+  }
+}
+.ctl-tooltip h3 { margin: 0 0 8px; }
+.ctl-tooltip .acts { flex-wrap: wrap; }
 .ctl-row.ctl-want { box-shadow: inset 3px 0 0 var(--brass); }
 .ctl-row.ctl-want .ctl-key { color: var(--brass); border-color: var(--brass); }
 .ctl-row.ctl-holder { box-shadow: inset 3px 0 0 var(--blood); }
@@ -5217,15 +5235,19 @@ ${paceControlsCss('tview')}
    in the block direction, so the overflow columns went below the fold
    and the list scrolled anyway - measured, 14 rows spilling 203px past
    the frame. A GRID has no fragmentation: two tracks, rows in reading
-   order, a definite height, nothing to overflow. */
-.loot-win.wide .remotelist { display: grid; grid-template-columns: 1fr 1fr;
+   order, a definite height, nothing to overflow.
+   AUDIT VIRT: and two EQUAL tracks. A bare 1fr is never narrower than its widest row's unwrapped name, so the
+   tracks were sized by the rows drawn - a long list's window drew a few dozen of them, and its columns changed width
+   as it scrolled (205, 237, 222 px on a phone); a whole list's ran past the window (476 px of 410). minmax(0, 1fr)
+   splits the width in two, and the name's own ellipsis takes the rest. */
+.loot-win.wide .remotelist { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
   align-content: start; }
 .loot-win.wide .remotelist .packempty { grid-column: 1 / -1; }
 .loot-win .itemrow { width: 100%; height: auto; min-height: 52px;
   display: flex; align-items: center; justify-content: flex-start; gap: 12px;
   padding: 8px 14px; border: 0; border-bottom: 2px solid rgba(125,116,96,0.16);
   text-align: left; }
-.loot-win .itemrow:last-child { border-bottom: 0; }
+.loot-win .itemrow:last-child { border-bottom-color: transparent; }   /* AUDIT VIRT: unseen, not gone - every row the one height, so a long list's spacers are its rows to the pixel */
 .loot-win .itemrow .tile { width: 38px; height: 38px; font-size: 18px; flex: 0 0 auto; }
 .loot-win .itemrow .itemname { position: static; width: auto; height: auto;
   clip-path: none; overflow: hidden; display: flex; flex-direction: column; gap: 2px;

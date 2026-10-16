@@ -136,6 +136,11 @@ brass, lit brass, the flash core, a hole): each comes out cooler than
 it went in, the flash *gains* blue, the lit metal takes more than the
 shadowed, and alpha is never written.
 
+While the gun's blow carries an element (WEAPON-GLOW1, `05-Combat/Weapon-Glow.md`
+- a Ruby set in it, say), it swings the PLAIN frames under the element's
+outline (`plainWeaponType`): the shimmer is the enchanted look, and the
+outline is the more that is known.
+
 ## How you get one
 
 > "This weapon wont be available for purchase and should be one of the

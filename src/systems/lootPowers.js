@@ -57,6 +57,7 @@ import { registerSpellPowerMod, registerSpellPierceMod } from './spellPower.js';
 import { hasSpecialAbility, SPECIAL_ABILITY, restIgnoresNoRegen } from './rest.js';   // BAL9c: a career that cannot regenerate magicka, rest's own gate
 import { registerPlayerBlowLanded, pendingPlayerBlow, REACH_RISE_M } from './sigilSetPowers.js';
 import { playerDoor, paidBack, oweFoe } from './playerDoor.js';   // BAL5: a blow paid back never kills; OPEN-HAND: a follow-up owed to a relay's body
+import { showFollowUp } from '../ui/hitNumbers.js';   // FIELD BUGS 2026-10-15e ROSE-SEEN: a follow-up's own number
 import { careerTolerance, EFFECT_FLAGS } from './spellcast.js';
 import { lootRarityOn, validAffix, powerOf, registerLegendaryFind, readLines } from './lootRarity.js';   // GEM1: readLines, law 6's reading
 import { equipTableOf } from './equip.js';
@@ -261,8 +262,8 @@ export function lootStrike(attacker, target, damage, weapon) {
     switch (p.kind) {
       case 'chain': if (ranged(weapon)) arc(target, (damage * p.share) / 100, p.metres); break;
       case 'quake': if (weapon && !ranged(weapon)) quake(target, (damage * p.share) / 100, p.metres); break;
-      case 'echo': if (_rand() * 100 < p.chance) again(target, damage); break;
-      case 'fists': if (!weapon) again(target, (damage * p.share) / 100); break;   // BAL7: for half (the record's share)
+      case 'echo': if (_rand() * 100 < p.chance) again(target, damage, p.name); break;
+      case 'fists': if (!weapon) again(target, (damage * p.share) / 100, p.name); break;   // BAL7: for half (the record's share)
       case 'conduit': gainMana(attacker, p.mana); break;
       case 'flow': _s.flow = Math.min(p.max, flowStacks(now) + 1); _s.flowUntil = now + p.seconds; break;
       case 'toll': if (weapon) { _tolls.set(weapon, ((_tolls.get(weapon) ?? 0) + 1) % p.every); _lastToll = { foe: target, at: now }; } break;   // GILDED1
@@ -286,11 +287,13 @@ export function near(door, feet, metres, except) {
     && rise(f.ai.feet, feet) <= REACH_RISE_M && flat2(f.ai.feet, feet) <= metres && (!door.clear || door.clear(feet, f.ai.feet)));
 }
 const recordOf = (door, entity) => door?.foes().find((f) => f.entity === entity) ?? null;
-/** The struck foe takes the blow again (Many Endings, Open Hand) - through its own pool's door. */
-function again(target, damage) {
+/** The struck foe takes the blow again (Many Endings, Open Hand) - through its own pool's door - and its number rises,
+ *  tagged `word` (the power's name). */
+function again(target, damage, word) {
   const door = playerDoor();
   const f = recordOf(door, target);
   const n = Math.max(1, Math.round(damage));
+  if (!f?.dead) showFollowUp(n, word);   // FIELD BUGS 2026-10-15e ROSE-SEEN: the HUD showed the first blow alone
   if (f) { if (!f.dead) door.hurtFoe(f, n); return; }
   oweFoe(target, n);   // FIELD BUGS 2026-10-12g OPEN-HAND: a body the relay runs (the gate's Warden) - its host's claim carries it
 }
