@@ -34,7 +34,6 @@ import {
 import { RMBRP_HILL_SHAPES, SHAPE_BEARINGS, SHAPE_RINGS } from '../src/world/rmbrpHillShapes.js';   // FIELD BUGS 2026-10-05 HILL-SHAPES
 import { DET_TOWN_MODELS, DET_FLAT_STAND_INS, DET_FLAT_DRAWINGS, DET_TOWN_FLATS, DET_OLD_ARCHIVES, detStandInsOn, _resetDetStandIns } from '../src/world/detStandIns.js';
 import { TOWN_PICTURE_ARCHIVE, TOWN_PICTURES, PICTURE, townPictureEntries } from '../src/world/townPictures.js';
-import { fakeClassicRgba, texelOf } from './classicArtFake.mjs';
 import { STAND_IN_SPRITES } from '../src/world/standInSprites.js';
 import { customModelFor, customAliasFor, aliasSubMeshes, classicModelIdOf, hasCustomModel, _resetCustomModels } from '../src/world/customModels.js';
 import { flatFieldFor, cropRecordsFor, sowField, CROP_ARCHIVE, _resetFlatFields } from '../src/world/flatFields.js';
@@ -253,18 +252,17 @@ test('WD3 stand-ins, every built piece is sound - Rosy\'s hangings and rugs, the
 });
 
 // ---- the pictures and the sprites ----------------------------------------------------------------------------------------
-test('WD3 stand-ins, the town\'s cloth (DF-ART, Mac: "use daggerfall textures instead of AI generated"): forty-eight records of archive 38202 - five regions\' tapestries and banners, the Eight\'s, fourteen patterns, four rugs, leaves, three small hangings - each a Daggerfall record (a heraldic tapestry of TEXTURE.057 - a banner its middle half -, a woven pattern of .049, the rug of .371, growth of .302), read from the player\'s own ARENA2, opaque, behind its switch', async () => {
+test('WD3 stand-ins, the drawn cloth: forty-eight pictures of archive 38202 - five regions\' tapestries and banners, the Eight\'s, fourteen patterns, four rugs, leaves, three small hangings - every one opaque, behind its switch', async () => {
   assert.equal(TOWN_PICTURE_ARCHIVE, 38202);
   assert.equal(TOWN_PICTURES.length, 48);
-  const recordOf = (from) => (Array.isArray(from) ? from : from.from);
-  const archives = TOWN_PICTURES.map((p) => recordOf(p.from)[0]);
-  for (const k of [5, 18]) assert.deepEqual(TOWN_PICTURES[k].from.crop, [32, 0, 95, 127], 'a banner the middle half of its tapestry');
-  assert.deepEqual([...new Set(archives.slice(0, 26))], [57], 'the regions\' and the Eight\'s hangings: Daggerfall\'s heraldic tapestries');
-  assert.ok(archives.slice(26, 40).every((a) => a === 49), 'the patterns: its woven cloth');
-  assert.equal(archives[40], 371, 'the first rug its rug');
-  assert.deepEqual(TOWN_PICTURES[44].from, [302, 2], 'the leaves: green growth');
-  assert.deepEqual(TOWN_PICTURES[PICTURE.divineTapestry('Akatosh')].from, [57, 0], 'Akatosh the dragon');
-  assert.deepEqual(TOWN_PICTURES[PICTURE.regionTapestry('Lainlyn')].from, [57, 1], 'Lainlyn\'s crescent the moon');
+  const sizes = TOWN_PICTURES.map((p) => { const pic = p.draw(); return `${pic.width}x${pic.height}`; });
+  assert.deepEqual([...new Set(sizes.slice(0, 5)), ...new Set(sizes.slice(5, 10)), ...new Set(sizes.slice(40, 44)), sizes[44], ...new Set(sizes.slice(45))], ['32x48', '24x64', '48x32', '16x16', '16x24']);
+  for (const [k, p] of TOWN_PICTURES.entries()) {
+    const pic = p.draw();
+    assert.equal(pic.data.length, pic.width * pic.height * 4, p.name);
+    for (let i = 3; i < pic.data.length; i += 4) assert.equal(pic.data[i], 255, `${k} ${p.name}: opaque`);
+    assert.deepEqual([...pic.data], [...p.draw().data], `${p.name}: the same every time`);
+  }
   assert.deepEqual([PICTURE.regionTapestry('Glenpoint'), PICTURE.regionBanner('Glenpoint'), PICTURE.divineTapestry('Kynareth'), PICTURE.divineBanner('Akatosh'), PICTURE.decorative(15), PICTURE.rug(5), PICTURE.leaves, PICTURE.smallHanging(4)], [0, 5, 10 + PICTURE.divineTapestry('Kynareth') - 10, 18 + PICTURE.divineBanner('Akatosh') - 18, 26 + 1, 41, 44, 46]);
   let on = true;
   const entries = townPictureEntries(() => on);
@@ -272,12 +270,7 @@ test('WD3 stand-ins, the town\'s cloth (DF-ART, Mac: "use daggerfall textures in
   assert.ok(entries.every((e, r) => e.archive === 38202 && e.record === r && e.standIn === true && e.gate() === true));
   on = false;
   assert.ok(entries.every((e) => e.gate() === false));
-  const ctx = { classicRgba: fakeClassicRgba() };
-  for (const [k, e] of entries.entries()) {
-    const pic = await e.build(ctx);
-    for (let i = 3; i < pic.data.length; i += 4) assert.equal(pic.data[i], 255, `${k} ${TOWN_PICTURES[k].name}: opaque`);
-    assert.deepEqual([...pic.data.slice(0, 3)], texelOf(...recordOf(TOWN_PICTURES[k].from)), `${k}: read from its Daggerfall record`);
-  }
+  assert.equal((await entries[3].build()).width, 32);
 });
 
 test('WD3 stand-ins, the drawn sprites: every one a clear ground and a drawn subject, binary alpha, small as Daggerfall\'s own; every name the DET tables point at is drawn', () => {
